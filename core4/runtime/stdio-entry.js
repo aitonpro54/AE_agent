@@ -366,14 +366,15 @@ function verifyInstallation(file, options = {}) {
 async function start({ descriptor, port = 3457, input = process.stdin, output = process.stdout, mode = 'stdio' } = {}) {
   const installation = verifyInstallation(descriptor), root = installation.releaseDir;
   if (fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(root)) fail('installation_entry_root_mismatch');
+  const compositionSpec = require('./composition-spec.js');
+  const release = JSON.parse(fs.readFileSync(path.join(root, 'release.json'), 'utf8'));
+  const selected = compositionSpec.deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
   const installGate = path.join(installation.installRoot, 'install.lock');
   let startupGate, broker, peer, panelStartup, attachmentOwner, ipc, reservedServer, ownerLifecycle, workSession, startOverOwner, startOverControl, ownerMaintenance, startOverRestartArmed = false;
   try {
   if (!['stdio', 'owner'].includes(mode)) fail('runtime_mode');
   if (mode === 'stdio') startupGate = fs.openSync(installGate, 'wx');
   if (canonical(verifyInstallation(descriptor)) !== canonical(installation)) fail('installation_changed_during_start');
-  const release = JSON.parse(fs.readFileSync(path.join(root, 'release.json'), 'utf8'));
-  const selected = deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
   if (selected.composition?.version !== 2) fail('runtime_composition_required');
   const ownerFiles = ['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js', 'runtime/start-over-inspection.js', 'runtime/start-over-process.js', 'runtime/start-over-state.js', 'runtime/start-over-barrier.js', 'runtime/start-over-archive.js', 'runtime/start-over-finisher.js', 'runtime/work-session.js', 'runtime/start-over-panel-control.js', 'runtime/start-over-driver.js', 'runtime/owner-launch.js'];
   const ownerRuntime = Object.hasOwn(release.hashes, 'runtime/owner-contract.json');

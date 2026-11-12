@@ -1,0 +1,62 @@
+[
+  {
+    "path": "core4/runtime/composition-spec.js",
+    "sha256": "6ffb8c4f0d20cedb25e0404ead8df9675ba003b6a6da53daa929056811c382ea"
+  },
+  {
+    "path": "core4/runtime/stdio-entry.js",
+    "sha256": "b27a5157d4b53d64d205885325b5b4c07ac2ca099d2f96024a268a15728ea824"
+  },
+  {
+    "path": "core4/runtime/client-entry.js",
+    "sha256": "aa9e6abfb291d1a27a6905f1aadaaed87f8196e5e423c51480ddbe2589bed380"
+  },
+  {
+    "path": "core4/runtime/source-package.json",
+    "sha256": "f0a4647a8990d81812617c5107b6e2b62b827fde9f08943fc4cc456f51c1753f"
+  },
+  {
+    "path": "core4/tools/composition-spec.js",
+    "sha256": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638"
+  },
+  {
+    "path": "core4/tools/package-installable.js",
+    "sha256": "db4279833e72f923e594ddb5dc06cfcef5d6e37d766a9a3d1f5e8f424cc7f95d"
+  },
+  {
+    "path": "core4/tools/install-core4.js",
+    "sha256": "f4d345ae1a42441d5c2d2ca713e07bee27f5c5b417f6dbc52ddee854e21d340a"
+  },
+  {
+    "path": "core4/tools/package-standalone-installer.js",
+    "sha256": "c49de8fb09730cac20d85ef2d63efc34c50bf79cf4e8427b59746551f751dbd4"
+  },
+  {
+    "path": "core4/tools/standalone-installer.js",
+    "sha256": "dfe57875f8b103669c80beca33ba5e89ffba52933203b459a0da991856b51692"
+  },
+  {
+    "path": "core4/tools/check-boundaries.js",
+    "sha256": "92c09516d4b35c449e64ed8a7bdacfded9a0747bb74f3c4eba4543bd37f96671"
+  },
+  {
+    "path": "core4/config/validation-map.json",
+    "sha256": "c0b311c56fa30a10fd71aaa3da7a4f9825954aaeb1d35fe1af32ccffeaecb2f0"
+  },
+  {
+    "path": "core4/test/composition-spec.test.js",
+    "sha256": "de4c51ae9874b672bf27b2dccee18d95fee874c8aeb985c4c719d3d99d4e1484"
+  },
+  {
+    "path": "core4/test/client-entry.test.js",
+    "sha256": "8fa61de477a560b81f518d4ca9a3ddcf9a42c1c668428d54f08cc444cc24c0ee"
+  },
+  {
+    "path": "core4/test/client-launcher.test.js",
+    "sha256": "8999182e213229230cf584a4d0e78131ffaa1cd630e8275d6bd45250e1d2a86c"
+  },
+  {
+    "path": "core4/test/standalone-installer.test.js",
+    "sha256": "507996ac5bfdf6a2f2d2dde3ecc2863e39a1be295f367d669160f385d00e44c9"
+  }
+]

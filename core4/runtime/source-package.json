@@ -4,6 +4,7 @@
     "core/artifact.json",
     "worker.js",
     "runtime/stdio-entry.js",
+    "runtime/composition-spec.js",
     "runtime/installation.js",
     "runtime/receiver-contract.json",
     "runtime/install-lease.js",

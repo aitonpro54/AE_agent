@@ -1,0 +1,366 @@
+{
+  "stage": "B1",
+  "recordedAt": "2026-11-12T10:43:44.305408+00:00",
+  "sourceParent": "5ef6921",
+  "result": "implemented; focused suites58 PASS; boundaries92; source trust+standalone seam review ACCEPT",
+  "sourceHashesVerified": 15,
+  "reviewLimits": "Full final affected union remains C; inline verifier/spec semantic duplication is intentional and parity tested",
+  "standaloneContract": "v3 current tooling copy separate from candidate; legacyv1/v2 data-readable; legacy package rebundling preserved",
+  "manifestSummary": "69в†’70,89в†’90,114в†’115,163в†’164; only runtime/spec addition; changed hashes only client-entry/stdio-entry/composition-policy; modules/assets/profiles/capabilities/catalog/registry/tool surface equal",
+  "roleSummary": "87в†’89,107в†’109,132в†’134,181в†’183 paths; runtime candidate spec + independent tools pure spec; legacy helpers16/current17; new manifestv3 capBase null or HASH. Baseline role paths reconstructed from pre-edit actual package manifests+frozen legacy helper list, not a previously executed standalone build.",
+  "actualFinalProof": "standalone-v3-final-proof.json: poison+old-nohelper dry-run exit0, marker absent/destination absent; capability exit1 capability_stopped_update_required, base/hash preserved; test covers legacyv1/v2 exact data closures+finite executable gate.",
+  "limits": [
+    "No full final affected union or release certification.",
+    "No live AE/MCP/CU/network or installed-state changes; TEMP fixture filesystem/Node child evidence only.",
+    "Initial auxiliary Buffer comparison and preliminary format1 repro emitted errors to tool output; compact records retained rather than claiming original full stderr artifacts."
+  ],
+  "files": [
+    {
+      "path": "b1-validation.json",
+      "sha256": "70b5683bec5782563a3b2f03814e3f9fbf08ff5186196e3c201ed02c560f4ff5",
+      "bytes": 31232
+    },
+    {
+      "path": "baseline-summary.json",
+      "sha256": "b240b2e2fce694cf64e8f57b8e26d8e09125768542f41bf0428293f55c54551e",
+      "bytes": 949
+    },
+    {
+      "path": "boundaries-v3.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "boundaries-v3.stdout.txt",
+      "sha256": "98850ee100fa03526f85cbaaffcbe974317bda5c91ec27e67736c999d7c584c7",
+      "bytes": 102
+    },
+    {
+      "path": "boundaries.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "boundaries.stdout.txt",
+      "sha256": "98850ee100fa03526f85cbaaffcbe974317bda5c91ec27e67736c999d7c584c7",
+      "bytes": 102
+    },
+    {
+      "path": "client-entry-full-attempt02.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "client-entry-full-attempt02.stdout.txt",
+      "sha256": "b6f99cc2149f6ec8c17f157c7bc1cf2d9a5b5b5207bcacb87384b7d75e5205cc",
+      "bytes": 1464
+    },
+    {
+      "path": "client-entry-full.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "client-entry-full.stdout.txt",
+      "sha256": "b293efc316150631e214782dec570f31dfab93f7c036c2252da5c6be61293f4a",
+      "bytes": 1358
+    },
+    {
+      "path": "client-launcher-full.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "client-launcher-full.stdout.txt",
+      "sha256": "6fd969418b5283394447728b368cd903bdbd6dc63bbac7ebe888871b81f795d3",
+      "bytes": 2773
+    },
+    {
+      "path": "composition-spec-full-attempt02.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "composition-spec-full-attempt02.stdout.txt",
+      "sha256": "33cccfe15f6e1e6e26f00f2f1ca4ec290e8470068e87c58bed175aa227d497ff",
+      "bytes": 1256
+    },
+    {
+      "path": "composition-spec-full.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "composition-spec-full.stdout.txt",
+      "sha256": "9dd862cff57494544cb6d7b691ca4add37d8c89e63e48dfe7e4d4db58e167915",
+      "bytes": 2222
+    },
+    {
+      "path": "composition-spec-v3-full.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "composition-spec-v3-full.stdout.txt",
+      "sha256": "ff41ac3a9abcfa6be65d36a00750e8e7c9c07950985a126b74cc39038102a8fd",
+      "bytes": 1846
+    },
+    {
+      "path": "diff-check.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "diff-check.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "installable-package-bootstrap-focused.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "installable-package-bootstrap-focused.stdout.txt",
+      "sha256": "046f50e403b7543773155fea1c703c6961e75d5790015f4751c154bd212feb82",
+      "bytes": 1788
+    },
+    {
+      "path": "manifest-diff-attempt01.result.json",
+      "sha256": "cf934e58d0f618ecbf4768e214ab15a584113d374cc31270b28dd00a97123b62",
+      "bytes": 219
+    },
+    {
+      "path": "manifest-diff-manual-titles-variants.json",
+      "sha256": "d33fd2397d445a5f3555cf2eeabed7f16d3d620f35a86d6725bcc7ea702bc339",
+      "bytes": 25492
+    },
+    {
+      "path": "manifest-diff-manual.json",
+      "sha256": "a0a6048fa689ab5351bb04901910f92580caad14132b953441444dc555e32bf2",
+      "bytes": 19846
+    },
+    {
+      "path": "manifest-diff-operator-render-jobs.json",
+      "sha256": "b4edfab9023245d30fdca2c33b54ea03bf0fcadc9c3201d6355b63ac3b61447b",
+      "bytes": 36512
+    },
+    {
+      "path": "manifest-diff-readonly.json",
+      "sha256": "d2297017f0e23d8b6408c95908efae883648f302e63d4c91f6af9ba8238c3077",
+      "bytes": 15330
+    },
+    {
+      "path": "manifest-diff-summary.json",
+      "sha256": "b7830bd93600211e87641a2c9962715654ef4f0e9912937bc37e2882c3334676",
+      "bytes": 4147
+    },
+    {
+      "path": "results-attempt01.json",
+      "sha256": "c7186ddf38833127e36afa5629a3267d26827c304e420c9b12902c91581c49d5",
+      "bytes": 1996
+    },
+    {
+      "path": "results-attempt02.json",
+      "sha256": "e273e21e831c01599d7160b3d5cdfe1ae823cfb673fc6b432b0283581cc8b70f",
+      "bytes": 626
+    },
+    {
+      "path": "results-final-static.json",
+      "sha256": "9d4573b614a7c10a31470710d272123de7a5b80d4763409a98cf28c519d1867e",
+      "bytes": 2923
+    },
+    {
+      "path": "results-focused.json",
+      "sha256": "569a6436cf5db5c31a06ba17c7c05a9262413ed770d2f4d6754312f7cc82ff50",
+      "bytes": 797
+    },
+    {
+      "path": "results-v3.json",
+      "sha256": "459c67c3fd67c29642906830a09b1b8124214c09cbdf21e4da55732a5149dfdf",
+      "bytes": 776
+    },
+    {
+      "path": "selection-final.json",
+      "sha256": "684e9d8fbd7329954d5ac9fa2a8a612c2f0424f8a7951cc458149a14e0f0e8dc",
+      "bytes": 463973
+    },
+    {
+      "path": "selection.json",
+      "sha256": "ae04a0056f171dbd6ba846012bcd639d93ef3a46275da3de0550fa2b612354f6",
+      "bytes": 446718
+    },
+    {
+      "path": "source-hashes.json",
+      "sha256": "7a7a25b2a06a7b946e5c510de9b22005e4e19725babfd4ac29de33894fe7c66d",
+      "bytes": 2089
+    },
+    {
+      "path": "standalone-installer-full.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "standalone-installer-full.stdout.txt",
+      "sha256": "d9b3171c834f84606984d665334d41da13c6d57adc3640dcf36e59dc9cddcdd1",
+      "bytes": 1057
+    },
+    {
+      "path": "standalone-role-closure-diff.json",
+      "sha256": "55bd14882c52b10e27d8fce0a86bb11d6ec4bbe93aa854125e12cac023c07c61",
+      "bytes": 42877
+    },
+    {
+      "path": "standalone-v3-final-proof.json",
+      "sha256": "dc9854676b028615fc7e5e3ae55050f1bdcef057ce435468720379897d695a61",
+      "bytes": 6965
+    },
+    {
+      "path": "syntax-final-core4_runtime_client-entry.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_runtime_client-entry.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_runtime_composition-spec.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_runtime_composition-spec.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_runtime_stdio-entry.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_runtime_stdio-entry.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_test_client-entry.test.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_test_client-entry.test.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_test_client-launcher.test.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_test_client-launcher.test.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_test_composition-spec.test.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_test_composition-spec.test.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_test_standalone-installer.test.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_test_standalone-installer.test.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_check-boundaries.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_check-boundaries.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_composition-spec.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_composition-spec.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_install-core4.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_install-core4.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_package-installable.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_package-installable.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_package-standalone-installer.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_package-standalone-installer.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_standalone-installer.js.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-final-core4_tools_standalone-installer.js.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "initial-poison.stdout.txt",
+      "sha256": "e70bd6e0c9f395c1947bdd3d4b818cf3d97a6ecdcdbd24ac967bfc1ae01b9b0f",
+      "bytes": 1234
+    },
+    {
+      "path": "initial-poison.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "initial-poison-marker.txt",
+      "sha256": "a192c7f58ed06a7b25299f818436611affeb2e076515d378018f0cc637cdfcfc",
+      "bytes": 28
+    }
+  ],
+  "largeBaselinePackages": "Retained in task TEMP with original run metadata; not copied as source blobs into Git",
+  "noUserInstalledChanges": true
+}

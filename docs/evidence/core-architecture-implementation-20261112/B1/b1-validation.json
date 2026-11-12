@@ -1,0 +1,983 @@
+{
+  "scope": "B1 extraction plus reviewed standalone v3 trusted tooling role boundary",
+  "status": "implemented and reviewed; focused suites PASS; one existing identity fixture failure retained for C; final affected union not run",
+  "productVersion": "4.2.6",
+  "sourceFreeze": "source-hashes.json verified unchanged after review",
+  "sources": [
+    {
+      "path": "core4/runtime/composition-spec.js",
+      "sha256": "6ffb8c4f0d20cedb25e0404ead8df9675ba003b6a6da53daa929056811c382ea"
+    },
+    {
+      "path": "core4/runtime/stdio-entry.js",
+      "sha256": "b27a5157d4b53d64d205885325b5b4c07ac2ca099d2f96024a268a15728ea824"
+    },
+    {
+      "path": "core4/runtime/client-entry.js",
+      "sha256": "aa9e6abfb291d1a27a6905f1aadaaed87f8196e5e423c51480ddbe2589bed380"
+    },
+    {
+      "path": "core4/runtime/source-package.json",
+      "sha256": "f0a4647a8990d81812617c5107b6e2b62b827fde9f08943fc4cc456f51c1753f"
+    },
+    {
+      "path": "core4/tools/composition-spec.js",
+      "sha256": "4368f4cd2619ca288ea82ed9ac60d57ab1613fb824725b300815b053e09e4638"
+    },
+    {
+      "path": "core4/tools/package-installable.js",
+      "sha256": "db4279833e72f923e594ddb5dc06cfcef5d6e37d766a9a3d1f5e8f424cc7f95d"
+    },
+    {
+      "path": "core4/tools/install-core4.js",
+      "sha256": "f4d345ae1a42441d5c2d2ca713e07bee27f5c5b417f6dbc52ddee854e21d340a"
+    },
+    {
+      "path": "core4/tools/package-standalone-installer.js",
+      "sha256": "c49de8fb09730cac20d85ef2d63efc34c50bf79cf4e8427b59746551f751dbd4"
+    },
+    {
+      "path": "core4/tools/standalone-installer.js",
+      "sha256": "dfe57875f8b103669c80beca33ba5e89ffba52933203b459a0da991856b51692"
+    },
+    {
+      "path": "core4/tools/check-boundaries.js",
+      "sha256": "92c09516d4b35c449e64ed8a7bdacfded9a0747bb74f3c4eba4543bd37f96671"
+    },
+    {
+      "path": "core4/config/validation-map.json",
+      "sha256": "c0b311c56fa30a10fd71aaa3da7a4f9825954aaeb1d35fe1af32ccffeaecb2f0"
+    },
+    {
+      "path": "core4/test/composition-spec.test.js",
+      "sha256": "de4c51ae9874b672bf27b2dccee18d95fee874c8aeb985c4c719d3d99d4e1484"
+    },
+    {
+      "path": "core4/test/client-entry.test.js",
+      "sha256": "8fa61de477a560b81f518d4ca9a3ddcf9a42c1c668428d54f08cc444cc24c0ee"
+    },
+    {
+      "path": "core4/test/client-launcher.test.js",
+      "sha256": "8999182e213229230cf584a4d0e78131ffaa1cd630e8275d6bd45250e1d2a86c"
+    },
+    {
+      "path": "core4/test/standalone-installer.test.js",
+      "sha256": "507996ac5bfdf6a2f2d2dde3ecc2863e39a1be295f367d669160f385d00e44c9"
+    }
+  ],
+  "runs": [
+    {
+      "name": "syntax-core4_runtime_composition-spec.js",
+      "args": [
+        "--check",
+        "core4/runtime/composition-spec.js"
+      ],
+      "exit": 0,
+      "record": "results-attempt01.json",
+      "logs": []
+    },
+    {
+      "name": "syntax-core4_runtime_stdio-entry.js",
+      "args": [
+        "--check",
+        "core4/runtime/stdio-entry.js"
+      ],
+      "exit": 0,
+      "record": "results-attempt01.json",
+      "logs": []
+    },
+    {
+      "name": "syntax-core4_runtime_client-entry.js",
+      "args": [
+        "--check",
+        "core4/runtime/client-entry.js"
+      ],
+      "exit": 0,
+      "record": "results-attempt01.json",
+      "logs": []
+    },
+    {
+      "name": "syntax-core4_tools_package-installable.js",
+      "args": [
+        "--check",
+        "core4/tools/package-installable.js"
+      ],
+      "exit": 0,
+      "record": "results-attempt01.json",
+      "logs": []
+    },
+    {
+      "name": "syntax-core4_tools_install-core4.js",
+      "args": [
+        "--check",
+        "core4/tools/install-core4.js"
+      ],
+      "exit": 0,
+      "record": "results-attempt01.json",
+      "logs": []
+    },
+    {
+      "name": "syntax-core4_tools_check-boundaries.js",
+      "args": [
+        "--check",
+        "core4/tools/check-boundaries.js"
+      ],
+      "exit": 0,
+      "record": "results-attempt01.json",
+      "logs": []
+    },
+    {
+      "name": "syntax-core4_test_composition-spec.test.js",
+      "args": [
+        "--check",
+        "core4/test/composition-spec.test.js"
+      ],
+      "exit": 0,
+      "record": "results-attempt01.json",
+      "logs": []
+    },
+    {
+      "name": "syntax-core4_test_client-entry.test.js",
+      "args": [
+        "--check",
+        "core4/test/client-entry.test.js"
+      ],
+      "exit": 0,
+      "record": "results-attempt01.json",
+      "logs": []
+    },
+    {
+      "name": "composition-spec-full",
+      "args": [
+        "--test",
+        "core4/test/composition-spec.test.js"
+      ],
+      "exit": 1,
+      "signal": null,
+      "summary": [
+        "ℹ tests 11",
+        "ℹ pass 10",
+        "ℹ fail 1",
+        "ℹ skipped 0",
+        "ℹ duration_ms 9487.0247"
+      ],
+      "record": "results-attempt01.json",
+      "logs": [
+        {
+          "path": "composition-spec-full.stdout.txt",
+          "sha256": "9dd862cff57494544cb6d7b691ca4add37d8c89e63e48dfe7e4d4db58e167915",
+          "bytes": 2222
+        },
+        {
+          "path": "composition-spec-full.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "client-entry-full",
+      "args": [
+        "--test",
+        "core4/test/client-entry.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 12",
+        "ℹ pass 12",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 3438.3182"
+      ],
+      "record": "results-attempt01.json",
+      "logs": [
+        {
+          "path": "client-entry-full.stdout.txt",
+          "sha256": "b293efc316150631e214782dec570f31dfab93f7c036c2252da5c6be61293f4a",
+          "bytes": 1358
+        },
+        {
+          "path": "client-entry-full.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "boundaries",
+      "args": [
+        "core4/tools/check-boundaries.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [],
+      "record": "results-attempt01.json",
+      "logs": [
+        {
+          "path": "boundaries.stdout.txt",
+          "sha256": "98850ee100fa03526f85cbaaffcbe974317bda5c91ec27e67736c999d7c584c7",
+          "bytes": 102
+        },
+        {
+          "path": "boundaries.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "composition-spec-full-attempt02",
+      "args": [
+        "--test",
+        "core4/test/composition-spec.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 11",
+        "ℹ pass 11",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 10035.2797"
+      ],
+      "record": "results-attempt02.json",
+      "logs": [
+        {
+          "path": "composition-spec-full-attempt02.stdout.txt",
+          "sha256": "33cccfe15f6e1e6e26f00f2f1ca4ec290e8470068e87c58bed175aa227d497ff",
+          "bytes": 1256
+        },
+        {
+          "path": "composition-spec-full-attempt02.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "client-entry-full-attempt02",
+      "args": [
+        "--test",
+        "core4/test/client-entry.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 13",
+        "ℹ pass 13",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 4228.5559"
+      ],
+      "record": "results-attempt02.json",
+      "logs": [
+        {
+          "path": "client-entry-full-attempt02.stdout.txt",
+          "sha256": "b6f99cc2149f6ec8c17f157c7bc1cf2d9a5b5b5207bcacb87384b7d75e5205cc",
+          "bytes": 1464
+        },
+        {
+          "path": "client-entry-full-attempt02.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "client-launcher-full",
+      "args": [
+        "--test",
+        "core4/test/client-launcher.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 21",
+        "ℹ pass 21",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 88505.4062"
+      ],
+      "record": "results-focused.json",
+      "logs": [
+        {
+          "path": "client-launcher-full.stdout.txt",
+          "sha256": "6fd969418b5283394447728b368cd903bdbd6dc63bbac7ebe888871b81f795d3",
+          "bytes": 2773
+        },
+        {
+          "path": "client-launcher-full.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "installable-package-bootstrap-focused",
+      "args": [
+        "--test",
+        "--test-name-pattern=package deterministic closure|full generated host registry|exact release closure|stale release A entry|descriptor changed at startup gate",
+        "core4/test/installable-runtime.test.js"
+      ],
+      "exit": 1,
+      "signal": null,
+      "summary": [
+        "ℹ tests 5",
+        "ℹ pass 4",
+        "ℹ fail 1",
+        "ℹ skipped 0",
+        "ℹ duration_ms 15280.2987"
+      ],
+      "record": "results-focused.json",
+      "logs": [
+        {
+          "path": "installable-package-bootstrap-focused.stdout.txt",
+          "sha256": "046f50e403b7543773155fea1c703c6961e75d5790015f4751c154bd212feb82",
+          "bytes": 1788
+        },
+        {
+          "path": "installable-package-bootstrap-focused.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "composition-spec-v3-full",
+      "args": [
+        "--test",
+        "core4/test/composition-spec.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 16",
+        "ℹ pass 16",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 14106.3054"
+      ],
+      "record": "results-v3.json",
+      "logs": [
+        {
+          "path": "composition-spec-v3-full.stdout.txt",
+          "sha256": "ff41ac3a9abcfa6be65d36a00750e8e7c9c07950985a126b74cc39038102a8fd",
+          "bytes": 1846
+        },
+        {
+          "path": "composition-spec-v3-full.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "standalone-installer-full",
+      "args": [
+        "--test",
+        "core4/test/standalone-installer.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 8",
+        "ℹ pass 8",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 31276.6213"
+      ],
+      "record": "results-v3.json",
+      "logs": [
+        {
+          "path": "standalone-installer-full.stdout.txt",
+          "sha256": "d9b3171c834f84606984d665334d41da13c6d57adc3640dcf36e59dc9cddcdd1",
+          "bytes": 1057
+        },
+        {
+          "path": "standalone-installer-full.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "boundaries-v3",
+      "args": [
+        "core4/tools/check-boundaries.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [],
+      "record": "results-v3.json",
+      "logs": [
+        {
+          "path": "boundaries-v3.stdout.txt",
+          "sha256": "98850ee100fa03526f85cbaaffcbe974317bda5c91ec27e67736c999d7c584c7",
+          "bytes": 102
+        },
+        {
+          "path": "boundaries-v3.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_runtime_composition-spec.js",
+      "args": [
+        "--check",
+        "core4/runtime/composition-spec.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_runtime_composition-spec.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_runtime_composition-spec.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_runtime_stdio-entry.js",
+      "args": [
+        "--check",
+        "core4/runtime/stdio-entry.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_runtime_stdio-entry.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_runtime_stdio-entry.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_runtime_client-entry.js",
+      "args": [
+        "--check",
+        "core4/runtime/client-entry.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_runtime_client-entry.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_runtime_client-entry.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_tools_composition-spec.js",
+      "args": [
+        "--check",
+        "core4/tools/composition-spec.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_tools_composition-spec.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_tools_composition-spec.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_tools_package-installable.js",
+      "args": [
+        "--check",
+        "core4/tools/package-installable.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_tools_package-installable.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_tools_package-installable.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_tools_install-core4.js",
+      "args": [
+        "--check",
+        "core4/tools/install-core4.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_tools_install-core4.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_tools_install-core4.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_tools_package-standalone-installer.js",
+      "args": [
+        "--check",
+        "core4/tools/package-standalone-installer.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_tools_package-standalone-installer.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_tools_package-standalone-installer.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_tools_standalone-installer.js",
+      "args": [
+        "--check",
+        "core4/tools/standalone-installer.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_tools_standalone-installer.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_tools_standalone-installer.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_tools_check-boundaries.js",
+      "args": [
+        "--check",
+        "core4/tools/check-boundaries.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_tools_check-boundaries.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_tools_check-boundaries.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_test_composition-spec.test.js",
+      "args": [
+        "--check",
+        "core4/test/composition-spec.test.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_test_composition-spec.test.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_test_composition-spec.test.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_test_client-entry.test.js",
+      "args": [
+        "--check",
+        "core4/test/client-entry.test.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_test_client-entry.test.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_test_client-entry.test.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_test_client-launcher.test.js",
+      "args": [
+        "--check",
+        "core4/test/client-launcher.test.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_test_client-launcher.test.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_test_client-launcher.test.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-final-core4_test_standalone-installer.test.js",
+      "args": [
+        "--check",
+        "core4/test/standalone-installer.test.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "syntax-final-core4_test_standalone-installer.test.js.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-final-core4_test_standalone-installer.test.js.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "diff-check",
+      "args": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "core4/runtime/composition-spec.js",
+        "core4/runtime/stdio-entry.js",
+        "core4/runtime/client-entry.js",
+        "core4/runtime/source-package.json",
+        "core4/tools/composition-spec.js",
+        "core4/tools/package-installable.js",
+        "core4/tools/install-core4.js",
+        "core4/tools/package-standalone-installer.js",
+        "core4/tools/standalone-installer.js",
+        "core4/tools/check-boundaries.js",
+        "core4/config/validation-map.json",
+        "core4/test/composition-spec.test.js",
+        "core4/test/client-entry.test.js",
+        "core4/test/client-launcher.test.js",
+        "core4/test/standalone-installer.test.js"
+      ],
+      "exit": 0,
+      "record": "results-final-static.json",
+      "logs": [
+        {
+          "path": "diff-check.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "diff-check.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    }
+  ],
+  "passedCurrent": {
+    "compositionSpec": 16,
+    "clientEntry": 13,
+    "clientLauncher": 21,
+    "standaloneInstaller": 8,
+    "boundaries": 92,
+    "syntaxJS": 13,
+    "diffCheck": true
+  },
+  "manifestSummary": "69→70,89→90,114→115,163→164; only runtime/spec addition; changed hashes only client-entry/stdio-entry/composition-policy; modules/assets/profiles/capabilities/catalog/registry/tool surface equal",
+  "standaloneRoleSummary": "87→89,107→109,132→134,181→183 paths; runtime candidate spec + independent tools pure spec; legacy helpers16/current17; new manifestv3 capBase null or HASH. Baseline role paths reconstructed from pre-edit actual package manifests+frozen legacy helper list, not a previously executed standalone build.",
+  "currentProof": "standalone-v3-final-proof.json: poison+old-nohelper dry-run exit0, marker absent/destination absent; capability exit1 capability_stopped_update_required, base/hash preserved; test covers legacyv1/v2 exact data closures+finite executable gate.",
+  "retainedFailures": [
+    {
+      "file": "composition-spec-full.stdout.txt",
+      "kind": "fixture assertion",
+      "reason": "4.2.2 registryVerification absent/undefined, not false; test corrected, source semantics unchanged",
+      "resolved": true
+    },
+    {
+      "file": "manifest-diff-attempt01.result.json",
+      "kind": "auxiliary comparison harness",
+      "reason": "Buffer actual vs JSON-serialized Buffer object; normalized both sides, final metadata equality PASS",
+      "resolved": true
+    },
+    {
+      "file": "poison-candidate-helper/stdout.txt",
+      "kind": "pre-fix standalone role violation",
+      "marker": "poison-candidate-helper/candidate-helper-executed",
+      "reason": "Initial v1 flattened tooling loaded candidate helper during official TEMP dry-run; retained marker and output. Replaced by reviewed v3 trusted role copy.",
+      "resolved": true
+    },
+    {
+      "kind": "preliminary old fixture choice",
+      "reason": "Initial format1 standalone write rejected standalone_candidate; standalone historically accepts format2 only. Supported old4.2.2/format2 nohelper proved by final v3 fixture.",
+      "resolved": true
+    },
+    {
+      "file": "installable-package-bootstrap-focused.stdout.txt",
+      "kind": "existing C fixture gap",
+      "source": "core4/test/installable-runtime.test.js:495 / planInstall:499",
+      "reason": "CSS changed without panel identity restamp; panel_identity_integrity prevents reaching intended wrong-root scenario. Preserve exact wrong-root assertion and fix trusted restamp in C.",
+      "resolved": false
+    }
+  ],
+  "knownCFailuresFromEarlierBlocks": [
+    {
+      "source": "core4/test/owner-runtime.test.js:1086; panel helper:138",
+      "log": "C:/Users/Ant/AppData/Local/Temp/core4-a1-06fceb40336b4c55a50e54dca3be8f9b/owner-runtime-a1.stdout.txt",
+      "reason": "Old panel helper omits loadedPanel/extensionRoot/registry-ready, /link403"
+    },
+    {
+      "source": "core4/test/core4.test.js tests64/448/460; assertions67/454/478",
+      "log": "C:/Users/Ant/AppData/Local/Temp/core4-a3-9a549ac8b26b41fd9fb649086e1659cd/core4-full.stdout.txt",
+      "reason": "Exact routing expectation2 stale; final map now also includes panel-lifecycle and composition-spec; update against final map in C."
+    }
+  ],
+  "selectedChecks": [
+    "composition-spec",
+    "panel-lifecycle",
+    "ae-panel-startup",
+    "mixed-installation-repair",
+    "ae-readiness",
+    "package-location",
+    "start-over-driver",
+    "panel-start-over",
+    "start-over-runtime",
+    "start-over-operator",
+    "work-session",
+    "start-over-finisher",
+    "start-over-state",
+    "start-over-barrier",
+    "start-over-inspection",
+    "stopped-host-readoption-operator",
+    "stopped-host-readoption",
+    "readoption-core",
+    "readoption-recovery",
+    "readoption-enable",
+    "readoption-probe",
+    "stopped-update-operator",
+    "stopped-update",
+    "legacy-owner-migration",
+    "stopped-certification",
+    "maintenance-finish",
+    "maintenance-finish-operator",
+    "owner-maintenance",
+    "maintenance-operator",
+    "owner-lifecycle",
+    "owner-lifecycle-faults",
+    "owner-marker-publication",
+    "client-launcher",
+    "recovery-inspection",
+    "owner-installation",
+    "client-entry",
+    "owner-runtime",
+    "native-read-capture",
+    "windows-cim-probe",
+    "zero-dispatch-recovery",
+    "human-window",
+    "manual-runtime",
+    "point-layout-integration",
+    "text-layer-integration",
+    "comp-frame-export",
+    "frame-export-slot",
+    "project-assembly",
+    "project-save",
+    "project-lifecycle",
+    "media-layers",
+    "layer-overlay",
+    "render-job-owner",
+    "installable-runtime",
+    "manual-current-target",
+    "native-read-recovery",
+    "installed-composition",
+    "exact-f548-transition",
+    "standalone-installer",
+    "artifact-boundaries",
+    "validation-routing",
+    "adobe-child-environment"
+  ],
+  "selectedBatchCount": 59,
+  "deferredCoverageCount": 8,
+  "artifacts": [
+    {
+      "path": "after-manual-titles-variants.package.json",
+      "sha256": "7888c20585787d275780bb91bf5f163c0c1922b021ba98809785990027f53761",
+      "bytes": 1439724
+    },
+    {
+      "path": "after-manual.package.json",
+      "sha256": "74d9b998d5aa6ce106c10a26a4307d982f8c1658cbe5f965a8621e5bb892911a",
+      "bytes": 1167660
+    },
+    {
+      "path": "after-operator-render-jobs.package.json",
+      "sha256": "a2eb605b87857fc8020da3b2f4ff0445a40eb89462cd823b09b12e19ab1ea10e",
+      "bytes": 2021230
+    },
+    {
+      "path": "after-readonly.package.json",
+      "sha256": "a8b481464b14418d5efee82f45dc2bbdf305177fce37d2922e0ed802ee9fc92c",
+      "bytes": 1051354
+    },
+    {
+      "path": "baseline-manual-titles-variants.json",
+      "sha256": "c17d2c46350fafce9f99e77aa70e0ac08a462d0287657626efe9503ffdd9f4a4",
+      "bytes": 1622515
+    },
+    {
+      "path": "baseline-manual-titles-variants.package.json",
+      "sha256": "0e6524ce066a8474231d4eb234426bad8337387eea4a503b333fe4eae0999893",
+      "bytes": 1403286
+    },
+    {
+      "path": "baseline-manual.json",
+      "sha256": "a67022d5826f91f88f2e6dc64cb4cd6055363e8e743610a23705b17fcd3dbad3",
+      "bytes": 467215
+    },
+    {
+      "path": "baseline-manual.package.json",
+      "sha256": "305c820660f735583dab8611721dc47fa602f6243a011dd42eecaacdc05c2df1",
+      "bytes": 1131222
+    },
+    {
+      "path": "baseline-operator-render-jobs.json",
+      "sha256": "5b1787194dbed84e9a277c05e086e95377be2ea76d778d2038a44453566eebde",
+      "bytes": 3633542
+    },
+    {
+      "path": "baseline-operator-render-jobs.package.json",
+      "sha256": "7d1c96b75eef3cd6e5f694bf9ab3ca743147f7578ac0f94e1702aee0cb539e4c",
+      "bytes": 1984792
+    },
+    {
+      "path": "baseline-readonly.json",
+      "sha256": "9829b5f701fe988ad68bf26d4ab45993b62352651477daae66cc9d9b0c3d1ac9",
+      "bytes": 149730
+    },
+    {
+      "path": "baseline-readonly.package.json",
+      "sha256": "bce6b0c035b7120175664c3a00a2ca11827178fc7ee1d46a8a54ede9002c0d93",
+      "bytes": 1014916
+    },
+    {
+      "path": "baseline-summary.json",
+      "sha256": "b240b2e2fce694cf64e8f57b8e26d8e09125768542f41bf0428293f55c54551e",
+      "bytes": 949
+    },
+    {
+      "path": "manifest-diff-attempt01.result.json",
+      "sha256": "cf934e58d0f618ecbf4768e214ab15a584113d374cc31270b28dd00a97123b62",
+      "bytes": 219
+    },
+    {
+      "path": "manifest-diff-manual-titles-variants.json",
+      "sha256": "d33fd2397d445a5f3555cf2eeabed7f16d3d620f35a86d6725bcc7ea702bc339",
+      "bytes": 25492
+    },
+    {
+      "path": "manifest-diff-manual.json",
+      "sha256": "a0a6048fa689ab5351bb04901910f92580caad14132b953441444dc555e32bf2",
+      "bytes": 19846
+    },
+    {
+      "path": "manifest-diff-operator-render-jobs.json",
+      "sha256": "b4edfab9023245d30fdca2c33b54ea03bf0fcadc9c3201d6355b63ac3b61447b",
+      "bytes": 36512
+    },
+    {
+      "path": "manifest-diff-readonly.json",
+      "sha256": "d2297017f0e23d8b6408c95908efae883648f302e63d4c91f6af9ba8238c3077",
+      "bytes": 15330
+    },
+    {
+      "path": "manifest-diff-summary.json",
+      "sha256": "b7830bd93600211e87641a2c9962715654ef4f0e9912937bc37e2882c3334676",
+      "bytes": 4147
+    },
+    {
+      "path": "selection-final.json",
+      "sha256": "684e9d8fbd7329954d5ac9fa2a8a612c2f0424f8a7951cc458149a14e0f0e8dc",
+      "bytes": 463973
+    },
+    {
+      "path": "source-hashes.json",
+      "sha256": "7a7a25b2a06a7b946e5c510de9b22005e4e19725babfd4ac29de33894fe7c66d",
+      "bytes": 2089
+    },
+    {
+      "path": "standalone-role-closure-diff.json",
+      "sha256": "55bd14882c52b10e27d8fce0a86bb11d6ec4bbe93aa854125e12cac023c07c61",
+      "bytes": 42877
+    },
+    {
+      "path": "standalone-v3-final-proof.json",
+      "sha256": "dc9854676b028615fc7e5e3ae55050f1bdcef057ce435468720379897d695a61",
+      "bytes": 6965
+    }
+  ],
+  "limits": [
+    "No full final affected union or release certification.",
+    "No live AE/MCP/CU/network or installed-state changes; TEMP fixture filesystem/Node child evidence only.",
+    "Initial auxiliary Buffer comparison and preliminary format1 repro emitted errors to tool output; compact records retained rather than claiming original full stderr artifacts."
+  ],
+  "noCommits": true
+}

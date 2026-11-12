@@ -1,0 +1,44 @@
+✔ composition-spec selected parity and registry/config bytes: readonly (54.2635ms)
+✔ composition-spec selected parity and registry/config bytes: manual (64.45ms)
+✔ composition-spec selected parity and registry/config bytes: manual-titles-variants (90.1615ms)
+✔ composition-spec selected parity and registry/config bytes: operator-render-jobs (180.1694ms)
+✖ composition-spec legacy format1 and composition-v1 remain readable without the new helper (63.2915ms)
+✔ composition-spec current and legacy negative cases retain inline errors (11.4289ms)
+✔ composition-spec trusted readers treat a candidate helper as data without executing it (2476.3805ms)
+✔ composition-spec installed entry rejects missing or corrupt pinned helper before execution or state (3884.0786ms)
+✔ composition-spec exact bootstrap source guards reject premature, duplicate or dynamic helper imports (13.4434ms)
+✔ composition-spec standalone closure includes one candidate helper without a duplicate HELPERS entry (70.1132ms)
+✔ composition-spec declared consumers track the actual helper dependency without narrowing integration keys (2447.6931ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 10
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9487.0247
+
+✖ failing tests:
+
+test at core4\test\composition-spec.test.js:57:1
+✖ composition-spec legacy format1 and composition-v1 remain readable without the new helper (63.2915ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + undefined
+  - false
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\composition-spec.test.js:63:86)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

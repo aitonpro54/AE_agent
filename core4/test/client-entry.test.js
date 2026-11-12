@@ -23,7 +23,8 @@ function fixture(extraFiles = {}) {
   fs.writeFileSync(path.join(installRoot, 'origin.json'), canonical({ installationId, machineId }));
   const moduleFiles = {
     'runtime/client-entry.js': source,
-    'runtime/stdio-entry.js': Buffer.from('exports.deriveComposition=()=>({});'),
+    'runtime/stdio-entry.js': Buffer.from('/* No metadata import from runtime entry. */'),
+    'runtime/composition-spec.js': Buffer.from('exports.deriveComposition=()=>({});'),
     // Explicit trusted fixture modules prove loader ordering only, not IPC/AE.
     'runtime/client-ipc.js': Buffer.from("exports.createIpcClient=async o=>{if('panelToken' in o||'stateDir' in o)throw Error('fixture_role_leak');return {call(){},close(){}}};"),
     'runtime/client-stdio.js': Buffer.from("exports.serveAttachment=({output})=>{output.write('fixture-thin-ready\\n');return {close(){}}};"),
@@ -68,14 +69,23 @@ test('client-entry poisoned import bytes fail release verification before evalua
   fs.writeFileSync(path.join(f.releaseDir, 'runtime/client-ipc.js'), 'require("node:fs").writeFileSync(' + JSON.stringify(marker) + ',"bad");');
   const result = f.run(); assert.equal(result.status, 1); assert.match(result.stderr, /client_release_bytes/); assert.equal(fs.existsSync(marker), false);
 });
+test('client-entry missing or corrupt spec is rejected before helper execution or owner state', () => {
+  for (const mode of ['missing', 'corrupt']) {
+    const f = fixture(), helper = path.join(f.releaseDir, 'runtime/composition-spec.js'), marker = path.join(f.installRoot, 'spec-must-not-run');
+    if (mode === 'missing') fs.unlinkSync(helper); else fs.writeFileSync(helper, 'require("node:fs").writeFileSync(' + JSON.stringify(marker) + ',"bad");');
+    const result = f.run(); assert.equal(result.status, 1); assert.match(result.stderr, /client_release_bytes|client_release_tree/);
+    assert.equal(fs.existsSync(marker), false); assert.equal(fs.existsSync(f.installation.stateDir), false);
+  }
+});
 test('client-entry unexpected file or directory is rejected by exact release tree check', () => {
   const f = fixture(); fs.mkdirSync(path.join(f.releaseDir, 'unexpected'));
   assert.throws(() => verifyClientDescriptor(f.file), /client_release_tree/);
 });
 test('client-entry current descriptor cannot authorize a stale entry outside its release root', () => {
-  const f = fixture(), alternate = path.join(f.installRoot, 'stale/runtime'); fs.mkdirSync(alternate, { recursive: true });
+  const f = fixture({ 'runtime/composition-spec.js': Buffer.from('require("node:fs").writeFileSync(require("node:path").join(__dirname,"spec-executed"),"bad");') }), alternate = path.join(f.installRoot, 'stale/runtime'); fs.mkdirSync(alternate, { recursive: true });
   const entry = path.join(alternate, 'client-entry.js'); fs.writeFileSync(entry, source);
   const result = f.run(entry); assert.equal(result.status, 1); assert.match(result.stderr, /client_entry_root/); assert.equal(result.stdout, '');
+  assert.equal(fs.existsSync(path.join(f.releaseDir, 'runtime/spec-executed')), false);
 });
 test('client-entry positive actual child uses verified fixture-only thin adapter', () => {
   const f = fixture(), result = f.run(); assert.equal(result.status, 0, result.stderr); assert.equal(result.stdout, 'fixture-thin-ready\n');

@@ -98,6 +98,7 @@ async function startClient({ descriptor, input = process.stdin, output = process
   const d = verifyClientDescriptor(descriptor);
   if (fs.realpathSync(path.resolve(__dirname, '..')) !== fs.realpathSync(d.releaseDir)) fail('client_entry_root');
   // All non-builtin imports are below full release and exact-entry verification.
+  const { deriveComposition } = require('./composition-spec.js');
   const { createIpcClient, isPreSendClosed } = require('./client-ipc');
   const { serveAttachment } = require('./client-stdio');
   const { spawn } = require('node:child_process');
@@ -228,7 +229,6 @@ async function startClient({ descriptor, input = process.stdin, output = process
     if (hash(release) !== d.packageHash) fail('client_release');
     const manifest = JSON.parse(release);
     if (!hex(manifest.hashes['runtime/stdio-entry.js'])) fail('client_release');
-    const { deriveComposition } = require('./stdio-entry.js');
     const renderJobs = deriveComposition(manifest, file => read(path.join(d.releaseDir, file), 4 * 1024 * 1024)).renderJobs === true;
     return serveAttachment({ client, input, output, ...(renderJobs ? { renderJobs: true } : {}) });
   } catch (error) { client.close(); throw error; }

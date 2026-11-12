@@ -1,0 +1,94 @@
+[
+  {
+    "selector": "readonly",
+    "beforePackageHash": "46c46b461ccc2648949c1c750d7954263c773925f1ea5a37975c34437d5798d1",
+    "afterPackageHash": "99d25d222c4990591291494ddcdf576e912b036f83e6c76d9fbc107fc0417b3a",
+    "beforeCount": 69,
+    "afterCount": 70,
+    "added": [
+      "runtime/composition-spec.js"
+    ],
+    "removed": [],
+    "changed": [
+      "runtime/client-entry.js",
+      "runtime/stdio-entry.js",
+      "runtime/composition-policy.json"
+    ],
+    "metadataSha256": "ae7e59e8aa7f908bb0fc6435771afcbb239249f80f131e4562f1288a1fe1e6e5",
+    "registrySha256": "ae8473bfe84feef7b0358f2a14b5710c6161d8dbd514409ceead9bb10f148ceb",
+    "toolSurfaceSha256": "bd6f6568ece77dae41e27ba5348bf9f89dde31fd8667976157b1c6448ee01161",
+    "selectedMetadataEqual": true,
+    "toolSurfaceEqual": true,
+    "registryEqual": true,
+    "explanation": "One common pure spec added; own runtime/client wiring and declared composition-policy file list changed. Modules/assets/profiles/capabilities/catalog/registry unchanged."
+  },
+  {
+    "selector": "manual",
+    "beforePackageHash": "625d039624bbbc8941010050db257eec18a8aae3c73a3c465bd5b3ce3b5c25c2",
+    "afterPackageHash": "70d11a6bb80c32dec4e91b0109d078785752b5e5d949a13be4ef6b9e2abe6642",
+    "beforeCount": 89,
+    "afterCount": 90,
+    "added": [
+      "runtime/composition-spec.js"
+    ],
+    "removed": [],
+    "changed": [
+      "runtime/client-entry.js",
+      "runtime/stdio-entry.js",
+      "runtime/composition-policy.json"
+    ],
+    "metadataSha256": "b87c645844be9e889083007e2acf56c7230e8feb0a94278928722d6908ed3f8d",
+    "registrySha256": "b7c00c4b59d0150aaba7776be1c51650967498c3cad4b47a517c103e864e4873",
+    "toolSurfaceSha256": "bd6f6568ece77dae41e27ba5348bf9f89dde31fd8667976157b1c6448ee01161",
+    "selectedMetadataEqual": true,
+    "toolSurfaceEqual": true,
+    "registryEqual": true,
+    "explanation": "One common pure spec added; own runtime/client wiring and declared composition-policy file list changed. Modules/assets/profiles/capabilities/catalog/registry unchanged."
+  },
+  {
+    "selector": "manual-titles-variants",
+    "beforePackageHash": "f1379fd36938f25b2b74966a93354c81b9b021e6d6a338460f1c285958baae5f",
+    "afterPackageHash": "0dec989dd9179f8c18673c4cf2eefad39f6a3d585e27c999d54d345739112d28",
+    "beforeCount": 114,
+    "afterCount": 115,
+    "added": [
+      "runtime/composition-spec.js"
+    ],
+    "removed": [],
+    "changed": [
+      "runtime/client-entry.js",
+      "runtime/stdio-entry.js",
+      "runtime/composition-policy.json"
+    ],
+    "metadataSha256": "c81a922ece26af936a776c6654b6b2e87ec8cac828cd8fe79ebdaa2ad2b51151",
+    "registrySha256": "0868e0fa3167d670138d79b3f49c4143687031239e86d02e5f9c18a5ad89f032",
+    "toolSurfaceSha256": "bd6f6568ece77dae41e27ba5348bf9f89dde31fd8667976157b1c6448ee01161",
+    "selectedMetadataEqual": true,
+    "toolSurfaceEqual": true,
+    "registryEqual": true,
+    "explanation": "One common pure spec added; own runtime/client wiring and declared composition-policy file list changed. Modules/assets/profiles/capabilities/catalog/registry unchanged."
+  },
+  {
+    "selector": "operator-render-jobs",
+    "beforePackageHash": "77529ea3c17720f39ca4962fbcb0f486846f303c5617340781f1865de2fae296",
+    "afterPackageHash": "f5dede6bb2c943de75402666ae40d9b466f42b0a30895cb7020e038442c2bfa8",
+    "beforeCount": 163,
+    "afterCount": 164,
+    "added": [
+      "runtime/composition-spec.js"
+    ],
+    "removed": [],
+    "changed": [
+      "runtime/client-entry.js",
+      "runtime/stdio-entry.js",
+      "runtime/composition-policy.json"
+    ],
+    "metadataSha256": "c2db3d852be777de42406bf72724be8f23e52f3ed03e4c2ca69d0208426c17f0",
+    "registrySha256": "fe86886c863232911e8eefefed0712b0ba2f6ab549335eb4283c2390a367e6fb",
+    "toolSurfaceSha256": "53386ef179de1a34c62efe54da4fb51d549381a6ed8026480674f3e11dc08608",
+    "selectedMetadataEqual": true,
+    "toolSurfaceEqual": true,
+    "registryEqual": true,
+    "explanation": "One common pure spec added; own runtime/client wiring and declared composition-policy file list changed. Modules/assets/profiles/capabilities/catalog/registry unchanged."
+  }
+]

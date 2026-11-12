@@ -1,0 +1,29 @@
+✔ installable-runtime package deterministic closure, install CAS, exact rollback and stable origin (6983.982ms)
+✔ installable-runtime full generated host registry parses as ES3 before any host evaluation (180.6631ms)
+✔ installable-runtime exact release closure rejects extensionless shadow, empty directory and junction before package imports (3236.5129ms)
+✖ installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies (1996.2045ms)
+✔ installable-runtime descriptor changed at startup gate is rejected before package imports (2754.2264ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 15280.2987
+
+✖ failing tests:
+
+test at core4\test\installable-runtime.test.js:495:1
+✖ installable-runtime stale release A entry cannot verify B descriptor then import unchecked A dependencies (1996.2045ms)
+  Error: panel_identity_integrity
+      at Object.verify (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\integrations\cep\panel-identity.js:23:90)
+      at verifyPackage (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\tools\package-installable.js:102:86)
+      at planInstall (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\tools\install-core4.js:340:3)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\installable-runtime.test.js:499:35)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7)

@@ -1,0 +1,19 @@
+✔ composition-spec selected parity and registry/config bytes: readonly (58.0297ms)
+✔ composition-spec selected parity and registry/config bytes: manual (60.5939ms)
+✔ composition-spec selected parity and registry/config bytes: manual-titles-variants (87.2392ms)
+✔ composition-spec selected parity and registry/config bytes: operator-render-jobs (171.1005ms)
+✔ composition-spec legacy format1 and composition-v1 remain readable without the new helper (80.7176ms)
+✔ composition-spec current and legacy negative cases retain inline errors (59.2999ms)
+✔ composition-spec trusted readers treat a candidate helper as data without executing it (2800.3696ms)
+✔ composition-spec installed entry rejects missing or corrupt pinned helper before execution or state (3856.5558ms)
+✔ composition-spec exact bootstrap source guards reject premature, duplicate or dynamic helper imports (11.4796ms)
+✔ composition-spec standalone closure includes one candidate helper without a duplicate HELPERS entry (60.2724ms)
+✔ composition-spec declared consumers track the actual helper dependency without narrowing integration keys (2646.6643ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10035.2797

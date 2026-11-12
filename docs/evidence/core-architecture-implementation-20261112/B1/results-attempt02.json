@@ -1,0 +1,34 @@
+[
+  {
+    "name": "composition-spec-full-attempt02",
+    "args": [
+      "--test",
+      "core4/test/composition-spec.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 11",
+      "ℹ pass 11",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 10035.2797"
+    ]
+  },
+  {
+    "name": "client-entry-full-attempt02",
+    "args": [
+      "--test",
+      "core4/test/client-entry.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 13",
+      "ℹ pass 13",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 4228.5559"
+    ]
+  }
+]

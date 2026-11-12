@@ -43,7 +43,7 @@ test('standalone-installer deterministic manual/readonly distributions include e
     assert.ok(runtime.files['runtime/render-job-history.js']);
     assert.ok(runtime.files['runtime/render-job-maintenance.js']);
     assert.equal(Object.hasOwn(runtime.files, 'runtime/render-job-owner.js'), false);
-    assert.equal(Object.keys(runtime.files).length, selector === 'manual' ? 65 : 45);
+    assert.equal(Object.keys(runtime.files).length, selector === 'manual' ? 66 : 46);
     assert.deepEqual(Object.keys(f.bundle.files).filter(file => HELPERS.includes(file)).sort(), [...HELPERS]);
     assert.equal(Object.keys(runtime.files).some(file => file.startsWith('tools/')), false);
     assert.throws(() => writeStandalone(f.distribution, f.bundle), /new_absolute_standalone_output_required/);

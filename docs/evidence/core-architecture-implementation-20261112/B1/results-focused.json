@@ -1,0 +1,35 @@
+[
+  {
+    "name": "client-launcher-full",
+    "args": [
+      "--test",
+      "core4/test/client-launcher.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 21",
+      "ℹ pass 21",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 88505.4062"
+    ]
+  },
+  {
+    "name": "installable-package-bootstrap-focused",
+    "args": [
+      "--test",
+      "--test-name-pattern=package deterministic closure|full generated host registry|exact release closure|stale release A entry|descriptor changed at startup gate",
+      "core4/test/installable-runtime.test.js"
+    ],
+    "exit": 1,
+    "signal": null,
+    "summary": [
+      "ℹ tests 5",
+      "ℹ pass 4",
+      "ℹ fail 1",
+      "ℹ skipped 0",
+      "ℹ duration_ms 15280.2987"
+    ]
+  }
+]

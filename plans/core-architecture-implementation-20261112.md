@@ -319,6 +319,15 @@ production HMAC/Origin/identity/registry gates сохраняются.
 обновить точные ожидания по окончательной карте после B, без ослабления selector
 или замены assertions на неполные includes.
 
+Для продуктового шва C использовать существующий manual-http-runtime fixture:
+его реальный Broker contract/inspection передать в products/titles prepareBuild,
+затем продолжить прежние proposal/dry-run/run/receipt/read-back. Не копировать
+request вручную и не подменять inspection.synthetic. Действующий manual-policy
+fixture сам возвращает synthetic=false через свой private port в изолированной
+TEMP-среде; это не authority установленного AE и не native acceptance. Existing
+transport crash/ACK/UNKNOWN fixtures дополняют этот сценарий, без дублирования
+широкого harness и без экспортируемых production grants.
+
 1. Использовать актуальный diff и existing validation map. Для каждого изменённого
    инварианта: какой fixture ловит нарушение, какой результат получен, какое
    историческое evidence применимо и что осталось непроверенным.
@@ -405,6 +414,36 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Progress
 
+- **B1 реализован и принят в source scope:** pure spec после own-root проверки,
+  trusted standalone tooling copy/manifest v3 и legacy data readers/rebundling.
+  Focused suites 58/58, boundaries 92, syntax 13 JS и diff check PASS.
+  Source trust review и адресный standalone review ae_architect ACCEPT.
+  [Evidence B1](../docs/evidence/core-architecture-implementation-20261112/B1/acceptance.json).
+- При промежуточной реализации B1 source/client parity и manifest сравнение дали
+  ожидаемое +1 common helper (69→70, 89→90, 114→115, 163→164), registry bytes и
+  выбранные metadata/assets/tool surface совпали. Но выявлен data-only seam:
+  в flattened standalone tooling import runtime/composition-spec разрешается
+  к candidate-owned файлу. Изолированный poison-candidate dry-run воспроизвёл
+  исполнение marker-кода после успешной outer byte verification, без install.
+- Эта B1 граница передана ae_architect для конкретного trusted tooling closure
+  решения, включая supported old no-helper candidates/distributions. Writer
+  не перезаписывает candidate bytes и не ослабляет guards; независимые parity/
+  client fixtures продолжаются. Исходный failure evidence остаётся в task TEMP
+  core4-b1-8413d5e1fdeb442d9f38522ca633a4eb до финального связывания результатов.
+- B1 seam contract уточнён: отдельный trusted tools/composition-spec slot,
+  repository shim и full own pure bytes в standalone; новые manifests v3.
+  Legacy v1/v2 data readers и old candidate/capability rebundling сохраняются.
+  Current executable отвергает legacy-only tooling closure до imports.
+  Ae_implementer продолжает реализацию по этому контракту после XHigh-разбора.
+- Финальный B1 actual dry-run: poison helper не исполнился, destination не
+  создан; supported old format2 без runtime helper работает; capability mode
+  сохраняет отказ ordinary dry-run. Runtime manifests +1 common spec, selected
+  assets/metadata/registry/tool surface эквивалентны. Standalone имеет +2 paths
+  против baseline role count (runtime candidate spec + trusted tools spec).
+- B1 оставляет C старую installable-runtime wrong-root fixture: изменение CSS
+  без restamp identity даёт panel_identity_integrity раньше intended root guard.
+  FAIL сохранён; C восстановит fixture с прежней целью. Полный affected union
+  пока не заявлен, baseline standalone role counts реконструированы, не запускались.
 - **B0 завершён:** [контракт доверенного bootstrap](../docs/core-composition-bootstrap-contract-20261112.md)
   подготовлен ae_architect, независимый ae_reviewer ACCEPT. Inline verifier
   остаётся прежней доверенной границей; fixed pure spec загружается после
@@ -461,6 +500,14 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Decision Log
 
+- Уточнение B0 в B1: own-tooling helper должен оставаться отдельным от candidate
+  и в flattened standalone, а не только в source checkout. Current supported
+  legacy rebundling не сужается молча; итоговый контракт фиксируется до принятия
+  B1. Outer reviewed distribution hash не заменяет data-only boundary tooling.
+- Добавление standalone v3 — явное разделение tooling/candidate ролей, не смена
+  версии Core и не расширение authority. Runtime spec не дублируется в HELPERS;
+  новый tooling slot копируется из reviewed source, candidate hashes неизменны.
+  Подробные legacy/current closure и отрицательные fixtures закреплены в B0.
 - Проверка target tree не удостоверяет соседний helper исполняемого source tree.
   Поэтому ранний verifier не вызывает новый require; новый entry требует свой
   pinned helper без missing-helper fallback. Legacy readers/форматы сохраняются.
@@ -501,6 +548,13 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Validation
 
+- B1: pure/parity/bootstrap 16, client-entry 13, client-launcher 21,
+  standalone-installer 8 PASS. Координатор сверил все 15 source SHA и скопированные
+  evidence hashes. Большие baseline source/package blobs оставлены в task TEMP;
+  portable manifests/role diff и исходный unsafe marker/stdout сохранены.
+- Независимый B1 review привязан к финальным hashes; после него source не менялся.
+  Исходные fixture/auxiliary failures сохранены с пределами provenance, не
+  переписаны как PASS. Raw stdout/stderr имеют только локальное whitespace exception.
 - B0 — source argument и независимый contract review, не test/live PASS.
   Описаны positive/negative parity, corrupt/missing helper, wrong root,
   candidate non-execution и version/profile compatibility fixtures для B1/B3.

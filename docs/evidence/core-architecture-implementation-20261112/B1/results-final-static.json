@@ -1,0 +1,131 @@
+[
+  {
+    "name": "syntax-final-core4_runtime_composition-spec.js",
+    "args": [
+      "--check",
+      "core4/runtime/composition-spec.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_runtime_stdio-entry.js",
+    "args": [
+      "--check",
+      "core4/runtime/stdio-entry.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_runtime_client-entry.js",
+    "args": [
+      "--check",
+      "core4/runtime/client-entry.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_tools_composition-spec.js",
+    "args": [
+      "--check",
+      "core4/tools/composition-spec.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_tools_package-installable.js",
+    "args": [
+      "--check",
+      "core4/tools/package-installable.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_tools_install-core4.js",
+    "args": [
+      "--check",
+      "core4/tools/install-core4.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_tools_package-standalone-installer.js",
+    "args": [
+      "--check",
+      "core4/tools/package-standalone-installer.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_tools_standalone-installer.js",
+    "args": [
+      "--check",
+      "core4/tools/standalone-installer.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_tools_check-boundaries.js",
+    "args": [
+      "--check",
+      "core4/tools/check-boundaries.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_test_composition-spec.test.js",
+    "args": [
+      "--check",
+      "core4/test/composition-spec.test.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_test_client-entry.test.js",
+    "args": [
+      "--check",
+      "core4/test/client-entry.test.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_test_client-launcher.test.js",
+    "args": [
+      "--check",
+      "core4/test/client-launcher.test.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-final-core4_test_standalone-installer.test.js",
+    "args": [
+      "--check",
+      "core4/test/standalone-installer.test.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "diff-check",
+    "args": [
+      "git",
+      "diff",
+      "--check",
+      "--",
+      "core4/runtime/composition-spec.js",
+      "core4/runtime/stdio-entry.js",
+      "core4/runtime/client-entry.js",
+      "core4/runtime/source-package.json",
+      "core4/tools/composition-spec.js",
+      "core4/tools/package-installable.js",
+      "core4/tools/install-core4.js",
+      "core4/tools/package-standalone-installer.js",
+      "core4/tools/standalone-installer.js",
+      "core4/tools/check-boundaries.js",
+      "core4/config/validation-map.json",
+      "core4/test/composition-spec.test.js",
+      "core4/test/client-entry.test.js",
+      "core4/test/client-launcher.test.js",
+      "core4/test/standalone-installer.test.js"
+    ],
+    "exit": 0
+  }
+]

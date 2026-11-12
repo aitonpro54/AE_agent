@@ -1,0 +1,107 @@
+[
+  {
+    "name": "syntax-core4_runtime_composition-spec.js",
+    "args": [
+      "--check",
+      "core4/runtime/composition-spec.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-core4_runtime_stdio-entry.js",
+    "args": [
+      "--check",
+      "core4/runtime/stdio-entry.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-core4_runtime_client-entry.js",
+    "args": [
+      "--check",
+      "core4/runtime/client-entry.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-core4_tools_package-installable.js",
+    "args": [
+      "--check",
+      "core4/tools/package-installable.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-core4_tools_install-core4.js",
+    "args": [
+      "--check",
+      "core4/tools/install-core4.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-core4_tools_check-boundaries.js",
+    "args": [
+      "--check",
+      "core4/tools/check-boundaries.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-core4_test_composition-spec.test.js",
+    "args": [
+      "--check",
+      "core4/test/composition-spec.test.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "syntax-core4_test_client-entry.test.js",
+    "args": [
+      "--check",
+      "core4/test/client-entry.test.js"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "composition-spec-full",
+    "args": [
+      "--test",
+      "core4/test/composition-spec.test.js"
+    ],
+    "exit": 1,
+    "signal": null,
+    "summary": [
+      "ℹ tests 11",
+      "ℹ pass 10",
+      "ℹ fail 1",
+      "ℹ skipped 0",
+      "ℹ duration_ms 9487.0247"
+    ]
+  },
+  {
+    "name": "client-entry-full",
+    "args": [
+      "--test",
+      "core4/test/client-entry.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 12",
+      "ℹ pass 12",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 3438.3182"
+    ]
+  },
+  {
+    "name": "boundaries",
+    "args": [
+      "core4/tools/check-boundaries.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  }
+]

@@ -1,0 +1,43 @@
+[
+  {
+    "name": "composition-spec-v3-full",
+    "args": [
+      "--test",
+      "core4/test/composition-spec.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 16",
+      "ℹ pass 16",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 14106.3054"
+    ]
+  },
+  {
+    "name": "standalone-installer-full",
+    "args": [
+      "--test",
+      "core4/test/standalone-installer.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 8",
+      "ℹ pass 8",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 31276.6213"
+    ]
+  },
+  {
+    "name": "boundaries-v3",
+    "args": [
+      "core4/tools/check-boundaries.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  }
+]

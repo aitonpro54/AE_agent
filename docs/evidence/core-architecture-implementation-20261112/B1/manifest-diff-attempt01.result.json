@@ -1,0 +1,5 @@
+{
+  "exit": 1,
+  "kind": "comparison-harness",
+  "reason": "Compared actual executor Buffer to JSON-deserialized {type:Buffer,data}; normalize serialization on both sides. No product metadata difference established."
+}

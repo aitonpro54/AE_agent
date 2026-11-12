@@ -78,7 +78,8 @@ function fixture(t, options = {}) {
   const required = JSON.parse(fs.readFileSync(path.join(SOURCE, 'runtime/owner-contract.json'))).requiredFiles;
   const files = Object.fromEntries(required.filter(name => name !== 'runtime/owner-entry.js').map(name => [name, fs.readFileSync(path.join(SOURCE, name))]));
   files['runtime/owner-entry.js'] = Buffer.from(ownerSource); files['runtime/owner-contract.json'] = fs.readFileSync(path.join(SOURCE, 'runtime/owner-contract.json'));
-  files['runtime/stdio-entry.js'] = Buffer.from('exports.deriveComposition=()=>({});');
+  files['runtime/stdio-entry.js'] = Buffer.from('/* No metadata import from runtime entry. */');
+  files['runtime/composition-spec.js'] = Buffer.from('exports.deriveComposition=()=>({});');
   Object.assign(files, options.files);
   if (options.contract) files['runtime/owner-contract.json'] = Buffer.from(canonical(options.contract));
   const manifest = { version: '4.2.2', format: 2, hashes: Object.fromEntries(Object.entries(files).map(([name, bytes]) => [name, hash(bytes)])) };

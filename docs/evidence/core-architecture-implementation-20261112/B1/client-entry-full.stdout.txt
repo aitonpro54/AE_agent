@@ -1,0 +1,20 @@
+✔ client-entry projects only the control role and verifies without reading full installation or state (293.4435ms)
+✔ client-entry endpoint is installation scoped and independent of package revision (0.5049ms)
+✔ client-entry exact descriptor shape rejects role leakage and foreign endpoint before any imports (28.62ms)
+✔ client-entry wrong Node pin, origin and release traversal are rejected (224.2777ms)
+✔ client-entry poisoned import bytes fail release verification before evaluating module (387.2606ms)
+✔ client-entry unexpected file or directory is rejected by exact release tree check (264.5688ms)
+✔ client-entry current descriptor cannot authorize a stale entry outside its release root (354.5939ms)
+✔ client-entry positive actual child uses verified fixture-only thin adapter (388.0619ms)
+✔ client-entry builtin-only verification does not follow a junction ancestor (13.9391ms)
+✔ client-entry source guard rejects executable imports before verification or outside entry function (2.2039ms)
+✔ client-entry actual thin initialize/discovery survives absent owner without claiming an empty queue (711.5825ms)
+✔ client-entry local oversized request preserves the existing controller and an accepted call (476.7454ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3438.3182

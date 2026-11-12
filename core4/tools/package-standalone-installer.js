@@ -19,7 +19,8 @@ arguments as maintenance-inspect / maintenance-finish. Certification requires
 a durable desired-stop, fresh process-death proof and settled original history;
 it preserves the stop barrier and issues its own certificate, not an old receipt.
 Явные команды обновления owner distributions:
-Для отдельного пакета операции manifest v2 фиксирует capabilityBaseHash.
+Manifest v3 отделяет trusted tooling от candidate. Для отдельного пакета
+операции capabilityBaseHash фиксирует исходную базу; null означает обычный пакет.
 Передайте этот хеш как --expected-current-package-hash. Такой дистрибутив
 принимает остановленное обновление owner, а обычные apply и dry-run отклоняет.
 Общие flags: --expected-distribution-hash DIST --expected-package-hash NEW
@@ -75,13 +76,14 @@ function buildStandalone(root = path.resolve(__dirname, '..'), selector = 'manua
   return bundleStandalone(buildPackage(root, selector, options), { root });
 }
 function bundleStandalone(pkg, { root = path.resolve(__dirname, '..'), capabilityBaseHash } = {}) {
+  if (Object.keys(pkg.files).some(file => /^tools[. ]*(?:[\\/]|$)/i.test(file))) fail('standalone_candidate_namespace');
   verifyPackage(pkg);
   const files = { ...pkg.files };
-  for (const file of HELPERS) { const target = path.join(root, file); if (fs.realpathSync(target) !== target || !fs.lstatSync(target).isFile()) fail('standalone_source_path'); files[file] = fs.readFileSync(target).toString('base64'); }
+  for (const file of HELPERS) { const target = path.join(root, file === 'tools/composition-spec.js' ? 'runtime/composition-spec.js' : file); if (fs.realpathSync(target) !== target || !fs.lstatSync(target).isFile()) fail('standalone_source_path'); files[file] = fs.readFileSync(target).toString('base64'); }
   files['candidate.json'] = Buffer.from(canonical(pkg)).toString('base64'); files['README.txt'] = Buffer.from(README).toString('base64');
-  const manifest = { version: capabilityBaseHash === undefined ? 1 : 2, purpose: 'core4-standalone-installer-v1', packageHash: pkg.packageHash,
+  const manifest = { version: 3, purpose: 'core4-standalone-installer-v1', packageHash: pkg.packageHash,
     hashes: Object.fromEntries(Object.keys(files).sort().map(file => [file, hash(Buffer.from(files[file], 'base64'))])),
-    ...(capabilityBaseHash === undefined ? {} : { capabilityBaseHash }) };
+    capabilityBaseHash: capabilityBaseHash === undefined ? null : capabilityBaseHash };
   verifyManifest(manifest);
   return { distributionHash: hash(canonical(manifest)), packageHash: pkg.packageHash, manifest, files };
 }
@@ -98,7 +100,9 @@ function writeStandalone(output, bundle = buildStandalone()) {
   // Reject an invalid in-memory bundle before creating even the output folder.
   if (!bundle || !bundle.manifest || !bundle.files || bundle.distributionHash !== hash(canonical(bundle.manifest)) || bundle.packageHash !== bundle.manifest.packageHash || Object.keys(bundle.files).some(file => !/^[A-Za-z0-9_./-]+$/.test(file) || file.split('/').some(p => !p || p === '.' || p === '..') || file === 'standalone.json')) fail('standalone_bundle');
   verifyManifest(bundle.manifest);
+  if (bundle.manifest.version !== 3) fail('standalone_tooling_upgrade_required');
   const pkg = verifyPackage(JSON.parse(Buffer.from(bundle.files['candidate.json'] || '', 'base64'))), expected = [...Object.keys(pkg.files), ...HELPERS, 'candidate.json', 'README.txt'].sort();
+  if (Object.keys(pkg.files).some(file => /^tools[. ]*(?:[\\/]|$)/i.test(file))) fail('standalone_candidate_namespace');
   if (bundle.packageHash !== pkg.packageHash || canonical(Object.keys(bundle.files).sort()) !== canonical(expected) || canonical(Object.keys(bundle.manifest.hashes).sort()) !== canonical(expected) || expected.some(file => hash(Buffer.from(bundle.files[file], 'base64')) !== bundle.manifest.hashes[file]) || Object.keys(pkg.files).some(file => pkg.release.hashes[file] !== bundle.manifest.hashes[file])) fail('standalone_bundle');
   fs.mkdirSync(output);
   for (const [file, encoded] of Object.entries(bundle.files)) { const target = path.join(output, file); fs.mkdirSync(path.dirname(target), { recursive: true }); fs.writeFileSync(target, Buffer.from(encoded, 'base64'), { flag: 'wx' }); }

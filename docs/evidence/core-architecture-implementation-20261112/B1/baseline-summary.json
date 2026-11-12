@@ -1,0 +1,26 @@
+[
+  {
+    "selector": "readonly",
+    "files": 69,
+    "packageHash": "46c46b461ccc2648949c1c750d7954263c773925f1ea5a37975c34437d5798d1",
+    "registrySha256": "ae8473bfe84feef7b0358f2a14b5710c6161d8dbd514409ceead9bb10f148ceb"
+  },
+  {
+    "selector": "manual",
+    "files": 89,
+    "packageHash": "625d039624bbbc8941010050db257eec18a8aae3c73a3c465bd5b3ce3b5c25c2",
+    "registrySha256": "b7c00c4b59d0150aaba7776be1c51650967498c3cad4b47a517c103e864e4873"
+  },
+  {
+    "selector": "manual-titles-variants",
+    "files": 114,
+    "packageHash": "f1379fd36938f25b2b74966a93354c81b9b021e6d6a338460f1c285958baae5f",
+    "registrySha256": "0868e0fa3167d670138d79b3f49c4143687031239e86d02e5f9c18a5ad89f032"
+  },
+  {
+    "selector": "operator-render-jobs",
+    "files": 163,
+    "packageHash": "77529ea3c17720f39ca4962fbcb0f486846f303c5617340781f1865de2fae296",
+    "registrySha256": "fe86886c863232911e8eefefed0712b0ba2f6ab549335eb4283c2390a367e6fb"
+  }
+]
