@@ -30,8 +30,14 @@
   },
   "documentationCorrection": "Summary limitation narrowed from LOCK/LOG to the two observed UXP LOCK copies; no runtime changes or retesting needed.",
   "limits": [
-    "Current-chat namespace 4.2.7 remains open until user full Codex restart; configured CLI is not substituted for it.",
+    "At the original independent review current-chat 4.2.7 remained open. The subsequent root direct-namespace proof closes it; reviewer did not repeat the native call.",
     "No automatic lifecycle/continuity claim; continuity=false remains.",
     "Exact wire/reload subpath, MSI and full release not proven."
-  ]
+  ],
+  "currentChatFollowup": {
+    "recordedBy": "Root dispatcher",
+    "result": "PASS direct namespace",
+    "proof": "current-chat-after-restart.json",
+    "independentReviewerRepeated": false
+  }
 }

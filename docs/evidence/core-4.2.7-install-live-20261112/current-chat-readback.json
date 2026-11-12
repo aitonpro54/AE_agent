@@ -1,0 +1,62 @@
+{
+  "collectedAt": "2026-11-12T18:58:48.659Z",
+  "chatIdFromExecRuntime": "01a1cede-3e0f-7aa1-a375-be24e49bec1e",
+  "result": "PASS-scoped-post-namespace-read",
+  "ownAepSha256": "e9bfd6813ae411ad46c207c5633f65e7f30c14f1a108f2ea0a7f9861d33d6edc",
+  "coreFixed": [
+    {
+      "file": "installation.json",
+      "sha256": "68b21edb3efac1041534d16d2e3c0298b01d566195589773e4ba88e84dfa4847",
+      "same": true
+    },
+    {
+      "file": "core-client.json",
+      "sha256": "ea348bcef5ce95bc16cc1dd7efa419625d9f2b4e9868dea576bd2fed22169494",
+      "same": true
+    },
+    {
+      "file": "config.toml",
+      "sha256": "b0e123d55a5c3d840bcb70192a5b3f07ca046763d0418fbed76ec8dcf7430030",
+      "same": true
+    },
+    {
+      "file": "installation.js",
+      "sha256": "b876d092b80b77278639a885b0d3f1759b8a50df5cfcad9288779142d4aa1711",
+      "same": true
+    },
+    {
+      "file": "installation-state.json",
+      "sha256": "9f0cbec19c5b29afd7cb48a710f42facefa3ac8bdd9c87ea73c51a960aa6c3c5",
+      "same": true
+    }
+  ],
+  "journals": [
+    {
+      "file": "state/production/broker/ledger.ndjson",
+      "beforeBytes": 140900,
+      "afterBytes": 140900,
+      "prefixPreserved": true,
+      "afterSha256": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa"
+    },
+    {
+      "file": "state/production/receiver/completions.ndjson",
+      "beforeBytes": 94877,
+      "afterBytes": 97530,
+      "prefixPreserved": true,
+      "afterSha256": "adcf0d7d9d5309193521d05c66028107a8c6e9babe318d4a3e261017712e436f"
+    }
+  ],
+  "userDirty": [
+    {
+      "file": "AGENTS.md",
+      "same": true
+    },
+    {
+      "file": "plans/core-transfer-4.2.5-20261111.md",
+      "same": true
+    }
+  ],
+  "nativeDispatchAttempts": 1,
+  "projectMutations": 0,
+  "globalConfigCompared": false
+}

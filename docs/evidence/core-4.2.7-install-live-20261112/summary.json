@@ -273,9 +273,9 @@
     "codexRestarts": 0,
     "sourceEdits": 0
   },
-  "currentChatMcpRefreshed": false,
+  "currentChatMcpRefreshed": true,
   "limitations": [
-    "Fresh configured CLI MCP proof; current root-chat MCP remains cached 4.2.6 until a user-managed full Codex restart. No app-server/thin-client manipulation performed.",
+    "Initial configured CLI proof was followed by a user full Codex restart and successful direct current-chat namespace proof; no app-server/thin-client manipulation was performed.",
     "No visual UI/title-bar proof, wire packet capture or direct CEP storage inspection; authenticated panel/registry readiness and native typed AE results are the live evidence.",
     "Only this installed host and bounded reconnect scenarios were exercised. Existing source evidence is reused, not rerun.",
     "Two zero-byte UXP LOCK copies disappeared from private TEMP backup after initial exact verification; current source matches sealed manifest. Full private backup restorability is not claimed."
@@ -290,5 +290,15 @@
     "missingPrivateBackupCopies": 2,
     "currentImmutableComparedAgainst": "sealed fresh manifest hashes and byte counts; original byte copies used for append-only prefix proofs",
     "completeBackupRestorabilityClaimed": false
+  },
+  "currentChatFollowup": {
+    "proof": "current-chat-after-restart.json",
+    "readback": "current-chat-readback.json",
+    "method": "User full Codex restart followed by direct current-chat namespace inspection/release",
+    "result": "PASS-current-chat-4.2.7-native",
+    "nativeDispatchAttempts": 1,
+    "observation": "observation-c881510a-8e9e-47c1-bb3b-8ea432a6672c",
+    "leaseReleased": true,
+    "automaticCodexRefreshClaimed": false
   }
 }

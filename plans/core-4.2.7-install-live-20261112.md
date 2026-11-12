@@ -6,6 +6,15 @@ Source version 4.2.7 опубликован в `02dc254` / `codex/ae-agent-core-
 
 ## Progress
 
+- **Финальный пункт закрыт после полного restart Codex пользователем.**
+  Прямой namespace текущего чата подтвердил 4.2.7 / package `2ce5b1c2…`,
+  authenticated panel `2111abf8…` / `file://` / registry ready. Один fresh
+  current-chat native read — `observation-c881510a-8e9e-47c1-bb3b-8ea432a6672c`,
+  command `inspect-d3df9219-68a9-4c81-a1dd-5e46d6665dc6`. Comp 1, revision 72,
+  dirty=false. Release=true, holder=null, pending/UNKNOWN/fault отсутствуют.
+  Ниже сохранены checkpoints до этого restart; их cached-client статус
+  больше не является текущим итогом.
+
 - Прямой MCP текущего чата перед передачей подтвердил прежнюю 4.2.6:
   package `75a95aa5…`, owner 31260 / boot `e7ca4384…`, CEP `file://`,
   registry ready. Holder=null, pending/UNKNOWN/store fault отсутствуют.
@@ -48,6 +57,12 @@ Source version 4.2.7 опубликован в `02dc254` / `codex/ae-agent-core-
 
 ## Decision Log
 
+- Финальный current-chat proof выполнил root одним готовым typed read-only
+  workflow: helper или CLI не может заменить namespace именно этого чата.
+  Установку, owner restart, source tests и UI после Codex restart не повторяли.
+  Полный restart Codex выполнил пользователь; автоматический refresh самого
+  Codex не заявляется. Дополнительных product changes нет.
+
 - Рабочий descriptor: `C:/Users/Ant/AEAgentCore4/installation.json`.
   Используются проверенные standalone/maintenance tools, новые UUID и
   durable intents; settled IDs прежних этапов не повторяются.
@@ -85,6 +100,15 @@ Source version 4.2.7 опубликован в `02dc254` / `codex/ae-agent-core-
   temp cleanup, MSIX incident repair или чужие настройки.
 
 ## Validation
+
+- [Current-chat 4.2.7 proof](../docs/evidence/core-4.2.7-install-live-20261112/current-chat-after-restart.json)
+  и [scoped read-back](../docs/evidence/core-4.2.7-install-live-20261112/current-chat-readback.json)
+  закрывают последний обязательный пункт. Root выполнял только одно native
+  dispatch с fresh contract и release. Owner 34544/boot `e5b2dffd…`, panel/epoch
+  и receiver store прежние. Own AEP SHA и пять Core binding files неизменны;
+  receiver prefix 94877 → 97530 сохранён, ledger 140900 неизменён.
+  Два пользовательских dirty файла сохранены; глобальная config повторно
+  не сравнивалась и не изменялась этим workflow.
 
 - Обязательны exact installed package/read-back, authenticated executing
   productVersion 4.2.7/panelBuild/Origin/registryReady и новое native чтение.

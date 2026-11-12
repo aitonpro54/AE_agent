@@ -1,5 +1,5 @@
 {
-  "observedAt": "2026-11-12T18:52:59.592Z",
+  "observedAt": "2026-11-12T19:00:21.862Z",
   "credentialsExcluded": true,
   "files": [
     {
@@ -18,9 +18,19 @@
       "sha256": "cf619cd421c0522988aa2b4fb3762494fd7320e0b7aaaae98fea5cf8fff402c0"
     },
     {
+      "file": "current-chat-after-restart.json",
+      "bytes": 36743,
+      "sha256": "928a15e889692b73e354ce75662db31f04f6c355b168237d504327cb8690ccff"
+    },
+    {
       "file": "current-chat-before-restart.json",
       "bytes": 800,
       "sha256": "0fbfa69dd711342b25a85b0a0b7d0ab23469d03edf1923fdf749399ffd22e6d2"
+    },
+    {
+      "file": "current-chat-readback.json",
+      "bytes": 1790,
+      "sha256": "b45221a2ab4955266ec3e37548a29a9be7884b0ddaa02d40b332de3c0d5e7af3"
     },
     {
       "file": "preflight-native.json",
@@ -39,13 +49,13 @@
     },
     {
       "file": "review.json",
-      "bytes": 1654,
-      "sha256": "cedb95870a545f2358306ca5b474ae52689af7c7a81556304c82226082493651"
+      "bytes": 1900,
+      "sha256": "31c6a2fcb3f80f95399724cc61344c773aa07b1b39f35a8bc812117c6fbdafcb"
     },
     {
       "file": "summary.json",
-      "bytes": 11305,
-      "sha256": "e05838214c3a0d1fd901097906cb794920899cc81a97b85fed8568499ea99bde"
+      "bytes": 11764,
+      "sha256": "b0bf6f5f4fbbaf3641ffcc04c30ecd59548f98925a53e537621b7f6dd0756884"
     },
     {
       "file": "update-operation.json",
