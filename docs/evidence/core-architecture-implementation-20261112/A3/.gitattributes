@@ -1,0 +1,2 @@
+# Raw failed-run diagnostics are retained byte-for-byte.
+core4-full.stdout.txt -whitespace

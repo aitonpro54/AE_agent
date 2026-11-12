@@ -1,0 +1,4604 @@
+{
+  "mode": "scoped",
+  "certification": "selected-artifacts-only",
+  "releaseCertified": false,
+  "contractImpacts": [],
+  "checks": [
+    {
+      "check": "core-control",
+      "reasons": [
+        "changed owner core: core4/core/broker.js",
+        "changed owner core: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core",
+          "core-control"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core",
+          "core-control"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=core-control",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "09b7a658d7c541bb970948cc3f0d749dc11406e5c0f04f02edb1c85a04274849",
+      "reason": "changed owner core: core4/core/broker.js; changed owner core: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core",
+          "core-control"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core",
+          "core-control"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/core4.test.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/crash-child.js",
+        "test/fixtures/lock-contender.js",
+        "test/helpers.js",
+        "tools/adopt-host.js",
+        "tools/aerender-jobs.js",
+        "tools/aerender-profile.js",
+        "tools/ame-isolated-export.ps1",
+        "tools/ame-isolated-host.ps1",
+        "tools/ame-media-export.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/check-package-location.js",
+        "tools/configure-render-job-toolchain.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-start-over.js",
+        "tools/operate-stopped-readoption.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-aerender-operator.js",
+        "tools/package-capability.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/package-visual-review.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/repair-mixed-installation.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/validation-reuse.js",
+        "tools/visual-review.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "core-admission",
+      "reasons": [
+        "changed owner core: core4/core/broker.js",
+        "changed owner core: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core",
+          "core-admission"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core",
+          "core-admission"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=core-admission",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "7ed590d5ebfea2f006a5fc12871cd85dfb4e9e0955b921d2aa91807e88748837",
+      "reason": "changed owner core: core4/core/broker.js; changed owner core: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core",
+          "core-admission"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core",
+          "core-admission"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/core4.test.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/crash-child.js",
+        "test/fixtures/lock-contender.js",
+        "test/helpers.js",
+        "tools/adopt-host.js",
+        "tools/aerender-jobs.js",
+        "tools/aerender-profile.js",
+        "tools/ame-isolated-export.ps1",
+        "tools/ame-isolated-host.ps1",
+        "tools/ame-media-export.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/check-package-location.js",
+        "tools/configure-render-job-toolchain.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-start-over.js",
+        "tools/operate-stopped-readoption.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-aerender-operator.js",
+        "tools/package-capability.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/package-visual-review.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/repair-mixed-installation.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/validation-reuse.js",
+        "tools/visual-review.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "human-window",
+      "reasons": [
+        "changed public contract human-window-core-consumer-v1: core4/core/broker.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "human-window-core-consumer-v1",
+          "human-window"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=human-window",
+        "test/human-window.test.js"
+      ],
+      "evidenceKey": "833e9ff4b6986fe3d46faf8c83db5bc9473f91153219a8e9100e1377994a2b4c",
+      "reason": "changed public contract human-window-core-consumer-v1: core4/core/broker.js",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "human-window-core-consumer-v1",
+          "human-window"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/compositions/manual-layer-overlay.json",
+        "config/compositions/manual-media-layers.json",
+        "config/compositions/manual-project-assembly.json",
+        "config/compositions/manual-project-lifecycle.json",
+        "config/compositions/manual-project-save.json",
+        "config/compositions/manual-titles-variants.json",
+        "config/compositions/operator-frame-export.json",
+        "config/compositions/operator-photo-montage.json",
+        "config/compositions/operator-project-lifecycle.json",
+        "config/compositions/operator-r1-minimal.json",
+        "config/compositions/operator-render-jobs.json",
+        "config/compositions/operator-titles-photo-pilot.json",
+        "config/compositions/operator-titles-pilot.json",
+        "config/compositions/operator-workflows-montage.json",
+        "config/compositions/operator-workflows.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/peer-protocol.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/adobe-child-environment.js",
+        "runtime/ae-panel-startup.js",
+        "runtime/ae-readiness.js",
+        "runtime/aerender-jobs.js",
+        "runtime/aerender-profile.js",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/comp-frame-export-proof.js",
+        "runtime/comp-render-proof.js",
+        "runtime/controller-lease.js",
+        "runtime/host/ensure-panel.jsx",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/layer-insert-proof.js",
+        "runtime/layer-overlay-proof.js",
+        "runtime/manual-policy.js",
+        "runtime/media-layer-proof.js",
+        "runtime/montage-mandate.js",
+        "runtime/native-read-disposition.js",
+        "runtime/operator-confirmation.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/photo-source-proof.js",
+        "runtime/png-proof.js",
+        "runtime/point-layout-proof.js",
+        "runtime/profiles.json",
+        "runtime/project-assembly-proof.js",
+        "runtime/project-file.js",
+        "runtime/project-lifecycle-proof.js",
+        "runtime/project-save-proof.js",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/render-job-history.js",
+        "runtime/render-job-maintenance.js",
+        "runtime/render-job-owner.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/text-layer-proof.js",
+        "runtime/text-variant-proof.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/human-window-stdio.js",
+        "test/fixtures/manual-http-runtime.js",
+        "test/human-window.test.js",
+        "tools/install-core4.js",
+        "tools/package-installable.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "manual-runtime",
+      "reasons": [
+        "changed public contract private-current-target-policy-v1: core4/core/broker.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "private-current-target-policy-v1",
+          "manual-runtime"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=manual-runtime",
+        "test/manual-runtime.test.js"
+      ],
+      "evidenceKey": "220ece288dc929a3476503f10c71a3dfb451b7bf52923a9723c2c895fb1f0465",
+      "reason": "changed public contract private-current-target-policy-v1: core4/core/broker.js",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "private-current-target-policy-v1",
+          "manual-runtime"
+        ]
+      ],
+      "dependencies": [
+        "cep/CSXS/manifest.xml",
+        "cep/index.html",
+        "cep/js/panel.js",
+        "cep/js/poll-dispatcher.js",
+        "cep/panel.css",
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/compositions/manual-layer-overlay.json",
+        "config/compositions/manual-media-layers.json",
+        "config/compositions/manual-project-assembly.json",
+        "config/compositions/manual-project-lifecycle.json",
+        "config/compositions/manual-project-save.json",
+        "config/compositions/manual-titles-variants.json",
+        "config/compositions/operator-frame-export.json",
+        "config/compositions/operator-photo-montage.json",
+        "config/compositions/operator-project-lifecycle.json",
+        "config/compositions/operator-r1-minimal.json",
+        "config/compositions/operator-render-jobs.json",
+        "config/compositions/operator-titles-photo-pilot.json",
+        "config/compositions/operator-titles-pilot.json",
+        "config/compositions/operator-workflows-montage.json",
+        "config/compositions/operator-workflows.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/peer-protocol.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/adobe-child-environment.js",
+        "runtime/ae-panel-startup.js",
+        "runtime/ae-readiness.js",
+        "runtime/aerender-jobs.js",
+        "runtime/aerender-profile.js",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/comp-frame-export-proof.js",
+        "runtime/comp-render-proof.js",
+        "runtime/controller-lease.js",
+        "runtime/host/ensure-panel.jsx",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/layer-insert-proof.js",
+        "runtime/layer-overlay-proof.js",
+        "runtime/manual-policy.js",
+        "runtime/media-layer-proof.js",
+        "runtime/montage-mandate.js",
+        "runtime/native-read-disposition.js",
+        "runtime/operator-confirmation.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/photo-source-proof.js",
+        "runtime/png-proof.js",
+        "runtime/point-layout-proof.js",
+        "runtime/profiles.json",
+        "runtime/project-assembly-proof.js",
+        "runtime/project-file.js",
+        "runtime/project-lifecycle-proof.js",
+        "runtime/project-save-proof.js",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/render-job-history.js",
+        "runtime/render-job-maintenance.js",
+        "runtime/render-job-owner.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/text-layer-proof.js",
+        "runtime/text-variant-proof.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/manual-http-runtime.js",
+        "test/manual-runtime.test.js",
+        "tools/package-installable.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "audit-repairs",
+      "reasons": [
+        "changed public contract audit-repair-control-boundary: core4/core/broker.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "audit-repair-control-boundary",
+          "audit-repairs"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=audit-repairs",
+        "test/audit-repairs.test.js"
+      ],
+      "evidenceKey": "05da34a3248a6bee3831b4182d9668d1ac1eb3f1262f623bdf9890c844b76ad1",
+      "reason": "changed public contract audit-repair-control-boundary: core4/core/broker.js",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "audit-repair-control-boundary",
+          "audit-repairs"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/artifact.json",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/host-dispatcher.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/manifest.json",
+        "integrations/cep/panel-identity.js",
+        "integrations/cep/peer-protocol.js",
+        "integrations/cep/transport.js",
+        "integrations/cep/wire.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/audit-repairs.test.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/artifact-publish-crash.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/cep-host.js",
+        "test/helpers.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "cep-transport",
+      "reasons": [
+        "changed public contract closed-receiver-v2: core4/core/broker.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "closed-receiver-v2",
+          "cep-transport"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=cep-transport",
+        "test/integration/cep-transport.test.js"
+      ],
+      "evidenceKey": "9cd9047a54e1da9afee0ef3d0478aabe40506ab891c6a9c991696c7789d5a9ee",
+      "reason": "changed public contract closed-receiver-v2: core4/core/broker.js",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "closed-receiver-v2",
+          "cep-transport"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/validation-map.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/artifact.json",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/host-dispatcher.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/manifest.json",
+        "integrations/cep/panel-identity.js",
+        "integrations/cep/peer-protocol.js",
+        "integrations/cep/transport.js",
+        "integrations/cep/wire.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/cep-crash-child.js",
+        "test/fixtures/cep-host.js",
+        "test/helpers.js",
+        "test/integration/cep-transport.test.js",
+        "tools/adopt-host.js",
+        "tools/aerender-jobs.js",
+        "tools/aerender-profile.js",
+        "tools/ame-isolated-export.ps1",
+        "tools/ame-isolated-host.ps1",
+        "tools/ame-media-export.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/check-package-location.js",
+        "tools/configure-render-job-toolchain.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-start-over.js",
+        "tools/operate-stopped-readoption.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-aerender-operator.js",
+        "tools/package-capability.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/package-visual-review.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/repair-mixed-installation.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/validation-reuse.js",
+        "tools/visual-review.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "reasons": [
+        "changed public contract project-lifecycle-and-approval-v1: core4/core/broker.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "project-lifecycle-and-approval-v1",
+          "lifecycle-simulation"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=lifecycle-simulation",
+        "test/lifecycle-simulation.test.js"
+      ],
+      "evidenceKey": "825f639ae049e8f34645ad05f2646ee150d8f2c600252a0d26b47df8bf4de99d",
+      "reason": "changed public contract project-lifecycle-and-approval-v1: core4/core/broker.js",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "project-lifecycle-and-approval-v1",
+          "lifecycle-simulation"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/validation-map.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/artifact.json",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/host-dispatcher.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/manifest.json",
+        "integrations/cep/panel-identity.js",
+        "integrations/cep/peer-protocol.js",
+        "integrations/cep/transport.js",
+        "integrations/cep/wire.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/adobe-child-environment.test.js",
+        "test/ae-panel-startup.test.js",
+        "test/ae-readiness.test.js",
+        "test/aerender-jobs.test.js",
+        "test/aerender-profile.test.js",
+        "test/ame-media-export.test.js",
+        "test/audit-repairs.test.js",
+        "test/client-entry.test.js",
+        "test/client-ipc.test.js",
+        "test/client-launcher.test.js",
+        "test/comp-frame-export.test.js",
+        "test/comp-render.test.js",
+        "test/controller-lease.test.js",
+        "test/controller-transfer-ipc.test.js",
+        "test/core4.test.js",
+        "test/endpoint-observation.test.js",
+        "test/exact-f548-transition.test.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/ame-isolated-host.ps1",
+        "test/fixtures/artifact-publish-crash.js",
+        "test/fixtures/attachment-process.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/cep-crash-child.js",
+        "test/fixtures/cep-host.js",
+        "test/fixtures/crash-child.js",
+        "test/fixtures/disposition-child.js",
+        "test/fixtures/endpoint-observation-preload.js",
+        "test/fixtures/exact-f548-transition.js",
+        "test/fixtures/fixed-format1-package.js",
+        "test/fixtures/human-window-stdio.js",
+        "test/fixtures/installed-composition-child.js",
+        "test/fixtures/installed-composition-transition.js",
+        "test/fixtures/legacy-completion-store.js",
+        "test/fixtures/legacy-installation-v1.js",
+        "test/fixtures/legacy-panel-v1.txt",
+        "test/fixtures/legacy-poll-dispatcher-v1.txt",
+        "test/fixtures/legacy-project-inspection-v1.txt",
+        "test/fixtures/local-operation.js",
+        "test/fixtures/lock-contender.js",
+        "test/fixtures/maintenance-finish.js",
+        "test/fixtures/manual-capture-driver-source.txt",
+        "test/fixtures/manual-current-target.js",
+        "test/fixtures/manual-http-runtime.js",
+        "test/fixtures/media-layer-host.js",
+        "test/fixtures/mixed-installation.js",
+        "test/fixtures/montage-host.js",
+        "test/fixtures/native-capture-panel-v1.txt",
+        "test/fixtures/native-read-recovery.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/owner-pre-ready-claim-child.js",
+        "test/fixtures/owner-runtime-child.js",
+        "test/fixtures/point-layout-ae.js",
+        "test/fixtures/project-lifecycle-host.js",
+        "test/fixtures/standalone-history.js",
+        "test/fixtures/start-over-barrier.js",
+        "test/fixtures/start-over-finisher.js",
+        "test/fixtures/start-over-runtime-preload.js",
+        "test/fixtures/stdio-main-ephemeral.js",
+        "test/fixtures/stopped-host-readoption.js",
+        "test/fixtures/text-layer-ae.js",
+        "test/helpers.js",
+        "test/human-window.test.js",
+        "test/installable-runtime.test.js",
+        "test/installed-composition.test.js",
+        "test/integration/cep-transport.test.js",
+        "test/layer-overlay.test.js",
+        "test/legacy-owner-migration.test.js",
+        "test/lifecycle-simulation.test.js",
+        "test/maintenance-finish-operator.test.js",
+        "test/maintenance-finish.test.js",
+        "test/maintenance-operator.test.js",
+        "test/manual-current-target.test.js",
+        "test/manual-runtime.test.js",
+        "test/media-layers.test.js",
+        "test/mixed-installation-repair.test.js",
+        "test/module-harness.js",
+        "test/modules/photo-placeholder.test.js",
+        "test/modules/titles.test.js",
+        "test/montage-mandate.test.js",
+        "test/native-read-capture.test.js",
+        "test/native-read-recovery.test.js",
+        "test/owner-attachments.test.js",
+        "test/owner-installation.test.js",
+        "test/owner-ipc-process.test.js",
+        "test/owner-lifecycle-faults.test.js",
+        "test/owner-lifecycle.test.js",
+        "test/owner-maintenance.test.js",
+        "test/owner-marker-publication.test.js",
+        "test/owner-runtime.test.js",
+        "test/package-aerender-operator.test.js",
+        "test/package-location.test.js",
+        "test/panel-lifecycle.test.js",
+        "test/panel-reconnect.test.js",
+        "test/panel-start-over.test.js",
+        "test/point-layout-local.test.js",
+        "test/point-layout.test.js",
+        "test/project-assembly.test.js",
+        "test/project-lifecycle.test.js",
+        "test/project-save.test.js",
+        "test/recover-zero-dispatch-owner.test.js",
+        "test/recovery-inspection.test.js",
+        "test/render-job-owner.test.js",
+        "test/standalone-installer.test.js",
+        "test/start-over-barrier.test.js",
+        "test/start-over-channel.test.js",
+        "test/start-over-driver.test.js",
+        "test/start-over-finisher.test.js",
+        "test/start-over-inspection.test.js",
+        "test/start-over-operator.test.js",
+        "test/start-over-panel-control.test.js",
+        "test/start-over-process.test.js",
+        "test/start-over-runtime.test.js",
+        "test/start-over-state.test.js",
+        "test/stopped-certification.test.js",
+        "test/stopped-host-readoption-core.test.js",
+        "test/stopped-host-readoption-enable.test.js",
+        "test/stopped-host-readoption-operator.test.js",
+        "test/stopped-host-readoption-probe.test.js",
+        "test/stopped-host-readoption-recovery.test.js",
+        "test/stopped-host-readoption.test.js",
+        "test/stopped-update-operator.test.js",
+        "test/stopped-update.test.js",
+        "test/text-layer-local.test.js",
+        "test/text-layer.test.js",
+        "test/text-variant.test.js",
+        "test/validation-reuse.test.js",
+        "test/visual-review.test.js",
+        "test/windows-cim-probe.test.js",
+        "test/windows-owner-process.test.js",
+        "test/windows-retained-process.test.js",
+        "test/work-session-owner.test.js",
+        "test/work-session.test.js",
+        "tools/adopt-host.js",
+        "tools/aerender-jobs.js",
+        "tools/aerender-profile.js",
+        "tools/ame-isolated-export.ps1",
+        "tools/ame-isolated-host.ps1",
+        "tools/ame-media-export.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/check-package-location.js",
+        "tools/configure-render-job-toolchain.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-start-over.js",
+        "tools/operate-stopped-readoption.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-aerender-operator.js",
+        "tools/package-capability.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/package-visual-review.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/repair-mixed-installation.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/validation-reuse.js",
+        "tools/visual-review.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "workflow-recovery",
+      "reasons": [
+        "changed shared runtime permanent-core-runtime: core4/core/broker.js",
+        "changed shared runtime permanent-core-runtime: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "permanent-core-runtime",
+          "workflow-recovery"
+        ],
+        [
+          "core4/core/artifact.json",
+          "permanent-core-runtime",
+          "workflow-recovery"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=workflow-recovery",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "9dbd0b88501766f0f6bfe773d80e352f4cd437d7b7c7ca31821f03fce27d1717",
+      "reason": "changed shared runtime permanent-core-runtime: core4/core/broker.js; changed shared runtime permanent-core-runtime: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "permanent-core-runtime",
+          "workflow-recovery"
+        ],
+        [
+          "core4/core/artifact.json",
+          "permanent-core-runtime",
+          "workflow-recovery"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/core4.test.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/crash-child.js",
+        "test/fixtures/lock-contender.js",
+        "test/helpers.js",
+        "tools/adopt-host.js",
+        "tools/aerender-jobs.js",
+        "tools/aerender-profile.js",
+        "tools/ame-isolated-export.ps1",
+        "tools/ame-isolated-host.ps1",
+        "tools/ame-media-export.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/check-package-location.js",
+        "tools/configure-render-job-toolchain.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-start-over.js",
+        "tools/operate-stopped-readoption.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-aerender-operator.js",
+        "tools/package-capability.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/package-visual-review.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/repair-mixed-installation.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/validation-reuse.js",
+        "tools/visual-review.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "worker-isolation",
+      "reasons": [
+        "changed shared runtime permanent-core-runtime: core4/core/broker.js",
+        "changed shared runtime permanent-core-runtime: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "permanent-core-runtime",
+          "worker-isolation"
+        ],
+        [
+          "core4/core/artifact.json",
+          "permanent-core-runtime",
+          "worker-isolation"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=worker-isolation",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "c393076eaa50d65f6b7db5ffee9d68089597b1ba30c94c5efe1492a8e198b0e9",
+      "reason": "changed shared runtime permanent-core-runtime: core4/core/broker.js; changed shared runtime permanent-core-runtime: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "permanent-core-runtime",
+          "worker-isolation"
+        ],
+        [
+          "core4/core/artifact.json",
+          "permanent-core-runtime",
+          "worker-isolation"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/core4.test.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/crash-child.js",
+        "test/fixtures/lock-contender.js",
+        "test/helpers.js",
+        "tools/adopt-host.js",
+        "tools/aerender-jobs.js",
+        "tools/aerender-profile.js",
+        "tools/ame-isolated-export.ps1",
+        "tools/ame-isolated-host.ps1",
+        "tools/ame-media-export.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/check-package-location.js",
+        "tools/configure-render-job-toolchain.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-start-over.js",
+        "tools/operate-stopped-readoption.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-aerender-operator.js",
+        "tools/package-capability.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/package-visual-review.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/repair-mixed-installation.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/validation-reuse.js",
+        "tools/visual-review.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "protocol-codec",
+      "reasons": [
+        "changed shared runtime permanent-core-runtime: core4/core/broker.js",
+        "changed shared runtime permanent-core-runtime: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "permanent-core-runtime",
+          "protocol-codec"
+        ],
+        [
+          "core4/core/artifact.json",
+          "permanent-core-runtime",
+          "protocol-codec"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=protocol-codec",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "54ab5df057ee8a3a5e2c9f233d4633b0c10ef83fb9642f8c25198fd7ddc10a94",
+      "reason": "changed shared runtime permanent-core-runtime: core4/core/broker.js; changed shared runtime permanent-core-runtime: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "permanent-core-runtime",
+          "protocol-codec"
+        ],
+        [
+          "core4/core/artifact.json",
+          "permanent-core-runtime",
+          "protocol-codec"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/core4.test.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/crash-child.js",
+        "test/fixtures/lock-contender.js",
+        "test/helpers.js",
+        "tools/adopt-host.js",
+        "tools/aerender-jobs.js",
+        "tools/aerender-profile.js",
+        "tools/ame-isolated-export.ps1",
+        "tools/ame-isolated-host.ps1",
+        "tools/ame-media-export.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/check-package-location.js",
+        "tools/configure-render-job-toolchain.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-start-over.js",
+        "tools/operate-stopped-readoption.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-aerender-operator.js",
+        "tools/package-capability.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/package-visual-review.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/repair-mixed-installation.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/validation-reuse.js",
+        "tools/visual-review.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "artifact-boundaries",
+      "reasons": [
+        "changed shared runtime permanent-core-runtime: core4/core/broker.js",
+        "changed shared runtime permanent-core-runtime: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "permanent-core-runtime",
+          "artifact-boundaries"
+        ],
+        [
+          "core4/core/artifact.json",
+          "permanent-core-runtime",
+          "artifact-boundaries"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=artifact-boundaries",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "819ed6cf0611e6c5be8cd3c37325b017200b831a8c3082c7c8a1bf0d5222ae90",
+      "reason": "changed shared runtime permanent-core-runtime: core4/core/broker.js; changed shared runtime permanent-core-runtime: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "permanent-core-runtime",
+          "artifact-boundaries"
+        ],
+        [
+          "core4/core/artifact.json",
+          "permanent-core-runtime",
+          "artifact-boundaries"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "package.json",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/core4.test.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/crash-child.js",
+        "test/fixtures/lock-contender.js",
+        "test/helpers.js",
+        "tools/adopt-host.js",
+        "tools/aerender-jobs.js",
+        "tools/aerender-profile.js",
+        "tools/ame-isolated-export.ps1",
+        "tools/ame-isolated-host.ps1",
+        "tools/ame-media-export.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/check-package-location.js",
+        "tools/configure-render-job-toolchain.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-start-over.js",
+        "tools/operate-stopped-readoption.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-aerender-operator.js",
+        "tools/package-capability.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/package-visual-review.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/repair-mixed-installation.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/validation-reuse.js",
+        "tools/visual-review.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "validation-routing",
+      "reasons": [
+        "changed owner validation: core4/test/core4.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/test/core4.test.js",
+          "validation",
+          "validation-routing"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=validation-routing",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "67d16cdbf11d64c395d24ac3b3e74422b544997822aa2ed557a8e20fec4876c7",
+      "reason": "changed owner validation: core4/test/core4.test.js",
+      "dependencyPath": [
+        [
+          "core4/test/core4.test.js",
+          "validation",
+          "validation-routing"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/comp-frame-export.json",
+        "config/admissions/comp-render.json",
+        "config/admissions/layer-insert.json",
+        "config/admissions/layer-overlay.json",
+        "config/admissions/media-import.json",
+        "config/admissions/photo-placeholder.json",
+        "config/admissions/project-assembly.json",
+        "config/admissions/project-lifecycle.json",
+        "config/admissions/project-save.json",
+        "config/admissions/text-layer.json",
+        "config/admissions/text-variant.json",
+        "config/admissions/titles-current-target.json",
+        "config/admissions/titles-point-layout.json",
+        "config/admissions/titles.json",
+        "config/catalog.json",
+        "config/validation-map.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/comp-frame-export/artifact.json",
+        "modules/comp-frame-export/contract.json",
+        "modules/comp-frame-export/executor.jsx",
+        "modules/comp-frame-export/implementation.js",
+        "modules/comp-render/artifact.json",
+        "modules/comp-render/completion.json",
+        "modules/comp-render/contract.json",
+        "modules/comp-render/executor.jsx",
+        "modules/comp-render/implementation.js",
+        "modules/layer-insert/artifact.json",
+        "modules/layer-insert/contract.json",
+        "modules/layer-insert/executor.jsx",
+        "modules/layer-insert/implementation.js",
+        "modules/layer-overlay/artifact.json",
+        "modules/layer-overlay/contract.json",
+        "modules/layer-overlay/executor.jsx",
+        "modules/layer-overlay/implementation.js",
+        "modules/media-import/artifact.json",
+        "modules/media-import/contract.json",
+        "modules/media-import/executor.jsx",
+        "modules/media-import/implementation.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "modules/project-assembly/artifact.json",
+        "modules/project-assembly/contract.json",
+        "modules/project-assembly/executor.jsx",
+        "modules/project-assembly/implementation.js",
+        "modules/project-inspection/artifact.json",
+        "modules/project-inspection/contract.json",
+        "modules/project-inspection/executor.jsx",
+        "modules/project-lifecycle/artifact.json",
+        "modules/project-lifecycle/contract.json",
+        "modules/project-lifecycle/executor.jsx",
+        "modules/project-lifecycle/implementation.js",
+        "modules/project-save/artifact.json",
+        "modules/project-save/contract.json",
+        "modules/project-save/executor.jsx",
+        "modules/project-save/implementation.js",
+        "modules/text-layer/artifact.json",
+        "modules/text-layer/contract.json",
+        "modules/text-layer/executor.jsx",
+        "modules/text-layer/implementation.js",
+        "modules/text-variant/artifact.json",
+        "modules/text-variant/contract.json",
+        "modules/text-variant/executor.jsx",
+        "modules/text-variant/implementation.js",
+        "modules/titles-current-target/artifact.json",
+        "modules/titles-current-target/contract.json",
+        "modules/titles-current-target/executor.jsx",
+        "modules/titles-current-target/implementation.js",
+        "modules/titles-point-layout/artifact.json",
+        "modules/titles-point-layout/contract.json",
+        "modules/titles-point-layout/executor.jsx",
+        "modules/titles-point-layout/implementation.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "plan-engine/artifact.json",
+        "plan-engine/index.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/core4.test.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/fixtures/crash-child.js",
+        "test/fixtures/lock-contender.js",
+        "test/helpers.js",
+        "tools/adopt-host.js",
+        "tools/aerender-jobs.js",
+        "tools/aerender-profile.js",
+        "tools/ame-isolated-export.ps1",
+        "tools/ame-isolated-host.ps1",
+        "tools/ame-media-export.js",
+        "tools/capture-native-read.js",
+        "tools/check-boundaries.js",
+        "tools/check-core4-endpoint.js",
+        "tools/check-package-location.js",
+        "tools/configure-render-job-toolchain.js",
+        "tools/dispose-native-read.js",
+        "tools/disposition-install-preflight.js",
+        "tools/finish-owner-maintenance.js",
+        "tools/install-core4.js",
+        "tools/legacy-owner-migration.js",
+        "tools/maintain-owner.js",
+        "tools/operate-start-over.js",
+        "tools/operate-stopped-readoption.js",
+        "tools/operate-stopped-update.js",
+        "tools/package-aerender-operator.js",
+        "tools/package-capability.js",
+        "tools/package-installable.js",
+        "tools/package-native-read-operator.js",
+        "tools/package-standalone-installer.js",
+        "tools/package-visual-review.js",
+        "tools/recover-zero-dispatch-owner.js",
+        "tools/repair-mixed-installation.js",
+        "tools/seal.js",
+        "tools/standalone-installer.js",
+        "tools/stopped-host-readoption-store.js",
+        "tools/stopped-host-readoption-transaction.js",
+        "tools/stopped-host-readoption.js",
+        "tools/stopped-update.js",
+        "tools/validate-diff.js",
+        "tools/validation-reuse.js",
+        "tools/visual-review.js",
+        "tools/windows-retained-process.js",
+        "worker.js"
+      ]
+    },
+    {
+      "check": "start-over-driver",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "start-over-driver"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "start-over-driver"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-driver",
+        "test/start-over-driver.test.js"
+      ],
+      "evidenceKey": "72f058bc8ae135b8f778848750bbad0f3f9f1e6c261f68191c6efb22911fda9b",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "start-over-driver"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "start-over-driver"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/peer-protocol.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/controller-lease.js",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-launch.js",
+        "runtime/recovery-inspection.js",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-owner-process.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/start-over-finisher.js",
+        "test/start-over-driver.test.js"
+      ]
+    },
+    {
+      "check": "work-session",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "work-session"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "work-session"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=work-session",
+        "test/work-session.test.js"
+      ],
+      "evidenceKey": "d1dd8cf0f17a7ee53643b8f8b07fd843d3f6e39709a8dbf3e1759b63bc8d32de",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "work-session"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "work-session"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "integrations/cep/peer-protocol.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/controller-lease.js",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/work-session.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/work-session-owner.test.js",
+        "test/work-session.test.js"
+      ]
+    },
+    {
+      "check": "start-over-finisher",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "start-over-finisher"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "start-over-finisher"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-finisher",
+        "test/start-over-finisher.test.js"
+      ],
+      "evidenceKey": "d414945e08e671c17f986dbc3b3ded0adbd92e8ea1398d1c0c466ea32139d5ba",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "start-over-finisher"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "start-over-finisher"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/client-entry.js",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/recovery-inspection.js",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/start-over-finisher.js",
+        "test/start-over-finisher.test.js"
+      ]
+    },
+    {
+      "check": "start-over-state",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "start-over-state"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "start-over-state"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-state",
+        "test/start-over-state.test.js"
+      ],
+      "evidenceKey": "630e5c8311c552837990b18d7ef8868344f5ee1cb7f82bcd2e94a3aec22dae0b",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "start-over-state"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "start-over-state"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/recovery-inspection.js",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/start-over-state.test.js"
+      ]
+    },
+    {
+      "check": "start-over-barrier",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "start-over-barrier"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "start-over-barrier"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-barrier",
+        "test/start-over-barrier.test.js"
+      ],
+      "evidenceKey": "062e4b986a6c2edd65b2e47373c1512afff82eae82c1b0271f7cab12cef180fd",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "start-over-barrier"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "start-over-barrier"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/client-entry.js",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/recovery-inspection.js",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/fixtures/start-over-barrier.js",
+        "test/start-over-barrier.test.js"
+      ]
+    },
+    {
+      "check": "start-over-inspection",
+      "reasons": [
+        "changed component dependency core/broker.js: core4/core/broker.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/broker.js",
+          "start-over-inspection"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=start-over-inspection",
+        "test/start-over-inspection.test.js"
+      ],
+      "evidenceKey": "1ba88626320d4e559bc4a59d415dfd8c95ec4a97f4430939b446724a02aa02e8",
+      "reason": "changed component dependency core/broker.js: core4/core/broker.js",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/broker.js",
+          "start-over-inspection"
+        ]
+      ],
+      "dependencies": [
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/recovery-inspection.js",
+        "runtime/start-over-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-reservation-provider.js",
+        "test/start-over-inspection.test.js"
+      ]
+    },
+    {
+      "check": "stopped-certification",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "stopped-certification"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "stopped-certification"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=stopped-certification",
+        "test/stopped-certification.test.js"
+      ],
+      "evidenceKey": "b130725972f46d12b47bdf9d82202907b203c851b9314192df88bd2e45286787",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "stopped-certification"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "stopped-certification"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/adobe-child-environment.js",
+        "runtime/ae-panel-startup.js",
+        "runtime/ae-readiness.js",
+        "runtime/aerender-jobs.js",
+        "runtime/aerender-profile.js",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/comp-frame-export-proof.js",
+        "runtime/comp-render-proof.js",
+        "runtime/controller-lease.js",
+        "runtime/host/ensure-panel.jsx",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/layer-insert-proof.js",
+        "runtime/layer-overlay-proof.js",
+        "runtime/manual-policy.js",
+        "runtime/media-layer-proof.js",
+        "runtime/montage-mandate.js",
+        "runtime/native-read-disposition.js",
+        "runtime/operator-confirmation.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/photo-source-proof.js",
+        "runtime/png-proof.js",
+        "runtime/point-layout-proof.js",
+        "runtime/profiles.json",
+        "runtime/project-assembly-proof.js",
+        "runtime/project-file.js",
+        "runtime/project-lifecycle-proof.js",
+        "runtime/project-save-proof.js",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/render-job-history.js",
+        "runtime/render-job-maintenance.js",
+        "runtime/render-job-owner.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/text-layer-proof.js",
+        "runtime/text-variant-proof.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/stopped-certification.test.js"
+      ]
+    },
+    {
+      "check": "maintenance-finish",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "maintenance-finish"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "maintenance-finish"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=maintenance-finish",
+        "test/maintenance-finish.test.js"
+      ],
+      "evidenceKey": "832a2f67a2d43baa5d6e1b73b982ea16e6d789230604fee537605a477c47fa82",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "maintenance-finish"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "maintenance-finish"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/adobe-child-environment.js",
+        "runtime/ae-panel-startup.js",
+        "runtime/ae-readiness.js",
+        "runtime/aerender-jobs.js",
+        "runtime/aerender-profile.js",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/comp-frame-export-proof.js",
+        "runtime/comp-render-proof.js",
+        "runtime/controller-lease.js",
+        "runtime/host/ensure-panel.jsx",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/layer-insert-proof.js",
+        "runtime/layer-overlay-proof.js",
+        "runtime/manual-policy.js",
+        "runtime/media-layer-proof.js",
+        "runtime/montage-mandate.js",
+        "runtime/native-read-disposition.js",
+        "runtime/operator-confirmation.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/photo-source-proof.js",
+        "runtime/png-proof.js",
+        "runtime/point-layout-proof.js",
+        "runtime/profiles.json",
+        "runtime/project-assembly-proof.js",
+        "runtime/project-file.js",
+        "runtime/project-lifecycle-proof.js",
+        "runtime/project-save-proof.js",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/render-job-history.js",
+        "runtime/render-job-maintenance.js",
+        "runtime/render-job-owner.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/text-layer-proof.js",
+        "runtime/text-variant-proof.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/maintenance-finish.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/maintenance-finish.test.js"
+      ]
+    },
+    {
+      "check": "owner-maintenance",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "owner-maintenance"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "owner-maintenance"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-maintenance",
+        "test/owner-maintenance.test.js"
+      ],
+      "evidenceKey": "b182327dba05272cec16d05ccc14299776c4ef385017dc97e06d27c03eebf0ba",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "owner-maintenance"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "owner-maintenance"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "integrations/cep/completion-store.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/adobe-child-environment.js",
+        "runtime/ae-panel-startup.js",
+        "runtime/ae-readiness.js",
+        "runtime/aerender-jobs.js",
+        "runtime/aerender-profile.js",
+        "runtime/attachment-owner.js",
+        "runtime/client-entry.js",
+        "runtime/client-ipc.js",
+        "runtime/client-stdio.js",
+        "runtime/comp-frame-export-proof.js",
+        "runtime/comp-render-proof.js",
+        "runtime/controller-lease.js",
+        "runtime/host/ensure-panel.jsx",
+        "runtime/host/json-codec.jsx",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/layer-insert-proof.js",
+        "runtime/layer-overlay-proof.js",
+        "runtime/manual-policy.js",
+        "runtime/media-layer-proof.js",
+        "runtime/montage-mandate.js",
+        "runtime/native-read-disposition.js",
+        "runtime/operator-confirmation.js",
+        "runtime/owner-contract.json",
+        "runtime/owner-entry.js",
+        "runtime/owner-launch.js",
+        "runtime/owner-lifecycle.js",
+        "runtime/owner-maintenance.js",
+        "runtime/photo-source-proof.js",
+        "runtime/png-proof.js",
+        "runtime/point-layout-proof.js",
+        "runtime/profiles.json",
+        "runtime/project-assembly-proof.js",
+        "runtime/project-file.js",
+        "runtime/project-lifecycle-proof.js",
+        "runtime/project-save-proof.js",
+        "runtime/receiver-contract.json",
+        "runtime/recovery-inspection.js",
+        "runtime/render-job-history.js",
+        "runtime/render-job-maintenance.js",
+        "runtime/render-job-owner.js",
+        "runtime/source-package.json",
+        "runtime/start-over-archive.js",
+        "runtime/start-over-barrier.js",
+        "runtime/start-over-driver.js",
+        "runtime/start-over-finisher.js",
+        "runtime/start-over-inspection.js",
+        "runtime/start-over-panel-control.js",
+        "runtime/start-over-process.js",
+        "runtime/start-over-state.js",
+        "runtime/stdio-entry.js",
+        "runtime/stopped-certification.js",
+        "runtime/text-layer-proof.js",
+        "runtime/text-variant-proof.js",
+        "runtime/windows-host-probe.ps1",
+        "runtime/windows-owner-process.js",
+        "runtime/windows-reservation-provider.js",
+        "runtime/work-session.js",
+        "test/fixtures/owner-lifecycle-fixture.js",
+        "test/owner-maintenance.test.js"
+      ]
+    },
+    {
+      "check": "recovery-inspection",
+      "reasons": [
+        "changed component dependency core/broker.js: core4/core/broker.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/broker.js",
+          "recovery-inspection"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=recovery-inspection",
+        "test/recovery-inspection.test.js"
+      ],
+      "evidenceKey": "f29714aebfc3a1108bf5af4f47c091970b974cb18aa3da48879e28e7814e7013",
+      "reason": "changed component dependency core/broker.js: core4/core/broker.js",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/broker.js",
+          "recovery-inspection"
+        ]
+      ],
+      "dependencies": [
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver.js",
+        "core/resources.js",
+        "integrations/cep/completion-store.js",
+        "integrations/cep/http-peer.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/install-lease.js",
+        "runtime/installation-lineage.js",
+        "runtime/installation.js",
+        "runtime/native-read-disposition.js",
+        "runtime/recovery-inspection.js",
+        "runtime/stdio-entry.js",
+        "runtime/windows-reservation-provider.js",
+        "test/recovery-inspection.test.js"
+      ]
+    },
+    {
+      "check": "owner-attachments",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "owner-attachments"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "owner-attachments"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=owner-attachments",
+        "test/owner-attachments.test.js"
+      ],
+      "evidenceKey": "65ee93dd4ef8b6a94087c58d82706b29bfe02adbc12e4fcf5575ad99c2bc7331",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "owner-attachments"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "owner-attachments"
+        ]
+      ],
+      "dependencies": [
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/attachment-owner.js",
+        "runtime/client-stdio.js",
+        "runtime/controller-lease.js",
+        "test/owner-attachments.test.js"
+      ]
+    },
+    {
+      "check": "photo-owner",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "photo-owner"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "photo-owner"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=photo-owner",
+        "test/modules/photo-placeholder.test.js"
+      ],
+      "evidenceKey": "dcdd958e71d45e7fdeb83813f9f0b8dcc0bc15d1e6f00a0022d3675a0b4db9dc",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "photo-owner"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "photo-owner"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/photo-placeholder.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/module-harness.js",
+        "test/modules/photo-placeholder.test.js",
+        "worker.js",
+        "config/catalog.json#modules[id=photo-placeholder]"
+      ]
+    },
+    {
+      "check": "titles-owner",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "titles-owner"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "titles-owner"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=titles-owner",
+        "test/modules/titles.test.js"
+      ],
+      "evidenceKey": "e9ac8e4f7b951669367bab21ae241c8a1602e1d97feab8333950fa57e0e5a48a",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "titles-owner"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "titles-owner"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/titles.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/module-harness.js",
+        "test/modules/titles.test.js",
+        "worker.js",
+        "config/catalog.json#modules[id=titles]"
+      ]
+    },
+    {
+      "check": "photo-executor-contract",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "photo-executor-contract"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "photo-executor-contract"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=photo-executor-contract",
+        "test/modules/photo-placeholder.test.js"
+      ],
+      "evidenceKey": "fcf0e9fc9ffe0b482cabdab0cf79d560ee94c270ce1f253ae7d02083d6941cd2",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "photo-executor-contract"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "photo-executor-contract"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/photo-placeholder.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/photo-placeholder/artifact.json",
+        "modules/photo-placeholder/contract.json",
+        "modules/photo-placeholder/executor.jsx",
+        "modules/photo-placeholder/implementation.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "runtime/photo-source-proof.js",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/module-harness.js",
+        "test/modules/photo-placeholder.test.js",
+        "worker.js",
+        "config/catalog.json#modules[id=photo-placeholder]"
+      ]
+    },
+    {
+      "check": "titles-executor-contract",
+      "reasons": [
+        "changed component dependency core/: core4/core/broker.js",
+        "changed component dependency core/: core4/core/artifact.json"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "titles-executor-contract"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "titles-executor-contract"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=titles-executor-contract",
+        "test/modules/titles.test.js"
+      ],
+      "evidenceKey": "35cc0cb56b3db71eae9bce1b66f487335e0bba3eb8d52e8e66adb06a37b85df4",
+      "reason": "changed component dependency core/: core4/core/broker.js; changed component dependency core/: core4/core/artifact.json",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "titles-executor-contract"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "titles-executor-contract"
+        ]
+      ],
+      "dependencies": [
+        "config/admissions/titles.json",
+        "core/artifact.json",
+        "core/artifacts.js",
+        "core/authority.js",
+        "core/broker.js",
+        "core/ledger.js",
+        "core/receiver-api.js",
+        "core/receiver.js",
+        "core/record-context.js",
+        "core/resources.js",
+        "core/state-lock.js",
+        "core/stdio.js",
+        "core/worker-client.js",
+        "modules/titles/artifact.json",
+        "modules/titles/contract.json",
+        "modules/titles/executor.jsx",
+        "modules/titles/implementation.js",
+        "protocol/artifact.json",
+        "protocol/codec.js",
+        "protocol/dispatch.js",
+        "protocol/json.js",
+        "protocol/schema.js",
+        "protocol/target-contract.json",
+        "test/fixtures/ae.js",
+        "test/fixtures/authority.js",
+        "test/module-harness.js",
+        "test/modules/titles.test.js",
+        "worker.js",
+        "config/catalog.json#modules[id=titles]"
+      ]
+    },
+    {
+      "check": "documentation",
+      "reasons": [
+        "changed component dependency test/core4.test.js: core4/test/core4.test.js"
+      ],
+      "dependencyPaths": [
+        [
+          "core4/test/core4.test.js",
+          "test/core4.test.js",
+          "documentation"
+        ]
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=documentation",
+        "test/core4.test.js"
+      ],
+      "evidenceKey": "538d5610465c1b57d192307f910142ebdab70e9467ad4c16c1a87b662526d233",
+      "reason": "changed component dependency test/core4.test.js: core4/test/core4.test.js",
+      "dependencyPath": [
+        [
+          "core4/test/core4.test.js",
+          "test/core4.test.js",
+          "documentation"
+        ]
+      ],
+      "dependencies": [
+        "README.md",
+        "test/core4.test.js"
+      ]
+    }
+  ],
+  "executionBatches": [
+    {
+      "checks": [
+        "core-control",
+        "core-admission",
+        "workflow-recovery",
+        "worker-isolation",
+        "protocol-codec",
+        "artifact-boundaries",
+        "validation-routing",
+        "documentation"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:core-control)|(?:core-admission)|(?:workflow-recovery)|(?:worker-isolation)|(?:protocol-codec)|(?:artifact-boundaries)|(?:validation-routing)|(?:documentation)",
+        "test/core4.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "human-window"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:human-window)",
+        "test/human-window.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "manual-runtime"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:manual-runtime)",
+        "test/manual-runtime.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "audit-repairs"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:audit-repairs)",
+        "test/audit-repairs.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "cep-transport"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:cep-transport)",
+        "test/integration/cep-transport.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "lifecycle-simulation"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:lifecycle-simulation)",
+        "test/lifecycle-simulation.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "start-over-driver"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-driver)",
+        "test/start-over-driver.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "work-session"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:work-session)",
+        "test/work-session.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "start-over-finisher"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-finisher)",
+        "test/start-over-finisher.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "start-over-state"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-state)",
+        "test/start-over-state.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "start-over-barrier"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-barrier)",
+        "test/start-over-barrier.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "start-over-inspection"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:start-over-inspection)",
+        "test/start-over-inspection.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "stopped-certification"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:stopped-certification)",
+        "test/stopped-certification.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "maintenance-finish"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:maintenance-finish)",
+        "test/maintenance-finish.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "owner-maintenance"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-maintenance)",
+        "test/owner-maintenance.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "recovery-inspection"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:recovery-inspection)",
+        "test/recovery-inspection.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "owner-attachments"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:owner-attachments)",
+        "test/owner-attachments.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "photo-owner",
+        "photo-executor-contract"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:photo-owner)|(?:photo-executor-contract)",
+        "test/modules/photo-placeholder.test.js"
+      ]
+    },
+    {
+      "checks": [
+        "titles-owner",
+        "titles-executor-contract"
+      ],
+      "command": [
+        "node",
+        "--test",
+        "--test-name-pattern=(?:titles-owner)|(?:titles-executor-contract)",
+        "test/modules/titles.test.js"
+      ]
+    }
+  ],
+  "deferredCoverage": [
+    {
+      "check": "mixed-installation-repair",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "mixed-installation-repair"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "mixed-installation-repair"
+        ]
+      ]
+    },
+    {
+      "check": "package-location",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "package-location"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "package-location"
+        ]
+      ]
+    },
+    {
+      "check": "start-over-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "start-over-runtime"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "start-over-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "start-over-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "start-over-operator"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "start-over-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-host-readoption-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "stopped-host-readoption-operator"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "stopped-host-readoption-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "stopped-update-operator"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "stopped-update-operator"
+        ]
+      ]
+    },
+    {
+      "check": "stopped-update",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "stopped-update"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "stopped-update"
+        ]
+      ]
+    },
+    {
+      "check": "legacy-owner-migration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "legacy-owner-migration"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "legacy-owner-migration"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-finish-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "maintenance-finish-operator"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "maintenance-finish-operator"
+        ]
+      ]
+    },
+    {
+      "check": "maintenance-operator",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "maintenance-operator"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "maintenance-operator"
+        ]
+      ]
+    },
+    {
+      "check": "owner-installation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "owner-installation"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "owner-installation"
+        ]
+      ]
+    },
+    {
+      "check": "owner-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "owner-runtime"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "owner-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "owner-ipc-process",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "owner-ipc-process"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "owner-ipc-process"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-capture",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "native-read-capture"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "native-read-capture"
+        ]
+      ]
+    },
+    {
+      "check": "windows-cim-probe",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "windows-cim-probe"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "windows-cim-probe"
+        ]
+      ]
+    },
+    {
+      "check": "zero-dispatch-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "zero-dispatch-recovery"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "zero-dispatch-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "point-layout-integration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "point-layout-integration"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "point-layout-integration"
+        ]
+      ]
+    },
+    {
+      "check": "text-layer-integration",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "text-layer-integration"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "text-layer-integration"
+        ]
+      ]
+    },
+    {
+      "check": "comp-frame-export",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "comp-frame-export"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "comp-frame-export"
+        ]
+      ]
+    },
+    {
+      "check": "frame-export-slot",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "frame-export-slot"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "frame-export-slot"
+        ]
+      ]
+    },
+    {
+      "check": "project-assembly",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "project-assembly"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "project-assembly"
+        ]
+      ]
+    },
+    {
+      "check": "project-save",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "project-save"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "project-save"
+        ]
+      ]
+    },
+    {
+      "check": "project-lifecycle",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "project-lifecycle"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "project-lifecycle"
+        ]
+      ]
+    },
+    {
+      "check": "media-layers",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "media-layers"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "media-layers"
+        ]
+      ]
+    },
+    {
+      "check": "layer-overlay",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "layer-overlay"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "layer-overlay"
+        ]
+      ]
+    },
+    {
+      "check": "installable-runtime",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "installable-runtime"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "installable-runtime"
+        ]
+      ]
+    },
+    {
+      "check": "catalog-discovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/test/core4.test.js",
+          "dependency": "test/core4.test.js"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/test/core4.test.js",
+          "test/core4.test.js",
+          "catalog-discovery"
+        ]
+      ]
+    },
+    {
+      "check": "native-read-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "native-read-recovery"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "native-read-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "installed-composition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "installed-composition"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "installed-composition"
+        ]
+      ]
+    },
+    {
+      "check": "exact-f548-transition",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "exact-f548-transition"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "exact-f548-transition"
+        ]
+      ]
+    },
+    {
+      "check": "standalone-installer",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/core/broker.js",
+          "dependency": "core/"
+        },
+        {
+          "file": "core4/core/artifact.json",
+          "dependency": "core/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/core/broker.js",
+          "core/",
+          "standalone-installer"
+        ],
+        [
+          "core4/core/artifact.json",
+          "core/",
+          "standalone-installer"
+        ]
+      ]
+    }
+  ]
+}

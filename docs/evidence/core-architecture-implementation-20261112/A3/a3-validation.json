@@ -1,0 +1,319 @@
+{
+  "scope": "A3 only",
+  "status": "implementation and four new actual-worker cases PASS; complete core4 test file FAIL in three existing validation-routing assertions, assigned to C",
+  "files": [
+    {
+      "path": "core4/core/broker.js",
+      "sha256": "42d64cee97ab79026447971b07ac12e6fd1c81a98c6738bf2014ae228d3c1c01"
+    },
+    {
+      "path": "core4/core/artifact.json",
+      "sha256": "9119a750bc5ea60b7ce9f0b649b6644feb6fbe99d9bdad85d3b07ff2bffaf99a"
+    },
+    {
+      "path": "core4/test/core4.test.js",
+      "sha256": "a38ec8635019d203af803661a0f3db345dde3983d43daa03a1b94bceff796724"
+    }
+  ],
+  "baseline": "563f30afd2431f8401355c56838baa41cc969aac",
+  "runs": [
+    {
+      "name": "seal-core",
+      "args": [
+        "core4/tools/seal.js",
+        "--component",
+        "core"
+      ],
+      "exit": 0,
+      "signal": null,
+      "logs": [
+        {
+          "path": "seal-core.stdout.txt",
+          "sha256": "ebfc7163e12f63bc6b2fc182ba030aa34a9bb2f5c6f6cd5a49bb4c274580c6bf",
+          "bytes": 73
+        },
+        {
+          "path": "seal-core.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-broker",
+      "args": [
+        "--check",
+        "core4/core/broker.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [],
+      "logs": [
+        {
+          "path": "syntax-broker.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-broker.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-core4-test",
+      "args": [
+        "--check",
+        "core4/test/core4.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [],
+      "logs": [
+        {
+          "path": "syntax-core4-test.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-core4-test.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "core4-full",
+      "args": [
+        "--test",
+        "core4/test/core4.test.js"
+      ],
+      "exit": 1,
+      "signal": null,
+      "summary": [
+        "ℹ tests 42",
+        "ℹ pass 39",
+        "ℹ fail 3",
+        "ℹ skipped 0",
+        "ℹ duration_ms 53340.8785"
+      ],
+      "logs": [
+        {
+          "path": "core4-full.stdout.txt",
+          "sha256": "d97883cd88739a59a5edba93ca8b2d39d7507258b117b22725a803ac077b0761",
+          "bytes": 9357
+        },
+        {
+          "path": "core4-full.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "audit-repairs-full",
+      "args": [
+        "--test",
+        "core4/test/audit-repairs.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 32",
+        "ℹ pass 32",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 7262.9717"
+      ],
+      "logs": [
+        {
+          "path": "audit-repairs-full.stdout.txt",
+          "sha256": "47f4a7ce36fcedd0c78866d4c9b15b6a73d7b478aa684552000cad26ceeb052a",
+          "bytes": 3277
+        },
+        {
+          "path": "audit-repairs-full.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "boundaries",
+      "args": [
+        "core4/tools/check-boundaries.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [],
+      "logs": [
+        {
+          "path": "boundaries.stdout.txt",
+          "sha256": "394931c5861ee7b063cabd543f3844f2184582019bd30b6c7dfd848a43cc304a",
+          "bytes": 102
+        },
+        {
+          "path": "boundaries.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "diff-check",
+      "args": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "core4/core/broker.js",
+        "core4/core/artifact.json",
+        "core4/test/core4.test.js"
+      ],
+      "exit": 0,
+      "logs": [
+        {
+          "path": "diff-check.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "diff-check.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    }
+  ],
+  "currentValidationMap": {
+    "path": "core4/config/validation-map.json",
+    "sha256": "5314285ca8ced464b7a01da33ff8d6d66ce69509ac7770ee2a7177616ded46c3",
+    "changed": false
+  },
+  "focusedA3Cases": [
+    {
+      "name": "A3 schema-valid unrequested builder effect fails before build publication or dispatch",
+      "status": "PASS"
+    },
+    {
+      "name": "A3 materialize repeats reject an effect introduced only after the approved build",
+      "status": "PASS"
+    },
+    {
+      "name": "A3 desired optional values and declared expectations survive repeated materialize",
+      "status": "PASS"
+    },
+    {
+      "name": "A3 existing desired value target and expectation checks remain effective",
+      "status": "PASS"
+    }
+  ],
+  "fullRuns": {
+    "core4": {
+      "tests": 42,
+      "pass": 39,
+      "fail": 3,
+      "stdout": "core4-full.stdout.txt"
+    },
+    "auditRepairs": {
+      "tests": 32,
+      "pass": 32,
+      "fail": 0,
+      "stdout": "audit-repairs-full.stdout.txt"
+    }
+  },
+  "retainedFailures": [
+    {
+      "testLine": 64,
+      "assertLine": 67,
+      "file": "core4/test/core4.test.js",
+      "group": "validation-routing",
+      "expected": [
+        "titles-executor-contract",
+        "titles-owner"
+      ],
+      "actual": [
+        "panel-lifecycle",
+        "titles-executor-contract",
+        "titles-owner"
+      ],
+      "disposition": "C: align test with current map without weakening production selector"
+    },
+    {
+      "testLine": 448,
+      "assertLine": 454,
+      "file": "core4/test/core4.test.js",
+      "group": "validation-routing",
+      "expected": [
+        "titles-executor-contract",
+        "titles-owner"
+      ],
+      "actual": [
+        "panel-lifecycle",
+        "titles-executor-contract",
+        "titles-owner"
+      ],
+      "disposition": "C: align test with current map without weakening production selector"
+    },
+    {
+      "testLine": 460,
+      "assertLine": 478,
+      "file": "core4/test/core4.test.js",
+      "group": "validation-routing",
+      "expected": [
+        "titles-executor-contract",
+        "titles-owner"
+      ],
+      "actual": [
+        "panel-lifecycle",
+        "titles-executor-contract",
+        "titles-owner"
+      ],
+      "disposition": "C: align test with current map without weakening production selector"
+    }
+  ],
+  "selectedChecks": [
+    "core-control",
+    "core-admission",
+    "human-window",
+    "manual-runtime",
+    "audit-repairs",
+    "cep-transport",
+    "lifecycle-simulation",
+    "workflow-recovery",
+    "worker-isolation",
+    "protocol-codec",
+    "artifact-boundaries",
+    "validation-routing",
+    "start-over-driver",
+    "work-session",
+    "start-over-finisher",
+    "start-over-state",
+    "start-over-barrier",
+    "start-over-inspection",
+    "stopped-certification",
+    "maintenance-finish",
+    "owner-maintenance",
+    "recovery-inspection",
+    "owner-attachments",
+    "photo-owner",
+    "titles-owner",
+    "photo-executor-contract",
+    "titles-executor-contract",
+    "documentation"
+  ],
+  "selectedBatchCount": 19,
+  "deferredCoverageCount": 31,
+  "remaining": "Full final affected union and routing assertion corrections belong to C; neither complete-file PASS nor release certification claimed.",
+  "materialDecisions": [
+    "one shared validateIntent guard covers build and materialize",
+    "only caller desired keys or declared expectedBindings keys may be present after schema validation",
+    "TEMP fixture re-admission uses pre-existing helper; no repo admissions changed",
+    "repository seal limited to --component core; protocol artifact has no byte diff",
+    "existing unrelated-artifact test name A3 was already present at baseline and remains unchanged"
+  ],
+  "noLive": true,
+  "noInstalledChanges": true,
+  "noCommits": true
+}

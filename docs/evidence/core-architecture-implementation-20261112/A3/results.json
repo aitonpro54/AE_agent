@@ -1,0 +1,63 @@
+[
+  {
+    "name": "syntax-broker",
+    "args": [
+      "--check",
+      "core4/core/broker.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  },
+  {
+    "name": "syntax-core4-test",
+    "args": [
+      "--check",
+      "core4/test/core4.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  },
+  {
+    "name": "core4-full",
+    "args": [
+      "--test",
+      "core4/test/core4.test.js"
+    ],
+    "exit": 1,
+    "signal": null,
+    "summary": [
+      "ℹ tests 42",
+      "ℹ pass 39",
+      "ℹ fail 3",
+      "ℹ skipped 0",
+      "ℹ duration_ms 53340.8785"
+    ]
+  },
+  {
+    "name": "audit-repairs-full",
+    "args": [
+      "--test",
+      "core4/test/audit-repairs.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 32",
+      "ℹ pass 32",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 7262.9717"
+    ]
+  },
+  {
+    "name": "boundaries",
+    "args": [
+      "core4/tools/check-boundaries.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  }
+]

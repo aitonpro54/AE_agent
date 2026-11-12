@@ -177,6 +177,7 @@ class Broker {
     // The module may fill only the declared expectation fields, never alter desired effects/targets.
     for (const key of Object.keys(desired)) if (canonical(intent.input[key]) !== canonical(desired[key])) fail('intent_changed_input');
     const policy = selected.contract.effectPolicy;
+    for (const key of Object.keys(intent.input)) if (!Object.hasOwn(desired, key) && !Object.hasOwn(policy.expectedBindings, key)) fail('intent_added_input');
     if (canonical(pick(intent.input, policy.targetFields)) !== canonical(evidence.target)) fail('intent_resource');
     for (const [field, observed] of Object.entries(policy.expectedBindings)) if (canonical(intent.input[field]) !== canonical(evidence[observed])) fail('intent_stale_expectation');
     return intent.input;

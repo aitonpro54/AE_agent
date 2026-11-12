@@ -1,0 +1,133 @@
+✔ [core-control catalog-discovery] A1 independent startup physically absent optional artifacts and bad catalog (450.7432ms)
+✔ [titles-owner titles-executor-contract core-control] A2 real lazy selection and successful typed title readback (595.6518ms)
+✔ [catalog-discovery titles-owner] A3 unrelated artifact refresh preserves core and titles pins without reconnect (811.7458ms)
+✖ [validation-routing] A4 diff maps single owner reverse contracts and dependency-keyed cache (277.5675ms)
+✔ [workflow-recovery photo-owner photo-executor-contract titles-owner] A5 mixed fault resumes fresh targets across worker and ledger reopen without replay (840.4692ms)
+✔ [workflow-recovery photo-owner] A5 counterexample manual photo drift is rejected on resume without rewriting photo (641.2401ms)
+✔ [core-control core-admission worker-isolation] A6 reset before dispatch sends no mutation and rejects late worker epoch (1408.7757ms)
+✔ [core-control core-admission] A6 reset after durable intent preserves receipt and after ACK loss preserves fence (1050.9419ms)
+✔ [worker-isolation core-control] A7 infinite loop exit malformed IPC keep same Core PID and durable UNKNOWN (1187.9743ms)
+✔ [core-admission titles-executor-contract artifact-boundaries] A8 worker claims code wrong operation altered resource cannot become authority (3958.9966ms)
+✔ [core-admission titles-executor-contract] A3 schema-valid unrequested builder effect fails before build publication or dispatch (651.2591ms)
+✔ [core-admission workflow-recovery] A3 materialize repeats reject an effect introduced only after the approved build (652.6852ms)
+✔ [core-admission titles-owner] A3 desired optional values and declared expectations survive repeated materialize (1381.4841ms)
+✔ [core-admission titles-executor-contract] A3 existing desired value target and expectation checks remain effective (2461.2966ms)
+✔ [core-admission titles-executor-contract] A8 stale CAS confirmed private gate admission revocation between dryrun and send (1028.8878ms)
+✔ [titles-owner titles-executor-contract photo-owner photo-executor-contract] actual JSX rejects unsupported sources style animation identity and verifies protection (2758.7491ms)
+✔ [artifact-boundaries core-admission] A9 mutable source replacement cannot alter selected immutable closure and receipt (683.9895ms)
+✔ [core-admission protocol-codec] forged channel response executor and payload bindings bounded schema reject (504.1871ms)
+✔ [workflow-recovery core-admission] A10 coinciding text does not reconcile ongoing UNKNOWN command and serialization survives reconnect (665.3441ms)
+✔ [core-control workflow-recovery] A10 actual child crash boundaries durable intent before send ACK readback (5908.1954ms)
+✔ [core-control] durable ledger torn record is diagnostic only and latched append failure prevents sends (193.6901ms)
+✔ [artifact-boundaries] reviewed source boundaries (27.575ms)
+✔ [documentation] local README records offline and UNKNOWN constraints (1.7075ms)
+✔ [core-control protocol-codec] actual stdio MCP generic surface status unavailable and no public fixture authority (407.4989ms)
+✔ [core-admission workflow-recovery] approved expectations cannot silently rebase and identity bindings cannot expand scope (1662.465ms)
+✔ [workflow-recovery titles-owner] new failed-step revision reapproves fresh drift without replaying successful photo (981.1677ms)
+✔ [core-admission titles-executor-contract photo-executor-contract] explicit project incarnation rejects reopen same path and IDs (782.1086ms)
+✔ [core-admission photo-executor-contract titles-executor-contract] mutations followed by setter errors or protected drift remain UNKNOWN (1536.8115ms)
+✔ [core-admission core-control] neutral durable ownership checkpoint constraints and unknown schemas fence mutation (3431.9638ms)
+✔ [artifact-boundaries validation-routing titles-owner] scoped package seal reads only selected module closure while others physically absent (347.3703ms)
+✔ [protocol-codec worker-isolation core-control] RPC and worker pending limits remain 32 after overflow and recover after drain (437.137ms)
+✔ [core-admission] admission and private grant revocation are rechecked at final dispatch commit (1536.7925ms)
+✔ [core-control core-admission] one broker owns durable state and valid-JSON ledger corruption fails closed (621.8161ms)
+✖ [validation-routing] actual Core-only diff checks pass with photo and engine absent from their source tree (554.8073ms)
+✖ [validation-routing] shared Core dependencies select component consumers while byte-only integrations remain explicit deferred coverage (5219.9409ms)
+✔ [validation-routing] declared semantic contract impacts select consumers without claiming private-file semantic equivalence (579.3529ms)
+✔ [core-control worker-isolation artifact-boundaries] permanent worker bytes are pinned and spawn excludes ambient credential environment (672.0139ms)
+✔ [core-control core-admission] recordContext descriptive defaults and synthetic checks do not authorize writes (534.4744ms)
+✔ [core-admission] unknown constraint schema or malformed neutral identities cannot narrow the fence (4110.7055ms)
+✔ [core-control core-admission] concurrent stale lease reclaim is serialized and orphan acquire gate remains closed (633.7591ms)
+✔ [core-control core-admission workflow-recovery] close is terminal drains physical send and forbids late old-owner ledger appends (612.0642ms)
+✔ [core-control] close also drains a pending connection and never reopens the closed instance (414.9186ms)
+ℹ tests 42
+ℹ suites 0
+ℹ pass 39
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 53340.8785
+
+✖ failing tests:
+
+test at core4\test\core4.test.js:64:1
+✖ [validation-routing] A4 diff maps single owner reverse contracts and dependency-keyed cache (277.5675ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'panel-lifecycle',
+      'titles-executor-contract',
+      'titles-owner'
+    ]
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\core4.test.js:67:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'panel-lifecycle', 'titles-executor-contract', 'titles-owner' ],
+    expected: [ 'titles-executor-contract', 'titles-owner' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at core4\test\core4.test.js:448:1
+✖ [validation-routing] actual Core-only diff checks pass with photo and engine absent from their source tree (554.8073ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'panel-lifecycle',
+      'titles-executor-contract',
+      'titles-owner'
+    ]
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\core4.test.js:454:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'panel-lifecycle', 'titles-executor-contract', 'titles-owner' ],
+    expected: [ 'titles-executor-contract', 'titles-owner' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at core4\test\core4.test.js:460:1
+✖ [validation-routing] shared Core dependencies select component consumers while byte-only integrations remain explicit deferred coverage (5219.9409ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'panel-lifecycle',
+      'titles-executor-contract',
+      'titles-owner'
+    ]
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\core4.test.js:478:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'panel-lifecycle', 'titles-executor-contract', 'titles-owner' ],
+    expected: [ 'titles-executor-contract', 'titles-owner' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

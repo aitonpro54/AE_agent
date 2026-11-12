@@ -2,6 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const { execFileSync, spawn } = require('node:child_process');
 const { Broker } = require('../core/broker');
@@ -155,6 +156,87 @@ test('[core-admission titles-executor-contract artifact-boundaries] A8 worker cl
   assert.throws(() => f.broker.getContract({ moduleId: 'titles' }), code('not_admitted'));
   const g = cleanup(t, fixture()); rewrite(g.root, 'modules/titles/implementation.js', source => "const peer = require('../photo-placeholder/implementation');\n" + source); seal(g.root);
   assert.throws(() => g.broker.getContract({ moduleId: 'titles' }), code('private_import_denied'));
+});
+
+function intentFixture(t, body) {
+  const f = cleanup(t, fixture());
+  assert.ok(f.temp.startsWith(path.join(os.tmpdir(), 'ae-core4-')));
+  assert.notEqual(path.resolve(f.root), SOURCE);
+  // Re-admission is confined to this fresh synthetic TEMP module, never source
+  // admissions or an installed package. The optional effect is schema-valid.
+  rewrite(f.root, 'modules/titles/contract.json', source => {
+    const contract = JSON.parse(source); contract.inputSchema.properties.styleOverride = { type: 'boolean' };
+    contract.buildSchema.properties.styleOverride = { type: 'boolean' };
+    return JSON.stringify(contract);
+  });
+  rewrite(f.root, 'modules/titles/implementation.js', () => "'use strict'; let builds = 0; function build({ input, evidence }) { builds++; const expected = { expectedRevision: evidence.revision, expectedText: evidence.text }; " + body + ' } module.exports = { build };\n');
+  seal(f.root); f.broker.listModules({ refresh: true }); return f;
+}
+
+test('[core-admission titles-executor-contract] A3 schema-valid unrequested builder effect fails before build publication or dispatch', async t => {
+  const f = intentFixture(t, "return { operationId: 'set-text', input: { ...input, ...expected, styleOverride: true } };");
+  await f.broker.connect(); const step = await requestStep(f, 'titles'), selected = f.broker.selected(step.contractId);
+  const evidence = f.broker.evidence.get(step.evidenceRef).snapshot;
+  assert.equal(Object.hasOwn(step.input, 'styleOverride'), false);
+  assert.doesNotThrow(() => check(selected.contract.inputSchema, { ...step.input, expectedRevision: evidence.revision, expectedText: evidence.text, styleOverride: true }));
+  const sends = f.transport.sends;
+  await assert.rejects(f.broker.build({ steps: [step] }), code('intent_added_input'));
+  assert.ok(f.broker.worker.status().loaded.some(pin => pin.startsWith('titles@')));
+  assert.equal(f.broker.builds.size, 0); assert.equal(f.broker.proposals.size, 0);
+  assert.equal(f.broker.ledger.events.some(event => ['build', 'proposal', 'intent'].includes(event.type)), false);
+  assert.equal(f.broker.ledger.commands().length, 0); assert.equal(f.transport.sends, sends); assert.equal(f.state.counts.titles, 0);
+});
+
+test('[core-admission workflow-recovery] A3 materialize repeats reject an effect introduced only after the approved build', async t => {
+  const f = intentFixture(t, "return { operationId: 'set-text', input: { ...input, ...expected, ...(builds > 1 ? { styleOverride: true } : {}) } };");
+  const approved = await prepare(f), stored = f.broker.builds.get(approved.buildId);
+  assert.equal(Object.hasOwn(stored.steps[0].input, 'styleOverride'), false);
+  const sends = f.transport.sends, desired = canonical(stored.steps[0].desiredInput);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const result = await run(f, approved);
+    assert.equal(result.state, 'stopped'); assert.equal(result.code, 'intent_added_input');
+    assert.equal(f.broker.ledger.commands().length, 0); assert.equal(f.state.counts.titles, 0);
+    assert.equal(canonical(stored.steps[0].desiredInput), desired);
+  }
+  assert.equal(f.transport.sends, sends + 2, 'only the two fresh inspections, no mutation');
+  assert.equal(f.broker.ledger.events.filter(event => event.type === 'build').length, 1);
+  assert.equal(f.broker.ledger.events.filter(event => event.type === 'proposal').length, 1);
+});
+
+test('[core-admission titles-owner] A3 desired optional values and declared expectations survive repeated materialize', async t => {
+  for (const callerEffect of [false, true]) {
+    const f = intentFixture(t, "return { operationId: 'set-text', input: { ...input, ...expected } };");
+    await f.broker.connect(); const step = await requestStep(f, 'titles');
+    if (callerEffect) step.input.styleOverride = false;
+    const desired = canonical(step.input), built = await f.broker.build({ steps: [step] }), plan = f.broker.builds.get(built.buildId), selected = plan.steps[0];
+    const proposal = f.broker.propose({ buildId: built.buildId }); f.authority.confirm(proposal.proposalId);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const materialized = await f.broker.materialize(plan, selected, {});
+      assert.equal(materialized.input.expectedRevision, selected.initialEvidence.revision);
+      assert.equal(materialized.input.expectedText, selected.initialEvidence.text);
+      assert.equal(canonical(selected.desiredInput), desired); assert.equal(canonical(step.input), desired);
+      if (callerEffect) assert.equal(materialized.input.styleOverride, false);
+    }
+    assert.equal(f.state.counts.titles, 0);
+    // The unchanged real executor supports the original profile. The optional
+    // synthetic effect above is checked only at the admitted builder boundary.
+    if (!callerEffect) { assert.equal((await run(f, proposal)).state, 'succeeded'); assert.equal(f.state.counts.titles, 1); }
+  }
+});
+
+test('[core-admission titles-executor-contract] A3 existing desired value target and expectation checks remain effective', async t => {
+  const changes = [
+    ["text: 'Changed'", 'intent_changed_input'],
+    ['layerId: 999', 'intent_changed_input'],
+    ["expectedRevision: 'stale-revision'", 'intent_stale_expectation'],
+    ["expectedText: 'stale-text'", 'intent_stale_expectation']
+  ];
+  for (const [change, expectedCode] of changes) {
+    const f = intentFixture(t, "return { operationId: 'set-text', input: { ...input, ...expected, " + change + ' } };');
+    await f.broker.connect(); const step = await requestStep(f, 'titles'), sends = f.transport.sends;
+    await assert.rejects(f.broker.build({ steps: [step] }), code(expectedCode));
+    assert.equal(f.broker.builds.size, 0); assert.equal(f.transport.sends, sends); assert.equal(f.state.counts.titles, 0);
+  }
 });
 
 test('[core-admission titles-executor-contract] A8 stale CAS confirmed private gate admission revocation between dryrun and send', async t => {

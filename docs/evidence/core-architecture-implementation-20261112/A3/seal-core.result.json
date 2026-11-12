@@ -1,0 +1,9 @@
+{
+  "args": [
+    "core4/tools/seal.js",
+    "--component",
+    "core"
+  ],
+  "exit": 0,
+  "signal": null
+}

@@ -23,9 +23,10 @@
 3. **C — связность и приёмка:** адресная проверка сквозного пути и применимости
    прежних результатов; подготовка пакета к отдельному выпуску.
 
-Эта записка подготовлена по поручению на анализ и план. Исполнение source-этапов
-начинается в новом чате по поручению пользователя. Она не назначает установку,
-перезапуск AE, live-мутации или повтор старых команд.
+Записка первоначально подготовлена по поручению на анализ и план. Затем
+пользователь прямо поручил исполнить source-этапы A → B → C здесь, в Core-чате,
+с проверками и отдельными коммитами. Установка, перезапуск AE, live-мутации
+и повтор старых команд в текущий source scope не входят.
 
 ## База и достоверность
 
@@ -297,6 +298,12 @@ Source file hashes и package hash могут измениться от пере
 - Для существующего result profile добавление законного модуля должно обходиться
   декларацией/артефактом/admission без новой ветки Broker. Новый effect/proof —
   отдельное расширение trusted adapters; универсальный plugin ABI не требуется.
+- Эта приёмка относится к переносимому profile, а не всем profiles подряд:
+  TEMP-only новый reviewed module с owned-text-layer-v1 сохраняет прежние typed
+  semantics и подтверждение; runtime selection и HTTP validator проверяются
+  через production seam. Fixed module-identity profiles/OPERATOR_EFFECTS
+  сохраняют прежние отказы. Положительный и отрицательный случаи описаны
+  в [контракте B0](../docs/core-composition-bootstrap-contract-20261112.md).
 
 ## Этап C — доказать затронутую связность
 
@@ -307,6 +314,10 @@ installable-runtime.test.js: panelIdentity.verify(), loadedPanel/extensionRoot
 в подписанном claim и signed registry-ready. Synthetic helpers без releaseDir/
 cepDir не переводить механически на installed identity. Это ремонт fixtures,
 production HMAC/Origin/identity/registry gates сохраняются.
+Также сохранить исходный A3 core suite FAIL: три exact routing assertions
+ожидают прежние два checks, текущая карта добавляет panel-lifecycle. В C
+обновить точные ожидания по окончательной карте после B, без ослабления selector
+или замены assertions на неполные includes.
 
 1. Использовать актуальный diff и existing validation map. Для каждого изменённого
    инварианта: какой fixture ловит нарушение, какой результат получен, какое
@@ -394,6 +405,14 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Progress
 
+- **A3 реализован:** validateIntent запрещает дополнительные keys вне desired
+  и expectedBindings при initial build и materialize. Четыре новых actual-worker
+  fixtures и audit-repairs 32/32 PASS; syntax, boundaries 91 и source diff check
+  PASS. Ae_reviewer ACCEPT. Core artifact resealed штатно, protocol/admissions
+  не менялись. [Evidence A3](../docs/evidence/core-architecture-implementation-20261112/A3/acceptance.json).
+- Full core suite A3: 39/42 PASS, три существующих exact routing assertions FAIL
+  сохранены. Они сравнивают прежние два checks с текущими тремя; C исправляет
+  ожидания по окончательной карте. Full selected current PASS пока не заявлен.
 - **A2 реализован:** строгий связанный bootstrap error callback сохраняет
   registry_refresh_failed через существующий UI. Success/registry-ready,
   persistent latch, signed retirement и UNKNOWN/no-replay не изменены.
@@ -434,6 +453,10 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Decision Log
 
+- A3 усиливает общий validateIntent, без отдельного mutable allowlist и без
+  фильтрации нежелательных полей. Схема может разрешать optional поле, но worker
+  не вправе добавить его без desired/expectedBindings. TEMP-only admission
+  fixtures изолированы; production sealing выполнен только --component core.
 - A2 использует существующий error.message путь. Matching finite error требует
   exact keys/version/nonce, текущий callback token и owned latch; malformed и
   foreign callback не превращаются в подтверждённый отказ. Новый terminal
@@ -453,9 +476,9 @@ reviewable commits, контракты и затронутая closure пров�
   понятия; не использовать одно как замену остальным.
 - План не превращает старые acceptance gaps в обязательный gate каждой
   пользовательской задачи. Frozen работы остаются остановленными.
-- Передача переносит инициативу, без новых browser/external/live действий.
-  Текущий заказ завершает архитектурный план; source-реализация отдельно
-  поручается пользователем. Создание нового чата автоматически не выполняется.
+- На момент передачи выполнялась только финализация плана без новых
+  browser/external/live действий. Следующим прямым поручением пользователь
+  разрешил source-реализацию здесь; новый чат автоматически не создаётся.
 - Новое поручение на реализацию получено здесь. A/B/C остаются source scope;
   выпуск, публикация, установка, изменение MCP/CEP config и native приемка
   не добавлены. Совместимые исторические records переиспользуются только
@@ -464,6 +487,9 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Validation
 
+- A3 exact source hashes сверены. Полные команды/exit/stdout SHA и исходный
+  failed core run сохранены; никакого переноса этого FAIL в PASS нет. Whitespace
+  исключён только для raw failed stdout локальным .gitattributes, source проверен.
 - A2: lifecycle 37, panel-start-over 11, start-over-channel 29,
   reconnect 69 PASS. Два изменённых source/test SHA сверены координатором;
   commands/exit codes/stdout hashes сохранены. Новый live proof не заявляется.
