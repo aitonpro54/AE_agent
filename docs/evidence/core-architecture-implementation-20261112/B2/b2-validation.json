@@ -1,0 +1,314 @@
+{
+  "scope": "B2 only; packaging-only selected catalog identity",
+  "baseline": "d8740d01c12f841d0dad82197020e762fd7c8f6b",
+  "status": "all focused tests PASS; final affected union reserved for C",
+  "sources": [
+    {
+      "path": "core4/tools/package-installable.js",
+      "sha256": "5b55099210611a5b27a54276d9a00fa106f4eeec29772c6978beb7bf9d5fc343"
+    },
+    {
+      "path": "core4/test/catalog-revision.test.js",
+      "sha256": "e6f6b453fcf9586703d33ad15a0a01c3093092ab81d00d623ee4d54fff8fede4"
+    },
+    {
+      "path": "core4/config/validation-map.json",
+      "sha256": "06d5da6ea0e9a52554bc2570c2063e96b27c370d53793100dc16b87bc58aacaa"
+    },
+    {
+      "path": "docs/core-selected-catalog-revision.md",
+      "sha256": "b538e8cab643de9855cabf4b0c843a0a433bd43ef0ef923e2b68495a161a67a5"
+    }
+  ],
+  "runs": [
+    {
+      "name": "syntax-package",
+      "args": [
+        "--check",
+        "core4/tools/package-installable.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [],
+      "logs": [
+        {
+          "path": "syntax-package.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-package.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-catalog-test",
+      "args": [
+        "--check",
+        "core4/test/catalog-revision.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [],
+      "logs": [
+        {
+          "path": "syntax-catalog-test.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-catalog-test.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "catalog-revision-full",
+      "args": [
+        "--test",
+        "core4/test/catalog-revision.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 12",
+        "ℹ pass 12",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 6275.2982"
+      ],
+      "logs": [
+        {
+          "path": "catalog-revision-full.stdout.txt",
+          "sha256": "11e30c29902eda98c13e0e0fa05b02709dd13dd33abef271f7723500c0a74a84",
+          "bytes": 1268
+        },
+        {
+          "path": "catalog-revision-full.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "composition-spec-regression",
+      "args": [
+        "--test",
+        "core4/test/composition-spec.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 16",
+        "ℹ pass 16",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 13304.6774"
+      ],
+      "logs": [
+        {
+          "path": "composition-spec-regression.stdout.txt",
+          "sha256": "54bb4b30b5224175d6eb1a34d5c2f199ea4526ebd99cced67e15ed582051573f",
+          "bytes": 1846
+        },
+        {
+          "path": "composition-spec-regression.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "standalone-regression",
+      "args": [
+        "--test",
+        "core4/test/standalone-installer.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 8",
+        "ℹ pass 8",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 29789.84"
+      ],
+      "logs": [
+        {
+          "path": "standalone-regression.stdout.txt",
+          "sha256": "3f2f3d3a462e3cbde994df812a56ef9ca53d0be72998de99f6a2277c76daf99a",
+          "bytes": 1055
+        },
+        {
+          "path": "standalone-regression.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "boundaries",
+      "args": [
+        "core4/tools/check-boundaries.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [],
+      "logs": [
+        {
+          "path": "boundaries.stdout.txt",
+          "sha256": "98850ee100fa03526f85cbaaffcbe974317bda5c91ec27e67736c999d7c584c7",
+          "bytes": 102
+        },
+        {
+          "path": "boundaries.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "diff-check",
+      "args": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "core4/tools/package-installable.js",
+        "core4/test/catalog-revision.test.js",
+        "core4/config/validation-map.json",
+        "docs/core-selected-catalog-revision.md"
+      ],
+      "exit": 0,
+      "logs": [
+        {
+          "path": "diff-check.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "diff-check.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    }
+  ],
+  "passed": {
+    "catalogRevision": 12,
+    "compositionSpec": 16,
+    "standaloneInstaller": 8,
+    "boundaries": 92,
+    "syntaxJS": 2,
+    "diffCheck": true
+  },
+  "manifestDiff": "readonly/owner70,manual/owner90,variants/owner115,operator/owner164 files unchanged; added0/removed0; only config/catalog.json hash changes. Registry, selected metadata, tool surface and capabilities equal.",
+  "preimage": "Selected modules+ordered entries/artifact/admission pins, engine, ordered asset declarations/artifact/admission pins, profiles, capabilities, registryVerification; domain/version/composition metadata. One computed selected-v1 digest after in-memory semantic derive; final verifyPackage before return.",
+  "surface": "No removals. manual-titles-variants inherits seven modules through manual-titles/manual-layout/manual; not claimed minimal. Common render history/maintenance retained because stop/update/start-over inspect prior jobs even when render capability absent.",
+  "retainedFailures": [
+    {
+      "kind": "auxiliary selector invocation",
+      "path": "selection-attempt01.result.json",
+      "reason": "Outside-Core docs path has no Core validation owner; corrected Core-only invocation, documentation reviewed separately. No product/test FAIL."
+    }
+  ],
+  "selectedChecks": [
+    "installable-runtime",
+    "installed-composition",
+    "manual-runtime",
+    "standalone-installer",
+    "owner-installation",
+    "catalog-revision",
+    "validation-routing",
+    "composition-spec",
+    "panel-lifecycle",
+    "ae-panel-startup",
+    "stopped-host-readoption",
+    "readoption-core",
+    "readoption-recovery",
+    "readoption-enable",
+    "readoption-probe"
+  ],
+  "selectedBatches": 15,
+  "deferredCoverage": 35,
+  "artifacts": [
+    {
+      "path": "baseline-manual-titles-variants.json",
+      "sha256": "f4876472fdc04a06834e093ce46c181cb8e342f2687dd635cc959a562e1743fc",
+      "bytes": 1624172
+    },
+    {
+      "path": "baseline-manual.json",
+      "sha256": "ed95cc158ee93a4dd4ad0eb2f715afd90c898eacbc5c3c986cd1a412db8697a5",
+      "bytes": 468166
+    },
+    {
+      "path": "baseline-operator-render-jobs.json",
+      "sha256": "932f46e4153f077cee74adb0186adda4268becd767bcf4c64de00cb7b2dee610",
+      "bytes": 3636460
+    },
+    {
+      "path": "baseline-readonly.json",
+      "sha256": "c80aeb6482dddc56f9b241454ea855a871e7250ba8a9a6611eb54177433f2dcd",
+      "bytes": 150004
+    },
+    {
+      "path": "baseline-summary.json",
+      "sha256": "31209b7c83d08bd9aebc9748594b5f7a3a674d06f60abf594b1ce4b24b2df96b",
+      "bytes": 1710
+    },
+    {
+      "path": "manifest-diff-manual-titles-variants.json",
+      "sha256": "af6e7898071ac08bc3918584b5056b0cfbc9c1e1d00cd5749e861500463ce38c",
+      "bytes": 25515
+    },
+    {
+      "path": "manifest-diff-manual.json",
+      "sha256": "77c457e7145c37d5f64f047a5e85bce658d11aca08dbbc23018c3016cbb6c846",
+      "bytes": 19706
+    },
+    {
+      "path": "manifest-diff-operator-render-jobs.json",
+      "sha256": "c01caa37c641b0da7c6716856467ef722805f498bfaffe872de492489e86b3d1",
+      "bytes": 36808
+    },
+    {
+      "path": "manifest-diff-readonly.json",
+      "sha256": "5f6254e8b1033dfb5f3f8a80210e5cd8a689ba634d1b360612da4ed0afc75022",
+      "bytes": 15107
+    },
+    {
+      "path": "manifest-diff-summary.json",
+      "sha256": "c3add835eb26cc0a02c113873ed99260d9890d88af3f09d357b735737009e1ba",
+      "bytes": 5613
+    },
+    {
+      "path": "selection-attempt01.result.json",
+      "sha256": "5a78a6956b901caf3d5f47e07565e323cd793187c4acac4e45ce06a0c3be9e52",
+      "bytes": 238
+    },
+    {
+      "path": "selection.json",
+      "sha256": "77bcf6ce8f10bb6d30a4d37599b8dad1107f61562561be612ec60e198ec45db0",
+      "bytes": 118621
+    },
+    {
+      "path": "source-hashes.json",
+      "sha256": "a3288029ce5691725705f0fd773e9454fc96c0177bc03d1277393b44690196b6",
+      "bytes": 566
+    }
+  ],
+  "unchangedBoundaries": [
+    "B1 trust/standalonev3",
+    "runtime spec/verifier",
+    "Broker/authority",
+    "product version policy4.2.6",
+    "production admissions/config/state"
+  ],
+  "noLive": true,
+  "noInstalledChanges": true,
+  "noCommits": true
+}

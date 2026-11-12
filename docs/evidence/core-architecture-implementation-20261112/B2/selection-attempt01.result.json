@@ -1,0 +1,6 @@
+{
+  "exit": 1,
+  "reason": "unknown_or_ambiguous_owner",
+  "path": "docs/core-selected-catalog-revision.md",
+  "resolution": "Core selector covers core4 source; external repo documentation reviewed separately, not an executable owner."
+}

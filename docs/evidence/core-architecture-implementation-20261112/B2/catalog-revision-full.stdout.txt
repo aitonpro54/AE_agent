@@ -1,0 +1,20 @@
+✔ catalog-revision actual first/last selected first manifest (560.7887ms)
+✔ catalog-revision actual first/last selected first admission (479.566ms)
+✔ catalog-revision actual first/last selected first-dynamic manifest (580.4946ms)
+✔ catalog-revision actual first/last selected first-dynamic admission (497.6027ms)
+✔ catalog-revision actual first/last selected last manifest (568.9077ms)
+✔ catalog-revision actual first/last selected last admission (471.0389ms)
+✔ catalog-revision actual excluded module and source-wide revision changes do not affect the selected package (567.7998ms)
+✔ catalog-revision actual engine changes affect identity and identical inputs repeat exactly (752.4206ms)
+✔ catalog-revision actual module and asset array order remains significant (885.392ms)
+✔ catalog-revision exact v1 preimage covers engine profile capability and registry flag without incidental identifiers (62.6073ms)
+✔ catalog-revision existing duplicate cycle and undeclared extra-file refusals remain effective (630.9024ms)
+✔ catalog-revision readers preserve opaque historical revisions without requiring the new generator (87.9035ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6275.2982

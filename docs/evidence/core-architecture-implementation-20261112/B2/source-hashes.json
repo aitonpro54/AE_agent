@@ -1,0 +1,18 @@
+[
+  {
+    "path": "core4/tools/package-installable.js",
+    "sha256": "5b55099210611a5b27a54276d9a00fa106f4eeec29772c6978beb7bf9d5fc343"
+  },
+  {
+    "path": "core4/test/catalog-revision.test.js",
+    "sha256": "e6f6b453fcf9586703d33ad15a0a01c3093092ab81d00d623ee4d54fff8fede4"
+  },
+  {
+    "path": "core4/config/validation-map.json",
+    "sha256": "06d5da6ea0e9a52554bc2570c2063e96b27c370d53793100dc16b87bc58aacaa"
+  },
+  {
+    "path": "docs/core-selected-catalog-revision.md",
+    "sha256": "b538e8cab643de9855cabf4b0c843a0a433bd43ef0ef923e2b68495a161a67a5"
+  }
+]

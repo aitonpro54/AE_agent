@@ -1,0 +1,79 @@
+[
+  {
+    "name": "syntax-package",
+    "args": [
+      "--check",
+      "core4/tools/package-installable.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  },
+  {
+    "name": "syntax-catalog-test",
+    "args": [
+      "--check",
+      "core4/test/catalog-revision.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  },
+  {
+    "name": "catalog-revision-full",
+    "args": [
+      "--test",
+      "core4/test/catalog-revision.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 12",
+      "ℹ pass 12",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 6275.2982"
+    ]
+  },
+  {
+    "name": "composition-spec-regression",
+    "args": [
+      "--test",
+      "core4/test/composition-spec.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 16",
+      "ℹ pass 16",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 13304.6774"
+    ]
+  },
+  {
+    "name": "standalone-regression",
+    "args": [
+      "--test",
+      "core4/test/standalone-installer.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 8",
+      "ℹ pass 8",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 29789.84"
+    ]
+  },
+  {
+    "name": "boundaries",
+    "args": [
+      "core4/tools/check-boundaries.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  }
+]

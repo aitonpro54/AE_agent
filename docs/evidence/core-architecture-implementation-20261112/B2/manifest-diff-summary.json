@@ -1,0 +1,145 @@
+[
+  {
+    "selector": "readonly",
+    "beforePackageHash": "99d25d222c4990591291494ddcdf576e912b036f83e6c76d9fbc107fc0417b3a",
+    "afterPackageHash": "4b429a31e8a75b886bb5f696228bf54433b4fb1d09fa056f08aa225ce332cca7",
+    "beforeRevision": "update-photo-placeholder-af7a9f92fc21e32321544ed21d139cb5af0415d249c9d8f3cee389b585aca655",
+    "afterRevision": "selected-v1-03acbf7923b654907f356a06dc96909fff7058fed772aaeea92617956368c73b",
+    "fileCount": 70,
+    "added": [],
+    "removed": [],
+    "changed": [
+      "config/catalog.json"
+    ],
+    "registrySha256": "ae8473bfe84feef7b0358f2a14b5710c6161d8dbd514409ceead9bb10f148ceb",
+    "metadataSha256": "ae7e59e8aa7f908bb0fc6435771afcbb239249f80f131e4562f1288a1fe1e6e5",
+    "toolSurfaceSha256": "bd6f6568ece77dae41e27ba5348bf9f89dde31fd8667976157b1c6448ee01161",
+    "modules": [],
+    "profiles": {},
+    "renderJobs": false,
+    "sharedHistoryFiles": [
+      "runtime/render-job-history.js",
+      "runtime/render-job-maintenance.js"
+    ]
+  },
+  {
+    "selector": "manual",
+    "beforePackageHash": "70d11a6bb80c32dec4e91b0109d078785752b5e5d949a13be4ef6b9e2abe6642",
+    "afterPackageHash": "8df9bc897f8c500dd0142b325d866b884967c24e830bbb19de3b33c4237e465c",
+    "beforeRevision": "update-photo-placeholder-af7a9f92fc21e32321544ed21d139cb5af0415d249c9d8f3cee389b585aca655",
+    "afterRevision": "selected-v1-94223dfd355441165bb48f02d0f26a7baf0aa52c8d5018d409628d5c58c6456d",
+    "fileCount": 90,
+    "added": [],
+    "removed": [],
+    "changed": [
+      "config/catalog.json"
+    ],
+    "registrySha256": "b7c00c4b59d0150aaba7776be1c51650967498c3cad4b47a517c103e864e4873",
+    "metadataSha256": "b87c645844be9e889083007e2acf56c7230e8feb0a94278928722d6908ed3f8d",
+    "toolSurfaceSha256": "bd6f6568ece77dae41e27ba5348bf9f89dde31fd8667976157b1c6448ee01161",
+    "modules": [
+      "photo-placeholder",
+      "titles",
+      "titles-current-target"
+    ],
+    "profiles": {
+      "titles-current-target": "manual-text-v1",
+      "photo-placeholder": "photo-source-v1"
+    },
+    "renderJobs": false,
+    "sharedHistoryFiles": [
+      "runtime/render-job-history.js",
+      "runtime/render-job-maintenance.js"
+    ]
+  },
+  {
+    "selector": "manual-titles-variants",
+    "beforePackageHash": "0dec989dd9179f8c18673c4cf2eefad39f6a3d585e27c999d54d345739112d28",
+    "afterPackageHash": "139766f52dd81d8e14941e830af92631a28860c9c00c7541e29ba63464cb7ad6",
+    "beforeRevision": "manual-titles-variants-5bbf9aa1276a5329f9557e80cc7d8a76a830bbff830317bfd3c2ffb99edd4b4f",
+    "afterRevision": "selected-v1-54245300b41697c25347d8a4ff743ab6ea8699c8f54add8d17bb703ffff3a3f1",
+    "fileCount": 115,
+    "added": [],
+    "removed": [],
+    "changed": [
+      "config/catalog.json"
+    ],
+    "registrySha256": "0868e0fa3167d670138d79b3f49c4143687031239e86d02e5f9c18a5ad89f032",
+    "metadataSha256": "c81a922ece26af936a776c6654b6b2e87ec8cac828cd8fe79ebdaa2ad2b51151",
+    "toolSurfaceSha256": "bd6f6568ece77dae41e27ba5348bf9f89dde31fd8667976157b1c6448ee01161",
+    "modules": [
+      "photo-placeholder",
+      "titles",
+      "titles-current-target",
+      "titles-point-layout",
+      "text-layer",
+      "text-variant",
+      "comp-render"
+    ],
+    "profiles": {
+      "titles-current-target": "manual-text-v1",
+      "photo-placeholder": "photo-source-v1",
+      "titles-point-layout": "manual-point-layout-v1",
+      "text-layer": "owned-text-layer-v1",
+      "text-variant": "owned-text-variant-v1",
+      "comp-render": "owned-comp-render-v1"
+    },
+    "renderJobs": false,
+    "sharedHistoryFiles": [
+      "runtime/render-job-history.js",
+      "runtime/render-job-maintenance.js"
+    ]
+  },
+  {
+    "selector": "operator-render-jobs",
+    "beforePackageHash": "f5dede6bb2c943de75402666ae40d9b466f42b0a30895cb7020e038442c2bfa8",
+    "afterPackageHash": "82d2e105fd50358b2719d55da19badec396c73ed23a0c0ad43d991944cc99d7b",
+    "beforeRevision": "operator-render-jobs-ea328aea674e8d57bee0aa767465b0a4a80ab7317de83ae9cf8ba4c91e1c4624",
+    "afterRevision": "selected-v1-084e8e8ad437be7d290f16a36bf57547822f52878ec6509d4f62b853298e2500",
+    "fileCount": 164,
+    "added": [],
+    "removed": [],
+    "changed": [
+      "config/catalog.json"
+    ],
+    "registrySha256": "fe86886c863232911e8eefefed0712b0ba2f6ab549335eb4283c2390a367e6fb",
+    "metadataSha256": "c2db3d852be777de42406bf72724be8f23e52f3ed03e4c2ca69d0208426c17f0",
+    "toolSurfaceSha256": "53386ef179de1a34c62efe54da4fb51d549381a6ed8026480674f3e11dc08608",
+    "modules": [
+      "photo-placeholder",
+      "titles",
+      "titles-current-target",
+      "titles-point-layout",
+      "text-layer",
+      "text-variant",
+      "comp-render",
+      "project-assembly",
+      "project-save",
+      "project-lifecycle",
+      "media-import",
+      "layer-insert",
+      "comp-frame-export",
+      "layer-overlay"
+    ],
+    "profiles": {
+      "titles-current-target": "manual-text-v1",
+      "photo-placeholder": "photo-source-v1",
+      "titles-point-layout": "manual-point-layout-v1",
+      "text-layer": "owned-text-layer-v1",
+      "text-variant": "owned-text-variant-v1",
+      "comp-render": "owned-comp-render-v1",
+      "project-assembly": "owned-project-assembly-v1",
+      "project-save": "current-project-save-v1",
+      "project-lifecycle": "project-lifecycle-v1",
+      "media-import": "media-import-v1",
+      "layer-insert": "layer-insert-v1",
+      "comp-frame-export": "comp-frame-export-v1",
+      "layer-overlay": "layer-overlay-v1"
+    },
+    "renderJobs": true,
+    "sharedHistoryFiles": [
+      "runtime/render-job-history.js",
+      "runtime/render-job-maintenance.js"
+    ]
+  }
+]

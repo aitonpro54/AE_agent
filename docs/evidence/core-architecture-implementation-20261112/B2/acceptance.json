@@ -1,0 +1,133 @@
+{
+  "stage": "B2",
+  "recordedAt": "2026-11-12T10:59:15.871036+00:00",
+  "sourceParent": "d8740d0",
+  "result": "36/36 focused tests PASS; boundaries92; independent review ACCEPT",
+  "sourceHashesVerified": 4,
+  "coverage": "Actual builder first/base/dynamic/last module+admission, engine/order/excluded; profiles/capabilities/registry preimage coverage is pure, not actual build",
+  "manifest": "All four counts and selected surface unchanged; only config/catalog.json hash changes",
+  "fullAffectedProof": "C pending",
+  "files": [
+    {
+      "path": "b2-validation.json",
+      "sha256": "4bfe44d0bd7d48528f2e8537873ba3f1415faac897a3fc8cbd5a947a23175148",
+      "bytes": 9586
+    },
+    {
+      "path": "boundaries.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "boundaries.stdout.txt",
+      "sha256": "98850ee100fa03526f85cbaaffcbe974317bda5c91ec27e67736c999d7c584c7",
+      "bytes": 102
+    },
+    {
+      "path": "catalog-revision-full.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "catalog-revision-full.stdout.txt",
+      "sha256": "11e30c29902eda98c13e0e0fa05b02709dd13dd33abef271f7723500c0a74a84",
+      "bytes": 1268
+    },
+    {
+      "path": "composition-spec-regression.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "composition-spec-regression.stdout.txt",
+      "sha256": "54bb4b30b5224175d6eb1a34d5c2f199ea4526ebd99cced67e15ed582051573f",
+      "bytes": 1846
+    },
+    {
+      "path": "diff-check.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "diff-check.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "manifest-diff-manual-titles-variants.json",
+      "sha256": "af6e7898071ac08bc3918584b5056b0cfbc9c1e1d00cd5749e861500463ce38c",
+      "bytes": 25515
+    },
+    {
+      "path": "manifest-diff-manual.json",
+      "sha256": "77c457e7145c37d5f64f047a5e85bce658d11aca08dbbc23018c3016cbb6c846",
+      "bytes": 19706
+    },
+    {
+      "path": "manifest-diff-operator-render-jobs.json",
+      "sha256": "c01caa37c641b0da7c6716856467ef722805f498bfaffe872de492489e86b3d1",
+      "bytes": 36808
+    },
+    {
+      "path": "manifest-diff-readonly.json",
+      "sha256": "5f6254e8b1033dfb5f3f8a80210e5cd8a689ba634d1b360612da4ed0afc75022",
+      "bytes": 15107
+    },
+    {
+      "path": "manifest-diff-summary.json",
+      "sha256": "c3add835eb26cc0a02c113873ed99260d9890d88af3f09d357b735737009e1ba",
+      "bytes": 5613
+    },
+    {
+      "path": "results.json",
+      "sha256": "a83e9c4d9e0b24e452dbf3db0df768df9dad3a6452a4dae3bd155ebbc7c8727b",
+      "bytes": 1427
+    },
+    {
+      "path": "selection-attempt01.result.json",
+      "sha256": "5a78a6956b901caf3d5f47e07565e323cd793187c4acac4e45ce06a0c3be9e52",
+      "bytes": 238
+    },
+    {
+      "path": "selection.json",
+      "sha256": "77bcf6ce8f10bb6d30a4d37599b8dad1107f61562561be612ec60e198ec45db0",
+      "bytes": 118621
+    },
+    {
+      "path": "source-hashes.json",
+      "sha256": "a3288029ce5691725705f0fd773e9454fc96c0177bc03d1277393b44690196b6",
+      "bytes": 566
+    },
+    {
+      "path": "standalone-regression.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "standalone-regression.stdout.txt",
+      "sha256": "3f2f3d3a462e3cbde994df812a56ef9ca53d0be72998de99f6a2277c76daf99a",
+      "bytes": 1055
+    },
+    {
+      "path": "syntax-catalog-test.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-catalog-test.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-package.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-package.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ],
+  "noLiveOrInstalledChanges": true
+}

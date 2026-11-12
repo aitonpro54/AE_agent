@@ -327,6 +327,11 @@ fixture сам возвращает synthetic=false через свой private 
 TEMP-среде; это не authority установленного AE и не native acceptance. Existing
 transport crash/ACK/UNKNOWN fixtures дополняют этот сценарий, без дублирования
 широкого harness и без экспортируемых production grants.
+Предпочтительное размещение нового интеграционного test — products/titles/test:
+он использует реальный compiler и существующий Core manual-http fixture через
+узкий test-only request-builder hook. Core production/startup не импортирует
+продукт; root confinement validation-map не ослабляется ради внешнего test.
+Supplemental product/source hashes фиксируются отдельно от Core check keys.
 
 1. Использовать актуальный diff и existing validation map. Для каждого изменённого
    инварианта: какой fixture ловит нарушение, какой результат получен, какое
@@ -414,6 +419,14 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Progress
 
+- **B2 реализован:** один selected-v1 digest полного выбранного каталога;
+  генератор остаётся packaging-only. 36/36 focused tests, syntax/boundaries 92
+  и diff check PASS; независимый ae_reviewer ACCEPT.
+  [Контракт revision](../docs/core-selected-catalog-revision.md),
+  [evidence B2](../docs/evidence/core-architecture-implementation-20261112/B2/acceptance.json).
+- B2 manifests: counts 70/90/115/164, added/removed 0, изменён только
+  config/catalog.json; registry/assets/capabilities/tool surface совпали.
+  Selector 15 checks/15 batches и deferred 35 сохраняются для union C.
 - **B1 реализован и принят в source scope:** pure spec после own-root проверки,
   trusted standalone tooling copy/manifest v3 и legacy data readers/rebundling.
   Focused suites 58/58, boundaries 92, syntax 13 JS и diff check PASS.
@@ -500,6 +513,10 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Decision Log
 
+- B2 не вводит общего runtime helper для единственного writer revision.
+  Старые revision читаются opaque; candidate/runtime IDs, machine paths,
+  исходный catalogRevision и excluded modules в preimage не входят.
+  Значимый порядок arrays сохранён; новый digest не является authority.
 - Уточнение B0 в B1: own-tooling helper должен оставаться отдельным от candidate
   и в flattened standalone, а не только в source checkout. Current supported
   legacy rebundling не сужается молча; итоговый контракт фиксируется до принятия
@@ -548,6 +565,11 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Validation
 
+- B2: actual package fixtures покрывают base/first dynamic/last module и
+  admission, engine/order/excluded; profile/capability/registry flag отдельно
+  проверены на pure preimage. Их не выдаём за actual-build proof. Source SHA
+  четырёх файлов сверены; сохранён исправленный auxiliary selector error при
+  подаче вне-Core docs path (не product/test FAIL).
 - B1: pure/parity/bootstrap 16, client-entry 13, client-launcher 21,
   standalone-installer 8 PASS. Координатор сверил все 15 source SHA и скопированные
   evidence hashes. Большие baseline source/package blobs оставлены в task TEMP;

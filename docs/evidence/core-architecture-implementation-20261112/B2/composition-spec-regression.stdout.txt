@@ -1,0 +1,24 @@
+✔ composition-spec selected parity and registry/config bytes: readonly (50.364ms)
+✔ composition-spec selected parity and registry/config bytes: manual (58.2028ms)
+✔ composition-spec selected parity and registry/config bytes: manual-titles-variants (90.3755ms)
+✔ composition-spec selected parity and registry/config bytes: operator-render-jobs (160.4629ms)
+✔ composition-spec legacy format1 and composition-v1 remain readable without the new helper (54.495ms)
+✔ composition-spec current and legacy negative cases retain inline errors (52.4498ms)
+✔ composition-spec trusted readers treat a candidate helper as data without executing it (2715.576ms)
+✔ composition-spec installed entry rejects missing or corrupt pinned helper before execution or state (3897.8906ms)
+✔ composition-spec exact bootstrap source guards reject premature, duplicate or dynamic helper imports (3.3975ms)
+✔ composition-spec standalone closure includes one candidate helper without a duplicate HELPERS entry (49.3747ms)
+✔ composition-spec v3 official dry-run never executes a matching-hash poisoned candidate helper (668.1068ms)
+✔ composition-spec v3 rebundles supported old data without helper and preserves capability base gates (1139.5201ms)
+✔ composition-spec v3 rejects corrupt or missing trusted tooling before its code or destination writes (695.0564ms)
+✔ composition-spec standalone reserved tools namespace rejects Windows case and directory aliases before merge (51.9414ms)
+✔ composition-spec legacy v1 v2 distributions remain data-readable but current executable refuses tooling (1087.4866ms)
+✔ composition-spec declared consumers track the actual helper dependency without narrowing integration keys (2391.0344ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13304.6774

@@ -1,5 +1,6 @@
 {
   "owners": [
+    { "prefix": "core4/test/catalog-revision.test.js", "owner": "catalog-revision", "checks": ["catalog-revision"] },
     { "prefix": "core4/tools/composition-spec.js", "owner": "composition-spec", "checks": ["composition-spec", "standalone-installer"] },
     { "prefix": "core4/runtime/composition-spec.js", "owner": "composition-spec", "checks": ["composition-spec"] },
     { "prefix": "core4/test/composition-spec.test.js", "owner": "composition-spec", "checks": ["composition-spec"] },
@@ -1194,6 +1195,7 @@
     }
   ],
   "checkDependencies": {
+    "catalog-revision": ["tools/package-installable.js", "tools/composition-spec.js", "tools/seal.js", "runtime/", "config/", "modules/", "core/", "protocol/", "plan-engine/", "worker.js", "cep/", "integrations/", "test/catalog-revision.test.js", "test/helpers.js", "test/fixtures/authority.js", "test/fixtures/ae.js"],
     "composition-spec": ["runtime/", "tools/", "config/", "modules/", "core/", "protocol/", "plan-engine/", "worker.js", "cep/", "integrations/", "test/composition-spec.test.js", "test/fixtures/fixed-format1-package.js", "test/fixtures/legacy-poll-dispatcher-v1.txt", "test/fixtures/legacy-panel-v1.txt", "test/fixtures/legacy-project-inspection-v1.txt"],
     "adobe-child-environment": ["runtime/adobe-child-environment.js", "runtime/render-job-history.js", "runtime/source-package.json", "tools/package-aerender-operator.js", "test/adobe-child-environment.test.js"],
     "panel-lifecycle": ["tools/composition-spec.js", "runtime/composition-spec.js", "runtime/start-over-panel-control.js", "runtime/source-package.json", "config/compositions/", "config/catalog.json", "modules/", "cep/", "integrations/cep/http-peer.js", "integrations/cep/panel-identity.js", "integrations/cep/completion-store.js", "runtime/stdio-entry.js", "tools/package-installable.js", "tools/install-core4.js", "tools/stopped-update.js", "protocol/", "test/panel-lifecycle.test.js"],
@@ -1806,6 +1808,7 @@
     "standalone-installer": ["tools/composition-spec.js", "tools/package-standalone-installer.js","tools/finish-owner-maintenance.js","tools/maintain-owner.js","tools/standalone-installer.js","tools/package-installable.js", "config/compositions/","tools/install-core4.js","tools/disposition-install-preflight.js","test/standalone-installer.test.js","test/fixtures/standalone-history.js","test/fixtures/fixed-format1-package.js","test/fixtures/legacy-project-inspection-v1.txt","test/fixtures/legacy-installation-v1.js","runtime/","cep/","core/","protocol/","modules/","plan-engine/","integrations/cep/http-peer.js","integrations/cep/peer-protocol.js","integrations/cep/completion-store.js","worker.js","config/catalog.json","config/admissions/","tools/legacy-owner-migration.js","tools/operate-stopped-readoption.js","tools/operate-stopped-update.js","tools/stopped-host-readoption.js","tools/stopped-host-readoption-store.js","tools/stopped-host-readoption-transaction.js","tools/stopped-update.js","tools/windows-retained-process.js","test/fixtures/legacy-poll-dispatcher-v1.txt","test/fixtures/legacy-panel-v1.txt"]
   },
   "checkCommands": {
+    "catalog-revision": ["node", "--test", "--test-name-pattern=catalog-revision", "test/catalog-revision.test.js"],
     "composition-spec": ["node", "--test", "--test-name-pattern=composition-spec", "test/composition-spec.test.js"],
     "adobe-child-environment": ["node", "--test", "--test-name-pattern=adobe-child-environment", "test/adobe-child-environment.test.js"],
     "panel-lifecycle": ["node", "--test", "--test-name-pattern=panel-lifecycle", "test/panel-lifecycle.test.js"],
@@ -2028,6 +2031,7 @@
     ]
   },
   "checkPolicy": {
+    "catalog-revision": { "kind": "component" },
     "composition-spec": { "kind": "component" },
     "adobe-child-environment": { "kind": "component" },
     "panel-lifecycle": { "kind": "component" },

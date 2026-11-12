@@ -5,6 +5,19 @@ const { hash, canonical, fail } = require('../protocol/json');
 const { deriveComposition, compositionPaths, builtinCapabilityFiles, registrySource } = require('./composition-spec.js');
 const OWNER_V3_FILES = Object.freeze(['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js']);
 const OWNER_FILES = Object.freeze([...OWNER_V3_FILES, 'runtime/start-over-inspection.js', 'runtime/start-over-process.js', 'runtime/start-over-state.js', 'runtime/start-over-barrier.js', 'runtime/start-over-archive.js', 'runtime/start-over-finisher.js', 'runtime/work-session.js', 'runtime/start-over-panel-control.js', 'runtime/start-over-driver.js', 'runtime/owner-launch.js']);
+// Packaging-only change identity. Call after semantic validation; json reads
+// already pinned in-memory package data, never source catalog-wide state.
+function selectedCatalogRevision({ catalog, composition, policy, registryVerification }, json) {
+  const preimage = {
+    kind: 'ae-core4-selected-catalog', version: 1,
+    composition: { version: composition.version, id: composition.id, policyVersion: policy.version },
+    modules: catalog.modules.map(entry => ({ entry: { ...entry }, artifactPin: hash(json(entry.path + '/artifact.json')), admissionPin: hash(json(entry.admission)) })),
+    engine: catalog.engine ? { path: catalog.engine.path, artifactHash: catalog.engine.artifactHash } : null,
+    assets: composition.assets.map(declaration => ({ declaration: { ...declaration }, artifactPin: hash(json(declaration.path + '/artifact.json')), admissionPin: hash(json(declaration.admission)) })),
+    profiles: policy.profiles, capabilities: policy.capabilities, registryVerification
+  };
+  return 'selected-v1-' + hash(preimage);
+}
 function runtimeBinding(release, read) {
   if (!Object.hasOwn(release.hashes, 'runtime/owner-contract.json')) {
     if (OWNER_FILES.some(file => Object.hasOwn(release.hashes, file))) fail('owner_contract_required');
@@ -76,17 +89,21 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
     const modulePath = 'modules/' + moduleId;
     const manifest = JSON.parse(Buffer.from(files[modulePath + '/artifact.json'], 'base64'));
     original.modules.push({ id: moduleId, version: manifest.version, path: modulePath, admission: 'config/admissions/' + moduleId + '.json' });
-    original.catalogRevision = selector + '-' + hash(manifest);
   }
   if (modules.some(id => original.modules.filter(m => m.id === id).length !== 1)) fail('composition_catalog');
   const catalog = { catalogRevision: original.catalogRevision, modules: modules.map(id => original.modules.find(m => m.id === id)), engine: selector === 'readonly' ? null : original.engine };
   const composition = { version: 2, id: selector, modules, engine: catalog.engine, assets };
+  const policy = { version: 2, id: selector, modules, assets, profiles, capabilities, files: filesInPolicy, closures };
   const add = (file, source) => { const bytes = typeof source === 'string' ? source : canonical(source); files[file] = Buffer.from(bytes).toString('base64'); hashes[file] = hash(bytes); };
   add('config/catalog.json', catalog); add('runtime/composition.json', composition);
-  add('runtime/composition-policy.json', { version: 2, id: selector, modules, assets, profiles, capabilities, files: filesInPolicy, closures });
+  add('runtime/composition-policy.json', policy);
   // Reserve the generated registry slot before checking the declared closure.
   add('cep/jsx/registry.jsx', '');
   const selected = deriveComposition(release, file => Buffer.from(files[file], 'base64'));
+  // The staged catalog above is private in-memory validation input. Publish
+  // exactly one selected revision only after the complete selection is valid.
+  catalog.catalogRevision = selectedCatalogRevision({ catalog, composition, policy, registryVerification: selected.registryVerification === true }, file => JSON.parse(Buffer.from(files[file], 'base64')));
+  add('config/catalog.json', catalog);
   add('cep/jsx/registry.jsx', registrySource(selected.assets, Buffer.from(files['runtime/host/json-codec.jsx'], 'base64').toString('utf8'), true));
   const panelIdentity = require('../integrations/cep/panel-identity');
   const loadedIdentity = panelIdentity.identity(file => Buffer.from(files[file], 'base64'));
@@ -112,4 +129,4 @@ if (require.main === module) {
     const pkg = buildPackage(undefined, options['--composition'] ?? 'manual', { runtimeModel: options['--runtime'] ?? 'stdio' }); fs.writeFileSync(options['--output'], canonical(pkg), { flag: 'wx' }); console.log(JSON.stringify({ packageHash: pkg.packageHash, files: Object.keys(pkg.files).length, composition: options['--composition'] ?? 'manual', runtimeModel: options['--runtime'] ?? 'stdio', output: options['--output'] }));
   } catch (e) { console.error(e.code || e.message); process.exitCode = 1; }
 }
-module.exports = { buildPackage, verifyPackage, runtimeBinding };
+module.exports = { buildPackage, verifyPackage, runtimeBinding, selectedCatalogRevision };
