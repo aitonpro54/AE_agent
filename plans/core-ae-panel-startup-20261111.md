@@ -570,3 +570,72 @@ identity и ровно один ordinary typed project read/release. Стары�
   panel identity. Snapshot перед ordinary update SHA94b04c2055fce48a5d1593b31b235a1a15dfcdb602c3b68bc26092a567f9b75b.
 - Текущий source milestone фиксирует узкую правку; native read после неё ещё
   ожидается. Никакого full release/recovery/root-rebase этот block не назначает.
+
+## Чистая установка: запуск, версия и native read приняты, 12 ноября
+
+### Progress
+
+- Новый root `C:/Users/Ant/AEAgentCore4` остаётся единственной активной установкой
+  Core4; installationId `installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56`.
+  Установлена 4.2.6, package `6cea1109…`, distribution `05a684ac…`.
+- Штатный запуск `AfterFX.exe` без аргументов выполнен через native Windows
+  process creation. AE16072/26.3x87 открыл пустой Untitled, исходные AEP не открывались
+  и не менялись. При первом запуске существующая рабочая область открыла CEP сама.
+- После штатного update короткий Computer Use блок закрыл прежний экземпляр CEP
+  и открыл `Window → Extensions → AE Agent Core`. Новая панель показала готовое
+  подключение. Сразу следующим вызовом отправлен `completion_summary`; дальше
+  выполнялись только CLI/MCP и чтение файлов.
+- Свежий MCP-клиент из effective project config подтвердил executing panel JS:
+  4.2.6, panelBuildId `0c3cc819adb45fa9fa157df972c86f7b4e7aaeed709e421066e02d43e83922d6`,
+  Origin `file://`; registry `f58832f9…` ready/bootstrap completed. Версия получена
+  из authenticated peer identity, а не только из заголовка интерфейса.
+- Ровно одно новое `project-inspection` после исправления успешно:
+  command `inspect-64529449-dc29-4f04-9714-da5764c98078`, observation
+  `observation-1e8d1950-48bf-4fda-83a1-2022e9535fa1`, receipt
+  `5bf780cb54c995568c536e0e69996c79721d5f35da528780fcd9f68d1838a27f`.
+  AE26.3x87 вернул несохранённый пустой проект, numItems0, dirtyfalse, complete
+  inventory, truncatedfalse. Read-only observation не выдаёт mutation authority.
+- Lease освобождён: releasedtrue, holdernull. Final pendingnull, UNKNOWNfalse,
+  storeFaultfalse, ledgerFaultfalse, ownershipFaultnull, unresolved0;
+  native readiness `recent-authenticated-read`, responsive AE без диалогов.
+
+### Decision Log
+
+Поручение на одну чистую установку и проверку launch/version/read выполнено.
+Старые истории сохраняются раздельно в архиве, их reset/UNKNOWN не повторялись
+и не объявлялись завершёнными. Изменение панели ограничено публикацией проверенного
+JSX registry; runtime/kernel bytes прежние. Новые recovery/storage протоколы
+не вводились. AE и подключённая панель оставлены открытыми, UI-управление завершено.
+
+### Validation
+
+Native proof: `.codex-runtime/core-single-install-loaderfix-20261112/native-read-final-01.json`,
+2026-11-12T07:25:34Z–07:25:36Z (12:25 YEKT), resultpass, inspectionCount1,
+controllerReleasedtrue. Исторические две отвергнутые inspection попытки сохранены,
+повторов их IDs нет. Targeted31/31 и independent review относятся к узкой правке,
+не к полной новой release-сертификации. `core_ensure_ae_panel` на новой identity
+не вызывался: host adoption отсутствует, запуск проверен штатным Windows путём;
+полностью автоматический relaunch и mutation authority этим результатом не заявляются.
+Итоговое безопасное evidence: `docs/evidence/core-single-install-cutover-20261112.json`.
+
+Финальная независимая read-only сверка PASS: originals и verified-copy всех
+2353 файлов (L439/U1906/CEP8) совпали с inventories; file IDs оригиналов сохранены.
+Оба прежних live root отсутствуют в текущем наблюдении; прежний physical proof
+whole-root rename/absence переиспользован с provenance, fresh WMI probe не повторялся.
+Global config byte-exact, прежние 802 non-Core bytes сохранены; действующий
+enabled Core binding указывает на новый root/package. Четыре AEP и их backup SHA
+совпали. Preferences backup91 exact; current88/unchanged83, отличия ограничены
+UXP start LocalStorage/логом и записаны без утверждения их точной причины.
+Safe report `final-safety-readback.json`, SHA
+`8183f9223695c5d739179a707d83de551ab9dd4afd9fe46be82864923058730d`.
+
+Отдельное ограничение текущего Codex-клиента: прежний встроенный MCP transport
+этого чата отвечает `Transport closed`. Рабочая native проверка выполнена свежим
+standard stdio клиентом из effective config. Доступные API не экспонируют targeted
+restart; в коротком UI-блоке подтверждены disabled Settings/Enable у проектной
+Core-записи, отдельный Restart не найден. Выполнен возврат в чат и сразу
+`completion_summary`. Desktop/app-server не перезапускались; переподключение
+старого транспорта этим результатом не заявляется. Официальная документация
+[MCP settings](https://learn.chatgpt.com/docs/extend/mcp?surface=cli) описывает
+Restart после сохранения сервера, но соответствующая команда для этой записи
+в наблюдённом интерфейсе недоступна.

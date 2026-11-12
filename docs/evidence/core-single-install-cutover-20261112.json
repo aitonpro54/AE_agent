@@ -1,0 +1,259 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-12T07:33:04.199Z",
+  "milestone": "Одна чистая установка: архивы, штатный запуск AE, executing version панели и одно успешное чтение MCP",
+  "result": "bounded-native-acceptance-pass",
+  "sourceCommit": "64cc957",
+  "installation": {
+    "path": "C:\\Users\\Ant\\AEAgentCore4",
+    "nativeCanonical": true,
+    "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+    "packageHash": "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9",
+    "descriptorSha256": "07d906b98298242f6a46cf026439f08a8b73c40c9eb4db227e17b7127794b0e1",
+    "clientAndOriginsMatch": true,
+    "knownLiveRootsWithDescriptor": 1,
+    "scope": "three fixed install roots only",
+    "version": "4.2.6",
+    "composition": "operator-render-jobs/owner",
+    "distributionHash": "05a684acb98f5c6117d62e11daf94feaf53ca317aa161d2774cc32a2b5227db3"
+  },
+  "archive": {
+    "path": "C:\\Users\\Ant\\AEAgentCore4-archive\\2026-11-12-fce38996-3172-4979-aa6a-575f7d959d99",
+    "trees": [
+      {
+        "name": "L-real-local",
+        "inventorySha256": "e5496a8467bfbe29cf29bc6fc72587ebbad5915bebca062f12cfceee0ebafa40",
+        "files": 439,
+        "originalsByteAndFileIdsExact": true,
+        "verifiedCopyBytesExact": true
+      },
+      {
+        "name": "U-codex-private",
+        "inventorySha256": "21a3c9731ece3fc227945f9637015e8dfc017d2549b14795ae966e7ca540e333",
+        "files": 1906,
+        "originalsByteAndFileIdsExact": true,
+        "verifiedCopyBytesExact": true
+      },
+      {
+        "name": "R-cep",
+        "inventorySha256": "a47c2c7471648c5bd22a2ff6909aa811929ebcffaeeae2f99d04fbef2a963c61",
+        "files": 8,
+        "originalsByteAndFileIdsExact": true,
+        "verifiedCopyBytesExact": true
+      }
+    ],
+    "allCredentialsHistoryAndUNKNOWNBytesPreserved": true
+  },
+  "oldLivePaths": {
+    "currentObserved": [
+      {
+        "path": "C:\\Users\\Ant\\AppData\\Local\\AEAgentCore4",
+        "exists": false
+      },
+      {
+        "path": "C:\\Users\\Ant\\AppData\\Local\\Packages\\OpenAI.Codex_2p2nqsd0c76g0\\LocalCache\\Local\\AEAgentCore4",
+        "exists": false
+      }
+    ],
+    "currentObservationView": "ordinary child filesystem; not independent WMI physical view",
+    "physicalProofReused": {
+      "provenance": "C:\\Users\\Ant\\AEAgentCore4-archive\\2026-11-12-fce38996-3172-4979-aa6a-575f7d959d99\\archive-complete.json",
+      "sha256": "a5d9abfa1b612727c2cbbe1786646bcc1f582281d8a740ffc2ca9e82866fd1f7",
+      "basis": "prior root unvirtualized native whole-root rename + absence proof; not repeated"
+    }
+  },
+  "config": {
+    "projectSha256": "ba0ce6f75d07abbc0b02fdb6e09796c2c2cd5f904d26df46ff18949f860c5e49",
+    "effectiveConfigSha256": "21258cf5d0d466a58ceb1e98838a181a6d38b0d9653df07dfd96703466bd45b1",
+    "effectiveCoreBindingMatchesSuccessfulRead": true,
+    "enabled": true,
+    "clientPath": "C:\\Users\\Ant\\AEAgentCore4\\releases\\6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9\\runtime\\client-entry.js",
+    "globalByteExactToOriginalAndSnapshot": true,
+    "nonCoreByteExactToPreUpdateSnapshot": true,
+    "nonCoreOriginalPrefixBytesPreserved": 802,
+    "installerAddedSeparatorBytes": 1
+  },
+  "launch": {
+    "executable": "C:/Program Files/Adobe/Adobe After Effects 2026/Support Files/AfterFX.exe",
+    "arguments": [],
+    "method": "native Windows WMI ordinary GUI process creation",
+    "createdAt": "2026-11-12T06:59:04.7625862Z",
+    "aePid": 16072,
+    "aeBirth": "2026-11-12T06:59:04.8138404Z",
+    "aeVersion": "26.3x87",
+    "panelAtInitialLaunch": "restored automatically by existing AE workspace",
+    "panelAfterUpdate": "reopened through Window > Extensions > AE Agent Core in one necessary UI block",
+    "coreEnsureCalled": false,
+    "hostAdoptionConfigured": false,
+    "automaticRelaunchCertified": false
+  },
+  "executingPanel": {
+    "extensionId": "com.codex.aeagentcore4.panel",
+    "panelBuildId": "0c3cc819adb45fa9fa157df972c86f7b4e7aaeed709e421066e02d43e83922d6",
+    "productVersion": "4.2.6",
+    "protocolVersion": 1,
+    "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+    "origin": "file://",
+    "connected": true,
+    "registryReady": true,
+    "bootstrapState": "completed"
+  },
+  "mcpRead": {
+    "client": "fresh standard stdio client started from effective project MCP config",
+    "observedAt": "2026-11-12T07:25:34.433Z",
+    "completedAt": "2026-11-12T07:25:36.160Z",
+    "moduleId": "project-inspection",
+    "contractId": "cd23fb95c4253fa47e0c3b7d8c58d60208ab12c3fb49dd0bd8c8657123364c26",
+    "commandId": "inspect-64529449-dc29-4f04-9714-da5764c98078",
+    "receiptRef": "5bf780cb54c995568c536e0e69996c79721d5f35da528780fcd9f68d1838a27f",
+    "evidenceRef": "observation-1e8d1950-48bf-4fda-83a1-2022e9535fa1",
+    "observation": {
+      "activeComp": null,
+      "aeVersion": "26.3x87",
+      "compositions": [],
+      "coverage": {
+        "displayNamesShortened": false,
+        "inventory": {
+          "itemsScanned": 0,
+          "nextCursor": null,
+          "startItemIndex": 1,
+          "status": "complete",
+          "throughItemIndex": 0
+        },
+        "layers": {
+          "returned": 0,
+          "total": 0
+        },
+        "lookup": {
+          "compId": null,
+          "method": "none",
+          "status": "not_requested"
+        }
+      },
+      "dirty": false,
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "Несохранённый проект",
+        "numItems": 0,
+        "saved": false
+      },
+      "projectRevision": 1,
+      "target": {
+        "compId": null,
+        "projectId": null
+      },
+      "truncated": false
+    },
+    "authority": false,
+    "continuity": false,
+    "successfulReadsAfterFix": 1,
+    "previousRejectedReads": [
+      {
+        "commandId": "inspect-ba7959ae-7e04-4711-933c-123357e88885",
+        "code": "host_registry_unavailable",
+        "terminal": true,
+        "effect": "none",
+        "replayed": false
+      },
+      {
+        "commandId": "inspect-d4d825a9-0cd4-45ef-aaf8-20c2927d88db",
+        "code": "host_registry_unavailable",
+        "terminal": true,
+        "effect": "none",
+        "replayed": false
+      }
+    ]
+  },
+  "finalState": {
+    "ownerPid": 29576,
+    "leaseReleased": true,
+    "holder": null,
+    "pending": null,
+    "unknown": false,
+    "storeFault": false,
+    "ledgerFault": false,
+    "ownershipFault": null,
+    "unresolvedCount": 0,
+    "nativeReadiness": "recent-authenticated-read",
+    "aeDialogs": []
+  },
+  "preservation": {
+    "aepCount": 4,
+    "aeProjectsUnchanged": true,
+    "preferences": {
+      "before": 91,
+      "after": 88,
+      "unchanged": 83,
+      "backupBytesExact": true,
+      "differences": "UXP start LocalStorage LevelDB files and UXP log; exact cause not asserted; no reset or manual edits"
+    },
+    "oldHistoryMerged": false,
+    "oldUnknownReplayedOrDeclaredSettled": false
+  },
+  "panelFix": {
+    "sourceFiles": [
+      "core4/cep/js/poll-dispatcher.js",
+      "core4/test/panel-lifecycle.test.js"
+    ],
+    "reason": "Проверенный registry после evalFile сохраняется в $.global.AECore4Host между JSX-вызовами; проверяется dispatch.",
+    "changedReleaseFiles": [
+      "cep/js/panel.js",
+      "cep/js/poll-dispatcher.js"
+    ],
+    "runtimeKernelBytesChanged": false,
+    "targetedChecks": "31/31 PASS; syntax/diff PASS; independent review ACCEPT",
+    "deterministicPairVerified": true,
+    "stopId": "4d54fa8f-1b2b-4e5b-a700-67d1aa24dc5b",
+    "updateId": "55d45f95-694d-4195-8f9f-0713291e6221",
+    "eachAppliedOnce": true
+  },
+  "computerUse": {
+    "finishedAfterPanelReopen": true,
+    "finalUiBlock": "В настройках Codex проверена проектная MCP-запись: Settings/Enable disabled, отдельный Restart не найден; выполнен возврат в чат.",
+    "finalUiBlockFinishedWithCompletionSummary": true,
+    "uiControlLeftActive": false
+  },
+  "existingChatMcp": {
+    "status": "Transport closed",
+    "nativeReadWasViaFreshConfiguredClient": true,
+    "targetedRestartExposedByAvailableApi": false,
+    "projectSettingsDisabledInObservedUi": true,
+    "desktopOrAppServerRestartPerformed": false
+  },
+  "scope": {
+    "newKernelArchitecture": false,
+    "recoveryRootRebase": false,
+    "projectMutations": false,
+    "fullReleaseCertified": false
+  },
+  "evidence": [
+    {
+      "path": ".codex-runtime/core-single-install-loaderfix-20261112/native-read-final-01.json",
+      "sha256": "c5f4169d2e2a2be865f432eae94f8be7d6b44fc6e6e1c91b64d07edb09775564"
+    },
+    {
+      "path": ".codex-runtime/core-single-install-cutover-20261112/final-safety-readback.json",
+      "sha256": "8183f9223695c5d739179a707d83de551ab9dd4afd9fe46be82864923058730d"
+    },
+    {
+      "path": ".codex-runtime/core-single-install-cutover-20261112/loader-standalone-pair.json",
+      "sha256": "f2984a3cfd8460feca02b2f3eb6a7051b69fcafd2b238e35821b463b1bc026d3"
+    },
+    {
+      "path": ".codex-runtime/core-single-install-loaderfix-20261112/update-once.json",
+      "sha256": "299435e7a8d698db64d69710a12b6e86cdbe3ad00f7e94774c0d34b3875a1cc5"
+    },
+    {
+      "path": ".codex-runtime/core-single-install-cutover-20261112/ae-gui-launch.json",
+      "sha256": "e4c44f968cae5c95a7f9d0f1b8a98153844fd6a7c8e88758100c1fa5cdcfafc1"
+    }
+  ],
+  "limitations": [
+    "No fresh WMI physical-view probe; prior root proof retained separately.",
+    "Preferences report records session differences without asserting their exact cause.",
+    "Verification observes files while AE remains open; later AE writes are outside this observation.",
+    "Чтение проверено свежим MCP-клиентом из действующей конфигурации. Прежний встроенный транспорт этого чата закрыт, автоматическое переподключение не заявлено.",
+    "Host adoption и core_ensure на новой identity не проверялись; штатный Windows launch подтверждён отдельно."
+  ]
+}
