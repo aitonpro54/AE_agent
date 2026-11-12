@@ -68,3 +68,36 @@ Bundled builder exit 0, skipped/warnings/redactions 0. Координатор н
 `git diff --check` отметил trailing CR в точной цитате package.json внутри
 bundle; frozen payload не нормализован ради сохранения source provenance.
 Дублирующий generated bundle и Python cache исключены из tracked artifacts.
+
+## Этап 2 — ChatGPT Pro получен, Argon запущен
+
+### Progress
+
+Pro/Rohan/5 из 5: один исходный запрос и одно техническое уточнение,
+разрешающее обычное read-only чтение вложений. Первоначальный отказ читать
+файлы сохранён; это не архитектурный результат. Основной verdict — `revise`:
+сохранить каркас и адресно проверить границы/восстановление.
+Полный ответ `pro-response.txt`, 31095 символов,
+SHA-256 `8a23d0d20f50a1a7e4eb778d813845b8da382f77fa8ec676be50e4bf30275d1a`.
+Чат: https://chatgpt.com/c/6af57bbd-2c10-83e9-a0b2-8e746617e46e.
+
+Единственное поручение Argon передано существующему контроллеру
+«Настроить мост к Chrome» (`01a17885-4a4a-7391-b7ed-982179db8abb`).
+Cross-check ID `20261112-current-crosscheck-01`; allowlist и hashes —
+`argon-manifest.json`, SHA-256
+`40329f69ce1fbb7e6e0b4a24e45546135c0ea75f91b74d353f8aaef3604d107e`.
+
+### Decision Log
+
+Локальный архитектурный разбор выполняет ae_architect: cross-component source
+аргументы требуют XHigh. Он владеет только local-pro-triage.md; Core остаётся
+read-only. Missing evidence выбранного пакета не приравнивается к отсутствию
+evidence в полном проекте. Новых исправлений, install или live acceptance нет.
+
+### Validation
+
+Вложения и target неизменны. Полный ответ Pro наблюдён после reload и сохранён
+как исходный visible message text; stale clipboard extraction отброшено до
+downstream использования. Response/request дополнения не содержат совпадений
+secret-patterns/email; allowlist для Argon проверена. CU-блок Pro завершён
+перед передачей Argon. Ответ Argon ещё ожидается.

@@ -1,0 +1,34 @@
+{
+  "reviewId": "20261112-current-01",
+  "provider": "ChatGPT Pro",
+  "chromeProfile": "Rohan",
+  "accountLabel": "Rohan Sharma Pro",
+  "mode": "Pro",
+  "effort": "5/5",
+  "targetCommit": "6d40cc228d9f2e18c672af5782033be305b82917",
+  "attempts": 1,
+  "state": "response_received_after_reload",
+  "attemptedAt": "2026-11-12T08:41:55.447Z",
+  "payloadHashes": {
+    "request.md": "f13794a8dd8e8c2ce037157d502cf2a7fadfc03f1746be1f57fee853527fb3c1",
+    "bundle.md": "6ace4bd2c9c6ceb8055936ceeb3c05602d13f6bd1a3842e2d03c2e84924f03bc",
+    "manifest.json": "efffba09e5f4536f124c051dceee32781a11b17f647e4849e76c2137a8de10cc"
+  },
+  "submittedAt": "2026-11-12T08:42:05.816Z",
+  "chatUrl": "https://chatgpt.com/c/6af57bbd-2c10-83e9-a0b2-8e746617e46e",
+  "uploadedFiles": [
+    "bundle.md",
+    "manifest.json"
+  ],
+  "initialResponseSha256": "9f97e59a3c0c68fed2fa8f47ced53fc3d91f506d1fce57940b51223f2259421c",
+  "clarificationMessages": 1,
+  "clarificationSha256": "491b4173aaf4c616e547aa9ecc03481e18248321401c067a251544c9f87da269",
+  "clarifiedAt": "2026-11-12T08:44:00.911Z",
+  "receivedAt": "2026-11-12T08:51:38.199Z",
+  "responseSha256": "8a23d0d20f50a1a7e4eb778d813845b8da382f77fa8ec676be50e4bf30275d1a",
+  "responseChars": 31095,
+  "responseFormat": "unmodified rendered message container innerText, includes heading",
+  "extractionNote": "Clipboard returned stale request; rejected by content/hash check and replaced with DOM-backed visible message text before downstream use",
+  "persistence": "response observed after reload",
+  "verdict": "revise"
+}
