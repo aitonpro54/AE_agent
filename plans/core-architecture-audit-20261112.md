@@ -65,3 +65,6 @@ COMPLETE подтверждает выбранный состав, не полн
 Bundled builder exit 0, skipped/warnings/redactions 0. Координатор независимо
 сверил payload hashes, SHA всех 39 полных файлов и SHA/точный текст каждого
 из 56 диапазонов с target commit. Product/runtime/AE не менялись.
+`git diff --check` отметил trailing CR в точной цитате package.json внутри
+bundle; frozen payload не нормализован ради сохранения source provenance.
+Дублирующий generated bundle и Python cache исключены из tracked artifacts.
