@@ -1,0 +1,5 @@
+{
+  "stdoutSHA": "ab3d1c468f765a0bc2c7a013eaa2afbb73240f6f673ac90b5cd0633bef067d11",
+  "command": "node --test core4/test/version-profile-compatibility.test.js core4/test/composition-spec.test.js core4/test/catalog-revision.test.js core4/test/standalone-installer.test.js core4/test/client-entry.test.js",
+  "exitCode": 0
+}

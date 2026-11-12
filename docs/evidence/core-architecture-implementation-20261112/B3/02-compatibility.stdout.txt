@@ -1,0 +1,74 @@
+✔ release policy exact supported format2: 4.0.0 (121.0701ms)
+✔ release policy exact supported format2: 4.1.0 (114.7956ms)
+✔ release policy exact supported format2: 4.1.1 (127.6929ms)
+✔ release policy exact supported format2: 4.1.2 (110.0594ms)
+✔ release policy exact supported format2: 4.2.1 (128.0334ms)
+✔ release policy exact supported format2: 4.2.2 (113.3135ms)
+✔ release policy exact supported format2: 4.2.3 (119.2327ms)
+✔ release policy exact supported format2: 4.2.4 (124.0658ms)
+✔ release policy exact supported format2: 4.2.5 (119.1424ms)
+✔ release policy exact supported format2: 4.2.6 (114.8478ms)
+✔ release policy legacy format1 is exact and future versions fail before reading composition (364.0133ms)
+✔ release policy current registry and panel markers remain mandatory (107.3895ms)
+✔ portable owned-text profile actual package has independent pins and retains fixed-profile refusals (950.3213ms)
+✖ portable owned-text profile actual runtime factory HTTP receipt and sibling readback (306.0829ms)
+✖ portable owned-text profile native cancellation stays rejected with unchanged readback (333.1315ms)
+✖ portable owned-text profile invalid original receipt cannot succeed or replay (307.5464ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 13
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3684.0314
+
+✖ failing tests:
+
+test at core4\test\version-profile-compatibility.test.js:78:1
+✖ portable owned-text profile actual runtime factory HTTP receipt and sibling readback (306.0829ms)
+  Error: install_scope
+      at fail (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\protocol\json.js:4:49)
+      at planInstall (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\tools\install-core4.js:346:130)
+      at runtime (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\fixtures\portable-text-runtime.js:45:16)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\version-profile-compatibility.test.js:79:19)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'install_scope'
+  }
+
+test at core4\test\version-profile-compatibility.test.js:91:1
+✖ portable owned-text profile native cancellation stays rejected with unchanged readback (333.1315ms)
+  Error: install_scope
+      at fail (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\protocol\json.js:4:49)
+      at planInstall (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\tools\install-core4.js:346:130)
+      at runtime (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\fixtures\portable-text-runtime.js:45:16)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\version-profile-compatibility.test.js:92:19)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'install_scope'
+  }
+
+test at core4\test\version-profile-compatibility.test.js:96:1
+✖ portable owned-text profile invalid original receipt cannot succeed or replay (307.5464ms)
+  Error: install_scope
+      at fail (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\protocol\json.js:4:49)
+      at planInstall (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\tools\install-core4.js:346:130)
+      at runtime (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\fixtures\portable-text-runtime.js:45:16)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\version-profile-compatibility.test.js:97:19)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    code: 'install_scope'
+  }

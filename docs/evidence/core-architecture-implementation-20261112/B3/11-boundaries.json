@@ -1,0 +1,5 @@
+{
+  "stdoutSHA": "80414417f9b7fae203c4d66dd7b70edff2eac36e7bf0736d240e90515efacc2e",
+  "exitCode": 0,
+  "command": "node core4/tools/check-boundaries.js"
+}

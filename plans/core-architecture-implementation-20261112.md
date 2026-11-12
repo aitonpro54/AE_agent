@@ -332,6 +332,9 @@ transport crash/ACK/UNKNOWN fixtures дополняют этот сценари�
 узкий test-only request-builder hook. Core production/startup не импортирует
 продукт; root confinement validation-map не ослабляется ради внешнего test.
 Supplemental product/source hashes фиксируются отдельно от Core check keys.
+В C адресно проверить package-location CSS fixture; stopped-update содержит
+корректный образец identity restamp. Capability artifact manifest v2 и owner
+contract v3 — другие identities: их не менять массово вслед за standalone v3.
 
 1. Использовать актуальный diff и existing validation map. Для каждого изменённого
    инварианта: какой fixture ловит нарушение, какой результат получен, какое
@@ -419,6 +422,15 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Progress
 
+- B3 реализован ae_implementer: явная release feature policy в trusted bootstrap
+  и pure spec; неизвестная версия отвергается до чтения состава. Narrower
+  owner/client whitelist сохранён. Actual TEMP module проходит штатный
+  owned-text-layer-v1 adapter, signed HTTP, receipt и свежий read-back;
+  sibling/cancellation/invalid receipt/no replay проверены. Focused 67/67 PASS,
+  boundaries 92; независимый ae_architect review ACCEPT, семь SHA совпали.
+  Четыре состава сохраняют 70/90/115/164 файлов и прежнюю поверхность;
+  selector 61/9 deferred — это выбор, полный union исполняется в C.
+  [Evidence B3](../docs/evidence/core-architecture-implementation-20261112/B3/acceptance.json).
 - **B2 реализован:** один selected-v1 digest полного выбранного каталога;
   генератор остаётся packaging-only. 36/36 focused tests, syntax/boundaries 92
   и diff check PASS; независимый ae_reviewer ACCEPT.
@@ -513,6 +525,10 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Decision Log
 
+- B3: closed feature table сохраняет прежние version/format пары и отсутствие
+  registryVerification у старых selected shapes. Минимальная inline/spec
+  дубликация защищена parity, без preverification import. Portable execution
+  подтверждён в stdio; этот тест не заменяет общий restart/UNKNOWN no-replay proof.
 - B2 не вводит общего runtime helper для единственного writer revision.
   Старые revision читаются opaque; candidate/runtime IDs, machine paths,
   исходный catalogRevision и excluded modules в preimage не входят.
@@ -565,6 +581,11 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Validation
 
+- B3: focused 67/67, boundaries 92, syntax и final declared-consumers parity
+  PASS. Исходные failures и их причины сохранены; transient SHA ранних test
+  revisions не фиксировались и не выдаются за финальное evidence. Coordinator
+  и независимый архитектор сверили все семь final SHA. C остаётся отдельным
+  доказательством полного affected union и product/transport связности.
 - B2: actual package fixtures покрывают base/first dynamic/last module и
   admission, engine/order/excluded; profile/capability/registry flag отдельно
   проверены на pure preimage. Их не выдаём за actual-build proof. Source SHA

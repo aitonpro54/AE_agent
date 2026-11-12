@@ -1,0 +1,5 @@
+{
+  "stdoutSHA": "a9296a12207d504b6e4ab1d79584f70c0fb7441caa707f827df49db4bd49d8be",
+  "exitCode": 0,
+  "command": "node core4/tools/validate-diff.js core4/runtime/composition-spec.js core4/runtime/stdio-entry.js core4/tools/package-installable.js core4/test/version-profile-compatibility.test.js core4/test/fixtures/portable-text-runtime.js core4/config/validation-map.json"
+}

@@ -1,0 +1,527 @@
+{
+  "scope": "B3 explicit release feature policy and portable owned-text-layer profile only",
+  "baseline": "0378e88c47abdf52f47f4e995e54f190af524ec5",
+  "sources": {
+    "core4/runtime/composition-spec.js": {
+      "sha256": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+      "bytes": 28094
+    },
+    "core4/runtime/stdio-entry.js": {
+      "sha256": "fb21717ab0ac2b93abfcbea4fc23be6c1d0d8af9a8cf87f6e4373756f75821c9",
+      "bytes": 71108
+    },
+    "core4/tools/package-installable.js": {
+      "sha256": "55486ffd50b3f7013627d7a7e90bc508b46b26c323bfd0072525131c391843e6",
+      "bytes": 11476
+    },
+    "core4/test/version-profile-compatibility.test.js": {
+      "sha256": "d167a5aca763c25aa52f7dab4bfb20bc70225392c1f0c6c63b06d3f087c14aec",
+      "bytes": 13822
+    },
+    "core4/test/fixtures/portable-text-runtime.js": {
+      "sha256": "1dfcc38a8b2f5c5e9cf2a7c244800e7abba74a7665304c3bf52ab34736a4637c",
+      "bytes": 10903
+    },
+    "core4/config/validation-map.json": {
+      "sha256": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4",
+      "bytes": 115860
+    },
+    "docs/core-version-profile-compatibility.md": {
+      "sha256": "f05a22e70f29ab0e52616714939842d366d9cc6d2ac1b2b5dd9a5c8011693717",
+      "bytes": 6514
+    }
+  },
+  "runs": [
+    {
+      "metadata": "01-compatibility.json",
+      "command": "node --test core4/test/version-profile-compatibility.test.js",
+      "exitCode": 1,
+      "stdoutSHA": "53a2ff8a5d7c1b5232b9332d6ffd363e571ae360f1973e84ca1ba09030273544"
+    },
+    {
+      "metadata": "02-compatibility.json",
+      "command": "node --test core4/test/version-profile-compatibility.test.js",
+      "exitCode": 1,
+      "stdoutSHA": "231c8e7f16817a5533eded3a6e9ce4f439cd3dad9139483f067bbe90cb7b722a"
+    },
+    {
+      "metadata": "03-compatibility.json",
+      "command": "node --test core4/test/version-profile-compatibility.test.js",
+      "stdoutSHA": "53b3c586f3a0bd38e78d839c3164676750252a72ee2a8742d9642c53ba33ca79",
+      "exitCode": 1
+    },
+    {
+      "metadata": "04-compatibility.json",
+      "command": "node --test core4/test/version-profile-compatibility.test.js",
+      "stdoutSHA": "05337b48d775003de970aaeb32c8e46122091ff978e7a603c1f2e679d45bedda",
+      "exitCode": 0
+    },
+    {
+      "metadata": "05-focused.json",
+      "stdoutSHA": "9accf5e041db5842434690baa6fb173e92b21d88f78efa39dd39fe91e03f0feb",
+      "command": "node --test core4/test/version-profile-compatibility.test.js core4/test/composition-spec.test.js core4/test/catalog-revision.test.js core4/test/standalone-installer.test.js core4/test/client-entry.test.js",
+      "exitCode": 1
+    },
+    {
+      "metadata": "06-syntax.json",
+      "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "command": "node --check core4/runtime/composition-spec.js"
+    },
+    {
+      "metadata": "07-syntax.json",
+      "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "command": "node --check core4/runtime/stdio-entry.js"
+    },
+    {
+      "metadata": "08-syntax.json",
+      "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "command": "node --check core4/tools/package-installable.js"
+    },
+    {
+      "metadata": "09-syntax.json",
+      "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "command": "node --check core4/test/version-profile-compatibility.test.js"
+    },
+    {
+      "metadata": "10-syntax.json",
+      "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "command": "node --check core4/test/fixtures/portable-text-runtime.js"
+    },
+    {
+      "metadata": "11-boundaries.json",
+      "stdoutSHA": "80414417f9b7fae203c4d66dd7b70edff2eac36e7bf0736d240e90515efacc2e",
+      "exitCode": 0,
+      "command": "node core4/tools/check-boundaries.js"
+    },
+    {
+      "metadata": "12-selection.json",
+      "stdoutSHA": "65f372d570feac6c6793bd5ee9673cb834cc574be4b1b93bbd250a3dee881443",
+      "exitCode": 1,
+      "command": "node core4/tools/validate-diff.js core4/runtime/composition-spec.js core4/runtime/stdio-entry.js core4/tools/package-installable.js core4/test/version-profile-compatibility.test.js core4/test/fixtures/portable-text-runtime.js core4/config/validation-map.json"
+    },
+    {
+      "metadata": "13-diffcheck.json",
+      "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "command": "git diff --check -- scoped B3 tracked files"
+    },
+    {
+      "metadata": "14-selection.json",
+      "command": "node core4/tools/validate-diff.js <6 B3 core4 changed files>; no --run",
+      "stdoutSHA": "e8001833fc4fe40e924e5ef349a56c78ad2ba65116c23358014675e6b3785a9b",
+      "exitCode": 0
+    },
+    {
+      "metadata": "15-focused.json",
+      "stdoutSHA": "ab3d1c468f765a0bc2c7a013eaa2afbb73240f6f673ac90b5cd0633bef067d11",
+      "command": "node --test core4/test/version-profile-compatibility.test.js core4/test/composition-spec.test.js core4/test/catalog-revision.test.js core4/test/standalone-installer.test.js core4/test/client-entry.test.js",
+      "exitCode": 0
+    },
+    {
+      "metadata": "16-final-fixture-syntax.json",
+      "stdoutSHA": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exitCode": 0,
+      "command": "node --check core4/test/fixtures/portable-text-runtime.js"
+    },
+    {
+      "metadata": "17-final-map-parity.json",
+      "stdoutSHA": "bd6ca75320d77712dac5b9e9015318435f8762dd3813fe16c23ac158d0693829",
+      "exitCode": 0,
+      "command": "node --test --test-name-pattern=composition-spec declared consumers core4/test/composition-spec.test.js"
+    },
+    {
+      "metadata": "18-final-selection.json",
+      "stdoutSHA": "a9296a12207d504b6e4ab1d79584f70c0fb7441caa707f827df49db4bd49d8be",
+      "exitCode": 0,
+      "command": "node core4/tools/validate-diff.js core4/runtime/composition-spec.js core4/runtime/stdio-entry.js core4/tools/package-installable.js core4/test/version-profile-compatibility.test.js core4/test/fixtures/portable-text-runtime.js core4/config/validation-map.json"
+    }
+  ],
+  "passed": {
+    "focused": 67,
+    "compatibilityProfile": 18,
+    "compositionSpec": 16,
+    "catalogRevision": 12,
+    "standalone": 8,
+    "clientEntry": 13,
+    "boundaries": 92
+  },
+  "actualProfilePath": [
+    "reviewed TEMP module/artifact/admission",
+    "actual buildPackage + inline/spec",
+    "actual isolated applyInstall + verified stdio.start",
+    "production profileFor selects spied original text-layer-proof",
+    "production private manual-policy + WindowsReservationProvider (existing probe replaced in module memory with synthetic observation)",
+    "production signed HTTP peer validator + actual registry/dispatcher in VM",
+    "original typed receipt + fresh inspection + sibling preservation"
+  ],
+  "profileOutcomes": {
+    "createSiblingEdit": "PASS; 3 original text proof calls; native confirmation simulated3",
+    "cancellation": "PASS; local_cancelled/stopped, unchanged readback, proofCalls0",
+    "invalidReceipt": "PASS; checkpoint digest corrupted once, local_transaction_receipt_mismatch, repeat run refused",
+    "fixedProfileOperatorNegatives": "PASS; actual builder + inline/spec; no OPERATOR_EFFECTS expansion"
+  },
+  "failedAttemptsRetained": {
+    "12": "same unsupported_check_command map issue; final selector PASS",
+    "01": "fixture admission.schemaHash incorrectly hashed whole contract; inline registry error assertion expected wrong code; panel marker test corrected to actual marker",
+    "02": "fixture installRoot basename installation refused install_scope; corrected to isolated AEAgentCore4",
+    "03": "fixture assertion expected rejected; actual Broker local_cancelled state is stopped",
+    "05": "new map command had3args; selector requires4 incl --test-name-pattern; final full67 PASS after map fix"
+  },
+  "provenanceLimit": "Production3file SHA unchanged across attempts. Exact transient test-file hashes for early01-04 fixture revisions were not captured; retained stdout and final reviewed source hashes are explicit, no early failed run is counted as PASS.",
+  "manifests": [
+    {
+      "selector": "readonly",
+      "beforePackageHash": "4b429a31e8a75b886bb5f696228bf54433b4fb1d09fa056f08aa225ce332cca7",
+      "afterPackageHash": "a74cb12a791aa68e06662716a80dfc6848d713c5a1ce58105ddf120ca34dc381",
+      "files": 70,
+      "added": [],
+      "removed": [],
+      "changed": [
+        "runtime/composition-spec.js",
+        "runtime/stdio-entry.js"
+      ],
+      "revision": "selected-v1-03acbf7923b654907f356a06dc96909fff7058fed772aaeea92617956368c73b",
+      "registrySha256": "ae8473bfe84feef7b0358f2a14b5710c6161d8dbd514409ceead9bb10f148ceb",
+      "compositionSha256": "01880437d5379397df1d99ac96ba4e693dd84be2cdca32d55b220223ce0b29bc",
+      "policySha256": "afa36112fd08e2341def21544b69e2c4e3b6a1c15b19b6dd3de543aed5e9a2d7"
+    },
+    {
+      "selector": "manual",
+      "beforePackageHash": "8df9bc897f8c500dd0142b325d866b884967c24e830bbb19de3b33c4237e465c",
+      "afterPackageHash": "26673c5aa903e1cb5957c7313120d0d7d3fc23c856a2815dc48dddab8882b965",
+      "files": 90,
+      "added": [],
+      "removed": [],
+      "changed": [
+        "runtime/composition-spec.js",
+        "runtime/stdio-entry.js"
+      ],
+      "revision": "selected-v1-94223dfd355441165bb48f02d0f26a7baf0aa52c8d5018d409628d5c58c6456d",
+      "registrySha256": "b7c00c4b59d0150aaba7776be1c51650967498c3cad4b47a517c103e864e4873",
+      "compositionSha256": "4dda9130928fe894ee5c92f4885410f07b005f06d39803bd9d8d647c163ac3d9",
+      "policySha256": "fdb876483f251213b240b6fc6ad371bc42a81c2fa606445a9fa0bd45918a01fc"
+    },
+    {
+      "selector": "manual-titles-variants",
+      "beforePackageHash": "139766f52dd81d8e14941e830af92631a28860c9c00c7541e29ba63464cb7ad6",
+      "afterPackageHash": "da720337f92e71b42c0f751d93477b08f4d9ca33cefa6573b2fcbde7c3e721d9",
+      "files": 115,
+      "added": [],
+      "removed": [],
+      "changed": [
+        "runtime/composition-spec.js",
+        "runtime/stdio-entry.js"
+      ],
+      "revision": "selected-v1-54245300b41697c25347d8a4ff743ab6ea8699c8f54add8d17bb703ffff3a3f1",
+      "registrySha256": "0868e0fa3167d670138d79b3f49c4143687031239e86d02e5f9c18a5ad89f032",
+      "compositionSha256": "592ed9c3097eacd7993d391130a80c38f7f0811c26a6705bb02bb04d0ebc49fb",
+      "policySha256": "0206bc554342887dd86d56acf08f903bdc4a7de120e08acdd2bc0737a415fa98"
+    },
+    {
+      "selector": "operator-render-jobs",
+      "beforePackageHash": "82d2e105fd50358b2719d55da19badec396c73ed23a0c0ad43d991944cc99d7b",
+      "afterPackageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+      "files": 164,
+      "added": [],
+      "removed": [],
+      "changed": [
+        "runtime/composition-spec.js",
+        "runtime/stdio-entry.js"
+      ],
+      "revision": "selected-v1-084e8e8ad437be7d290f16a36bf57547822f52878ec6509d4f62b853298e2500",
+      "registrySha256": "fe86886c863232911e8eefefed0712b0ba2f6ab549335eb4283c2390a367e6fb",
+      "compositionSha256": "b8e1eb1ed443494e5bb93a2378cb16141524d61e24e6f852a8ceaab926ae9bdb",
+      "policySha256": "317c28ca20a19e834da1e749ec6672cc0273e8da79c3c8d2424a91c831500931"
+    }
+  ],
+  "selectedChecks": [
+    "composition-spec",
+    "panel-lifecycle",
+    "ae-panel-startup",
+    "mixed-installation-repair",
+    "ae-readiness",
+    "package-location",
+    "start-over-driver",
+    "panel-start-over",
+    "start-over-runtime",
+    "start-over-operator",
+    "work-session",
+    "start-over-finisher",
+    "start-over-state",
+    "start-over-barrier",
+    "start-over-inspection",
+    "stopped-host-readoption-operator",
+    "stopped-host-readoption",
+    "readoption-core",
+    "readoption-recovery",
+    "readoption-enable",
+    "readoption-probe",
+    "stopped-update-operator",
+    "stopped-update",
+    "legacy-owner-migration",
+    "stopped-certification",
+    "maintenance-finish",
+    "maintenance-finish-operator",
+    "owner-maintenance",
+    "maintenance-operator",
+    "owner-lifecycle",
+    "owner-lifecycle-faults",
+    "owner-marker-publication",
+    "client-launcher",
+    "recovery-inspection",
+    "owner-installation",
+    "client-entry",
+    "owner-runtime",
+    "native-read-capture",
+    "windows-cim-probe",
+    "zero-dispatch-recovery",
+    "human-window",
+    "manual-runtime",
+    "point-layout-integration",
+    "text-layer-integration",
+    "comp-frame-export",
+    "frame-export-slot",
+    "project-assembly",
+    "project-save",
+    "project-lifecycle",
+    "media-layers",
+    "layer-overlay",
+    "render-job-owner",
+    "installable-runtime",
+    "manual-current-target",
+    "native-read-recovery",
+    "installed-composition",
+    "exact-f548-transition",
+    "standalone-installer",
+    "version-profile-compatibility",
+    "validation-routing",
+    "catalog-revision"
+  ],
+  "selectedCount": 61,
+  "deferredCoverage": [
+    {
+      "check": "core-control",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "core-control"
+        ]
+      ]
+    },
+    {
+      "check": "core-admission",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "core-admission"
+        ]
+      ]
+    },
+    {
+      "check": "worker-isolation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "worker-isolation"
+        ]
+      ]
+    },
+    {
+      "check": "protocol-codec",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "protocol-codec"
+        ]
+      ]
+    },
+    {
+      "check": "workflow-recovery",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "workflow-recovery"
+        ]
+      ]
+    },
+    {
+      "check": "validation-reuse",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "validation-reuse"
+        ]
+      ]
+    },
+    {
+      "check": "artifact-boundaries",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "artifact-boundaries"
+        ]
+      ]
+    },
+    {
+      "check": "cep-transport",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "cep-transport"
+        ],
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "cep-transport"
+        ]
+      ]
+    },
+    {
+      "check": "lifecycle-simulation",
+      "status": "current-closure-unverified",
+      "changedDependencies": [
+        {
+          "file": "core4/tools/package-installable.js",
+          "dependency": "tools/"
+        },
+        {
+          "file": "core4/test/version-profile-compatibility.test.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/test/fixtures/portable-text-runtime.js",
+          "dependency": "test/"
+        },
+        {
+          "file": "core4/config/validation-map.json",
+          "dependency": "config/validation-map.json"
+        }
+      ],
+      "reason": "Integration bytes changed outside this scoped owner/public/shared contract route; no current-closure PASS or release certification is claimed.",
+      "dependencyPath": [
+        [
+          "core4/tools/package-installable.js",
+          "tools/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/version-profile-compatibility.test.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/test/fixtures/portable-text-runtime.js",
+          "test/",
+          "lifecycle-simulation"
+        ],
+        [
+          "core4/config/validation-map.json",
+          "config/validation-map.json",
+          "lifecycle-simulation"
+        ]
+      ]
+    }
+  ],
+  "completeFocusedKeys": [
+    "version-profile-compatibility",
+    "composition-spec",
+    "catalog-revision",
+    "standalone-installer",
+    "client-entry"
+  ],
+  "remaining": "C must execute final affected union with known stale identity/routing fixture repairs; this report does not claim61 selected checks PASS or full release acceptance.",
+  "knownCFailuresUnchanged": [
+    "owner-runtime panel helper lacks current loadedPanel/extensionRoot/registry-ready and /link403",
+    "3 core4.test exact routing assertions need final map update",
+    "installable-runtime stale-release-A fixture changes CSS without restamping panel identity, reaches panel_identity_integrity before intended wrong-root branch"
+  ],
+  "boundaries": [
+    "product/serverInfo4.2.6 unchanged",
+    "no preverification import",
+    "trusted tools/composition-spec shim and standalonev3 unchanged",
+    "no production module or public injection hook",
+    "no installed config/state, AE/UI, network beyond fixture loopback, external review or Git commit"
+  ],
+  "evidenceMode": "offline TEMP/Node/VM only; synthetic Windows and native AE observation are not live acceptance"
+}

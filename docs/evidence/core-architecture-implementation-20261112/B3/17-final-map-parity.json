@@ -1,0 +1,5 @@
+{
+  "stdoutSHA": "bd6ca75320d77712dac5b9e9015318435f8762dd3813fe16c23ac158d0693829",
+  "exitCode": 0,
+  "command": "node --test --test-name-pattern=composition-spec declared consumers core4/test/composition-spec.test.js"
+}

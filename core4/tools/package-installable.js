@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { hash, canonical, fail } = require('../protocol/json');
-const { deriveComposition, compositionPaths, builtinCapabilityFiles, registrySource } = require('./composition-spec.js');
+const { releaseFeatures, deriveComposition, compositionPaths, builtinCapabilityFiles, registrySource } = require('./composition-spec.js');
 const OWNER_V3_FILES = Object.freeze(['runtime/owner-entry.js', 'runtime/client-entry.js', 'runtime/client-ipc.js', 'runtime/client-stdio.js', 'runtime/controller-lease.js', 'runtime/attachment-owner.js', 'runtime/owner-lifecycle.js', 'runtime/recovery-inspection.js', 'runtime/windows-owner-process.js', 'runtime/owner-maintenance.js']);
 const OWNER_FILES = Object.freeze([...OWNER_V3_FILES, 'runtime/start-over-inspection.js', 'runtime/start-over-process.js', 'runtime/start-over-state.js', 'runtime/start-over-barrier.js', 'runtime/start-over-archive.js', 'runtime/start-over-finisher.js', 'runtime/work-session.js', 'runtime/start-over-panel-control.js', 'runtime/start-over-driver.js', 'runtime/owner-launch.js']);
 // Packaging-only change identity. Call after semantic validation; json reads
@@ -81,7 +81,7 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
     const full = path.resolve(root, relative); if (fs.realpathSync(full) !== full) fail('package_symlink');
     const bytes = fs.readFileSync(full); hashes[relative] = hash(bytes); files[relative] = bytes.toString('base64');
   }
-  const release = { version: '4.2.6', format: 2, hashes };
+  const release = { version: '4.2.6', format: 2, hashes }; const features = releaseFeatures(release);
   const original = JSON.parse(fs.readFileSync(path.join(root, 'config/catalog.json'), 'utf8'));
   const modules = parts.flatMap(part => part.modules), assets = parts.flatMap(part => part.assets);
   const profiles = Object.assign({}, ...parts.map(part => part.profiles));
@@ -104,21 +104,22 @@ function buildPackage(root = path.resolve(__dirname, '..'), selector = 'manual',
   // exactly one selected revision only after the complete selection is valid.
   catalog.catalogRevision = selectedCatalogRevision({ catalog, composition, policy, registryVerification: selected.registryVerification === true }, file => JSON.parse(Buffer.from(files[file], 'base64')));
   add('config/catalog.json', catalog);
-  add('cep/jsx/registry.jsx', registrySource(selected.assets, Buffer.from(files['runtime/host/json-codec.jsx'], 'base64').toString('utf8'), true));
+  add('cep/jsx/registry.jsx', registrySource(selected.assets, Buffer.from(files['runtime/host/json-codec.jsx'], 'base64').toString('utf8'), features.registryIdentity));
   const panelIdentity = require('../integrations/cep/panel-identity');
   const loadedIdentity = panelIdentity.identity(file => Buffer.from(files[file], 'base64'));
   add('cep/js/panel.js', panelIdentity.stamp(Buffer.from(files['cep/js/panel.js'], 'base64').toString('utf8'), loadedIdentity));
   return verifyPackage({ packageHash: hash(release), release, files });
 }
 function verifyPackage(pkg) {
-  if (pkg.packageHash !== hash(pkg.release) || (pkg.release.version !== '4.0.0' && !(['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3', '4.2.4', '4.2.5', '4.2.6'].includes(pkg.release.version) && pkg.release.format === 2)) || canonical(Object.keys(pkg.files).sort()) !== canonical(Object.keys(pkg.release.hashes).sort())) fail('package_integrity');
+  const features = releaseFeatures(pkg.release);
+  if (pkg.packageHash !== hash(pkg.release) || canonical(Object.keys(pkg.files).sort()) !== canonical(Object.keys(pkg.release.hashes).sort())) fail('package_integrity');
   for (const [relative, data] of Object.entries(pkg.files)) {
     if (!/^[a-zA-Z0-9_./-]+$/.test(relative) || relative.split('/').includes('..') || path.isAbsolute(relative) || /^(test|experiments|node_modules|\.git|logs|state|tools)\//.test(relative) || hash(Buffer.from(data, 'base64')) !== pkg.release.hashes[relative]) fail('package_integrity');
   }
   runtimeBinding(pkg.release, file => Buffer.from(pkg.files[file], 'base64'));
-  if (pkg.release.version === '4.2.6') require('../integrations/cep/panel-identity').verify(file => Buffer.from(pkg.files[file], 'base64'));
+  if (features.registryIdentity) require('../integrations/cep/panel-identity').verify(file => Buffer.from(pkg.files[file], 'base64'));
   const selected = deriveComposition(pkg.release, file => Buffer.from(pkg.files[file], 'base64'));
-  if (!selected.legacy && Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString('utf8') !== registrySource(selected.assets, Buffer.from(pkg.files['runtime/host/json-codec.jsx'], 'base64').toString('utf8'), pkg.release.version === '4.2.6')) fail('composition_registry');
+  if (!selected.legacy && Buffer.from(pkg.files['cep/jsx/registry.jsx'], 'base64').toString('utf8') !== registrySource(selected.assets, Buffer.from(pkg.files['runtime/host/json-codec.jsx'], 'base64').toString('utf8'), features.registryIdentity)) fail('composition_registry');
   return pkg;
 }
 if (require.main === module) {

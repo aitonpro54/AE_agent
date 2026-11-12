@@ -1,0 +1,5 @@
+{
+  "command": "node TEMP/summarize.cjs repoRoot",
+  "stdoutSHA": "3b3ac27ef7409c2daa774985f1b7ada34fc6db7e6a3ffb94cd8fb0f77a17fb2e",
+  "exitCode": 0
+}

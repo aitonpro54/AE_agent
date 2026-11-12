@@ -1,0 +1,9 @@
+{
+  "core4/test/version-profile-compatibility.test.js": "d167a5aca763c25aa52f7dab4bfb20bc70225392c1f0c6c63b06d3f087c14aec",
+  "core4/tools/package-installable.js": "55486ffd50b3f7013627d7a7e90bc508b46b26c323bfd0072525131c391843e6",
+  "core4/test/fixtures/portable-text-runtime.js": "e1fb1c2380314e4fc15c3ab5bbc5fd9d6ac5a529c3cf2e3bf6864b5f51c484ad",
+  "core4/config/validation-map.json": "28b02e3cbe4c98ad353ebd7af71aafff15c0fe333f200c390687de6c5f82acb2",
+  "docs/core-version-profile-compatibility.md": "f05a22e70f29ab0e52616714939842d366d9cc6d2ac1b2b5dd9a5c8011693717",
+  "core4/runtime/composition-spec.js": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+  "core4/runtime/stdio-entry.js": "fb21717ab0ac2b93abfcbea4fc23be6c1d0d8af9a8cf87f6e4373756f75821c9"
+}

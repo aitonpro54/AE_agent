@@ -1,0 +1,5 @@
+{
+  "command": "node core4/tools/validate-diff.js <6 B3 core4 changed files>; no --run",
+  "stdoutSHA": "e8001833fc4fe40e924e5ef349a56c78ad2ba65116c23358014675e6b3785a9b",
+  "exitCode": 0
+}

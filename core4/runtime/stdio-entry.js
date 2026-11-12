@@ -18,6 +18,27 @@ function canonical(value) {
 }
 function hash(value) { return crypto.createHash('sha256').update(typeof value === 'string' || Buffer.isBuffer(value) ? value : canonical(value)).digest('hex'); }
 function exactKeys(value, keys) { if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).length !== keys.length || keys.some(key => !Object.hasOwn(value, key))) fail('composition_schema'); }
+// Release feature policy is duplicated in the builtin bootstrap and pure spec.
+// Keep their observed compatibility in parity tests; never import before trust.
+const RELEASE_FEATURES = Object.freeze(Object.fromEntries([
+  ['4.0.0', [1, 2], false, false],
+  ['4.1.0', [2], false, false],
+  ['4.1.1', [2], false, false],
+  ['4.1.2', [2], false, false],
+  ['4.2.1', [2], false, false],
+  ['4.2.2', [2], false, false],
+  ['4.2.3', [2], true, false],
+  ['4.2.4', [2], true, false],
+  ['4.2.5', [2], true, false],
+  ['4.2.6', [2], true, true]
+].map(([version, formats, versionedComposition, registryIdentity]) => [version,
+  Object.freeze({ formats: Object.freeze(formats), versionedComposition, registryIdentity })])));
+function releaseFeatures(release) {
+  if (!release || typeof release.version !== 'string' || !Object.hasOwn(RELEASE_FEATURES, release.version)) fail('unsupported_release');
+  const features = RELEASE_FEATURES[release.version];
+  if (!features.formats.includes(release.format)) fail('release_format');
+  return features;
+}
 const POLICY_FILE = 'runtime/composition-policy.json';
 const BUILTIN_CAPABILITIES = Object.freeze({ 'render-jobs': Object.freeze({ version: 1,
   files: Object.freeze(['runtime/render-job-owner.js', 'runtime/aerender-jobs.js', 'runtime/aerender-profile.js']) }) });
@@ -83,7 +104,7 @@ function compositionPaths(files, closures, readArtifact) {
 function declarativeProfiles(composition, release, json, checked) {
   const policy = json(POLICY_FILE);
   const declared = Object.hasOwn(policy, 'version');
-  const versionedPolicy = ['4.2.3', '4.2.4', '4.2.5', '4.2.6'].includes(release.version);
+  const versionedPolicy = releaseFeatures(release).versionedComposition;
   exactKeys(policy, ['id', 'modules', 'assets', 'profiles', 'files', 'closures', ...(declared ? ['version', 'capabilities'] : [])]);
   if (declared ? policy.version !== 2 || !versionedPolicy : versionedPolicy) fail('composition_policy_version');
   const capabilities = declared ? policy.capabilities : release.version === '4.2.2' && composition.id === 'operator-render-jobs' ? { 'render-jobs': 1 } : {};
@@ -161,7 +182,7 @@ const LEGACY_PROFILES = Object.freeze({
 // Builtin-only release interpretation. Callers verify the COMPLETE tree first.
 // These two reviewed adapters are closed policies, never names of executable imports.
 function deriveComposition(release, read) {
-  if (release.format !== 1 && release.format !== 2) fail('release_format');
+  const features = releaseFeatures(release);
   const checked = file => { if (!Object.hasOwn(release.hashes, file)) fail('composition_unhashed_path'); const bytes = read(file); if (hash(bytes) !== release.hashes[file]) fail('composition_bytes'); return bytes; };
   const json = file => JSON.parse(checked(file));
   if (release.format === 1) {
@@ -177,7 +198,7 @@ function deriveComposition(release, read) {
   if (![1, 2].includes(composition.version) || (composition.version === 2) !== Object.hasOwn(release.hashes, POLICY_FILE) ||
       typeof composition.id !== 'string' || !/^[a-z][a-z0-9-]*$/.test(composition.id) || !Array.isArray(composition.modules) || !Array.isArray(composition.assets)) fail('composition_schema');
   const catalog = json('config/catalog.json'); exactKeys(catalog, ['catalogRevision', 'modules', 'engine']);
-  if (['4.2.3', '4.2.4', '4.2.5', '4.2.6'].includes(release.version) && composition.version !== 2) fail('composition_policy_version');
+  if (releaseFeatures(release).versionedComposition && composition.version !== 2) fail('composition_policy_version');
   const { profiles, capabilities } = composition.version === 2 ? declarativeProfiles(composition, release, json, checked) : { profiles: LEGACY_PROFILES, capabilities: {} };
   if (composition.version === 1) validateLegacyComposition(composition, release, checked);
   if (!Array.isArray(catalog.modules) || canonical(catalog.modules.map(m => m.id)) !== canonical(composition.modules) || canonical(catalog.engine) !== canonical(composition.engine) || (composition.id === 'readonly' ? composition.engine !== null : !composition.engine || composition.engine.path !== 'plan-engine')) fail('composition_catalog');
@@ -228,9 +249,9 @@ function deriveComposition(release, read) {
   if (renderJobs) {
     if (!startOverSupported || !assets.some(item => item.resultProfile === 'project-lifecycle-v1' && item.registryOperatorConfirmation) ||
         !assets.some(item => item.resultProfile === 'current-project-save-v1')) fail('render_job_owner_required');
-    if (['4.2.3', '4.2.4', '4.2.5', '4.2.6'].includes(release.version)) for (const file of ['runtime/project-file.js', 'runtime/render-job-history.js', 'runtime/render-job-maintenance.js']) checked(file);
+    if (releaseFeatures(release).versionedComposition) for (const file of ['runtime/project-file.js', 'runtime/render-job-history.js', 'runtime/render-job-maintenance.js']) checked(file);
   }
-  return { composition, assets, ...(release.version === '4.2.6' ? { registryVerification: true } : {}), ...(startOverSupported ? { startOverSupported: true } : {}), ...(renderJobs ? { renderJobs: true } : {}) };
+  return { composition, assets, ...(features.registryIdentity ? { registryVerification: true } : {}), ...(startOverSupported ? { startOverSupported: true } : {}), ...(renderJobs ? { renderJobs: true } : {}) };
 }
 function validateLegacyComposition(composition, release, checked) {
   if (!['readonly', 'manual', 'manual-layout', 'manual-titles', 'manual-titles-variants'].includes(composition.id)) fail('composition_schema');
@@ -294,7 +315,8 @@ function registrySource(assets, codecSource, identityEnabled = false) {
 function installationConfig(d, selected) { const assets = selected.assets.map(a => ({ assetKey: a.assetKey, executorHash: a.executorHash, phases: a.phases })); return { installationId: d.installationId, packageHash: d.packageHash, panelToken: d.panelToken, executorHash: assets[0].executorHash, assetKey: assets[0].assetKey, assets, ...(selected.startOverSupported ? { startOverSupported: true } : {}), ...(selected.registryVerification ? { registryVerification: 1 } : {}) }; }
 function installationMarker(d, selected) { return { version: 1, installationId: d.installationId, packageHash: d.packageHash, panelConfigHash: hash(installationConfig(d, selected)) }; }
 function verifyRelease(directory, release) {
-  exactKeys(release, ['version', 'format', 'hashes']); if ((release.version !== '4.0.0' && !(['4.1.0', '4.1.1', '4.1.2', '4.2.1', '4.2.2', '4.2.3', '4.2.4', '4.2.5', '4.2.6'].includes(release.version) && release.format === 2)) || !release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype) fail('release_schema');
+  exactKeys(release, ['version', 'format', 'hashes']); const features = releaseFeatures(release);
+  if (!release.hashes || Object.getPrototypeOf(release.hashes) !== Object.prototype) fail('release_schema');
   const root = path.resolve(directory), expectedFiles = new Set(['release.json']), expectedDirs = new Set(['']);
   for (const relative of Object.keys(release.hashes || {})) {
     if (!/^[A-Za-z0-9_./-]+$/.test(relative) || relative.includes('\\') || relative.split('/').some(p => !p || p === '.' || p === '..') || path.isAbsolute(relative) || relative === 'release.json') fail('release_path');
@@ -320,7 +342,7 @@ function verifyRelease(directory, release) {
     return;
   }
   const selected = deriveComposition(release, file => fs.readFileSync(path.join(root, file)));
-  if (fs.readFileSync(path.join(root, 'cep/jsx/registry.jsx'), 'utf8') !== registrySource(selected.assets, fs.readFileSync(path.join(root, 'runtime/host/json-codec.jsx'), 'utf8'), release.version === '4.2.6')) fail('composition_registry');
+  if (fs.readFileSync(path.join(root, 'cep/jsx/registry.jsx'), 'utf8') !== registrySource(selected.assets, fs.readFileSync(path.join(root, 'runtime/host/json-codec.jsx'), 'utf8'), features.registryIdentity)) fail('composition_registry');
 }
 function assertPlainPath(file, directory = false) {
   if (!path.isAbsolute(file) || path.resolve(file) !== file) fail('installation_path');
@@ -766,7 +788,7 @@ async function start({ descriptor, port = 3457, input = process.stdin, output = 
 }
 // Direct-main start imports the historical reader synchronously. Publish these
 // builtin verifiers first so its installation.js import sees initialized exports.
-module.exports = { start, verifyInstallation, verifyRelease, verifyCep, deriveComposition, compositionPaths, builtinCapabilityFiles, validateCompRenderCompletion, registrySource, installationConfig, installationMarker, PRODUCTION_TIMING };
+module.exports = { releaseFeatures, start, verifyInstallation, verifyRelease, verifyCep, deriveComposition, compositionPaths, builtinCapabilityFiles, validateCompRenderCompletion, registrySource, installationConfig, installationMarker, PRODUCTION_TIMING };
 if (require.main === module) {
   const args = process.argv.slice(2);
   if (args.length !== 2 || args[0] !== '--installation') { process.stderr.write('Explicit --installation ABSOLUTE_DESCRIPTOR required.\n'); process.exitCode = 2; }

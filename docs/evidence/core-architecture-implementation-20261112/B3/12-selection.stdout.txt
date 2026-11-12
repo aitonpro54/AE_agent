@@ -1,0 +1,1 @@
+unsupported_check_command: version-profile-compatibility

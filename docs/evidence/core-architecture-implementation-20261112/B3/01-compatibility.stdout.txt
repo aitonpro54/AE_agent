@@ -1,0 +1,121 @@
+✔ release policy exact supported format2: 4.0.0 (141.9228ms)
+✔ release policy exact supported format2: 4.1.0 (112.759ms)
+✔ release policy exact supported format2: 4.1.1 (130.4576ms)
+✔ release policy exact supported format2: 4.1.2 (107.6245ms)
+✔ release policy exact supported format2: 4.2.1 (129.125ms)
+✔ release policy exact supported format2: 4.2.2 (105.4693ms)
+✔ release policy exact supported format2: 4.2.3 (114.9166ms)
+✔ release policy exact supported format2: 4.2.4 (101.8753ms)
+✔ release policy exact supported format2: 4.2.5 (116.5889ms)
+✔ release policy exact supported format2: 4.2.6 (114.5488ms)
+✔ release policy legacy format1 is exact and future versions fail before reading composition (426.6701ms)
+✖ release policy current registry and panel markers remain mandatory (119.315ms)
+✖ portable owned-text profile actual package has independent pins and retains fixed-profile refusals (303.9869ms)
+✖ portable owned-text profile actual runtime factory HTTP receipt and sibling readback (303.9333ms)
+✖ portable owned-text profile native cancellation stays rejected with unchanged readback (323.0943ms)
+✖ portable owned-text profile invalid original receipt cannot succeed or replay (312.1206ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 11
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3095.903
+
+✖ failing tests:
+
+test at core4\test\version-profile-compatibility.test.js:49:1
+✖ release policy current registry and panel markers remain mandatory (119.315ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /registry_identity_integrity/. Input:
+  
+  'Error: composition_registry'
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\version-profile-compatibility.test.js:53:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: Error: composition_registry
+        at fail (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\stdio-entry.js:11:43)
+        at Object.verifyRelease (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\stdio-entry.js:345:209)
+        at C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\version-profile-compatibility.test.js:53:30
+        at getActual (node:assert:611:5)
+        at strict.throws (node:assert:759:24)
+        at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\version-profile-compatibility.test.js:53:10)
+        at Test.runInAsyncScope (node:async_hooks:227:14)
+        at Test.run (node:internal/test_runner/test:1201:25)
+        at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+        at Test.postRun (node:internal/test_runner/test:1330:19),
+    expected: /registry_identity_integrity/,
+    operator: 'throws',
+    diff: 'simple'
+  }
+
+test at core4\test\version-profile-compatibility.test.js:58:1
+✖ portable owned-text profile actual package has independent pins and retains fixed-profile refusals (303.9869ms)
+  Error: composition_not_admitted
+      at fail (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:5:43)
+      at admitted (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:204:608)
+      at C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:208:68
+      at Array.map (<anonymous>)
+      at deriveComposition (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:208:44)
+      at buildPackage (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\tools\package-installable.js:102:20)
+      at fixturePackage (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\fixtures\portable-text-runtime.js:37:15)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\version-profile-compatibility.test.js:59:19)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1201:25) {
+    code: 'composition_not_admitted'
+  }
+
+test at core4\test\version-profile-compatibility.test.js:78:1
+✖ portable owned-text profile actual runtime factory HTTP receipt and sibling readback (303.9333ms)
+  Error: composition_not_admitted
+      at fail (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:5:43)
+      at admitted (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:204:608)
+      at C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:208:68
+      at Array.map (<anonymous>)
+      at deriveComposition (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:208:44)
+      at buildPackage (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\tools\package-installable.js:102:20)
+      at fixturePackage (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\fixtures\portable-text-runtime.js:37:15)
+      at runtime (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\fixtures\portable-text-runtime.js:43:13)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\version-profile-compatibility.test.js:79:19)
+      at Test.runInAsyncScope (node:async_hooks:227:14) {
+    code: 'composition_not_admitted'
+  }
+
+test at core4\test\version-profile-compatibility.test.js:91:1
+✖ portable owned-text profile native cancellation stays rejected with unchanged readback (323.0943ms)
+  Error: composition_not_admitted
+      at fail (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:5:43)
+      at admitted (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:204:608)
+      at C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:208:68
+      at Array.map (<anonymous>)
+      at deriveComposition (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:208:44)
+      at buildPackage (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\tools\package-installable.js:102:20)
+      at fixturePackage (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\fixtures\portable-text-runtime.js:37:15)
+      at runtime (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\fixtures\portable-text-runtime.js:43:13)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\version-profile-compatibility.test.js:92:19)
+      at Test.runInAsyncScope (node:async_hooks:227:14) {
+    code: 'composition_not_admitted'
+  }
+
+test at core4\test\version-profile-compatibility.test.js:96:1
+✖ portable owned-text profile invalid original receipt cannot succeed or replay (312.1206ms)
+  Error: composition_not_admitted
+      at fail (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:5:43)
+      at admitted (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:204:608)
+      at C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:208:68
+      at Array.map (<anonymous>)
+      at deriveComposition (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\runtime\composition-spec.js:208:44)
+      at buildPackage (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\tools\package-installable.js:102:20)
+      at fixturePackage (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\fixtures\portable-text-runtime.js:37:15)
+      at runtime (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\fixtures\portable-text-runtime.js:43:13)
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\version-profile-compatibility.test.js:97:19)
+      at Test.runInAsyncScope (node:async_hooks:227:14) {
+    code: 'composition_not_admitted'
+  }

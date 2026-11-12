@@ -1,0 +1,5 @@
+{
+  "command": "node --test core4/test/version-profile-compatibility.test.js",
+  "stdoutSHA": "53b3c586f3a0bd38e78d839c3164676750252a72ee2a8742d9642c53ba33ca79",
+  "exitCode": 1
+}

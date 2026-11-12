@@ -1,0 +1,30 @@
+{
+  "core4/runtime/composition-spec.js": {
+    "sha256": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+    "bytes": 28094
+  },
+  "core4/runtime/stdio-entry.js": {
+    "sha256": "fb21717ab0ac2b93abfcbea4fc23be6c1d0d8af9a8cf87f6e4373756f75821c9",
+    "bytes": 71108
+  },
+  "core4/tools/package-installable.js": {
+    "sha256": "55486ffd50b3f7013627d7a7e90bc508b46b26c323bfd0072525131c391843e6",
+    "bytes": 11476
+  },
+  "core4/test/version-profile-compatibility.test.js": {
+    "sha256": "d167a5aca763c25aa52f7dab4bfb20bc70225392c1f0c6c63b06d3f087c14aec",
+    "bytes": 13822
+  },
+  "core4/test/fixtures/portable-text-runtime.js": {
+    "sha256": "1dfcc38a8b2f5c5e9cf2a7c244800e7abba74a7665304c3bf52ab34736a4637c",
+    "bytes": 10903
+  },
+  "core4/config/validation-map.json": {
+    "sha256": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4",
+    "bytes": 115860
+  },
+  "docs/core-version-profile-compatibility.md": {
+    "sha256": "f05a22e70f29ab0e52616714939842d366d9cc6d2ac1b2b5dd9a5c8011693717",
+    "bytes": 6514
+  }
+}

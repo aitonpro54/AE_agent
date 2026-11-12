@@ -1,0 +1,101 @@
+{
+  "sources": {
+    "core4/runtime/composition-spec.js": {
+      "sha256": "f0726cf7276209241040f8cac195f753115d7ec9ecf3c7c2e52792bb4ce1ca5c",
+      "bytes": 28094
+    },
+    "core4/runtime/stdio-entry.js": {
+      "sha256": "fb21717ab0ac2b93abfcbea4fc23be6c1d0d8af9a8cf87f6e4373756f75821c9",
+      "bytes": 71108
+    },
+    "core4/tools/package-installable.js": {
+      "sha256": "55486ffd50b3f7013627d7a7e90bc508b46b26c323bfd0072525131c391843e6",
+      "bytes": 11476
+    },
+    "core4/test/version-profile-compatibility.test.js": {
+      "sha256": "d167a5aca763c25aa52f7dab4bfb20bc70225392c1f0c6c63b06d3f087c14aec",
+      "bytes": 13822
+    },
+    "core4/test/fixtures/portable-text-runtime.js": {
+      "sha256": "1dfcc38a8b2f5c5e9cf2a7c244800e7abba74a7665304c3bf52ab34736a4637c",
+      "bytes": 10903
+    },
+    "core4/config/validation-map.json": {
+      "sha256": "15a78ed8a4f37ebc0a290d86065c22ccad35115e57f981b46cfea844c67f6ec4",
+      "bytes": 115860
+    },
+    "docs/core-version-profile-compatibility.md": {
+      "sha256": "f05a22e70f29ab0e52616714939842d366d9cc6d2ac1b2b5dd9a5c8011693717",
+      "bytes": 6514
+    }
+  },
+  "manifests": [
+    {
+      "selector": "readonly",
+      "beforePackageHash": "4b429a31e8a75b886bb5f696228bf54433b4fb1d09fa056f08aa225ce332cca7",
+      "afterPackageHash": "a74cb12a791aa68e06662716a80dfc6848d713c5a1ce58105ddf120ca34dc381",
+      "files": 70,
+      "added": [],
+      "removed": [],
+      "changed": [
+        "runtime/composition-spec.js",
+        "runtime/stdio-entry.js"
+      ],
+      "revision": "selected-v1-03acbf7923b654907f356a06dc96909fff7058fed772aaeea92617956368c73b",
+      "registrySha256": "ae8473bfe84feef7b0358f2a14b5710c6161d8dbd514409ceead9bb10f148ceb",
+      "compositionSha256": "01880437d5379397df1d99ac96ba4e693dd84be2cdca32d55b220223ce0b29bc",
+      "policySha256": "afa36112fd08e2341def21544b69e2c4e3b6a1c15b19b6dd3de543aed5e9a2d7"
+    },
+    {
+      "selector": "manual",
+      "beforePackageHash": "8df9bc897f8c500dd0142b325d866b884967c24e830bbb19de3b33c4237e465c",
+      "afterPackageHash": "26673c5aa903e1cb5957c7313120d0d7d3fc23c856a2815dc48dddab8882b965",
+      "files": 90,
+      "added": [],
+      "removed": [],
+      "changed": [
+        "runtime/composition-spec.js",
+        "runtime/stdio-entry.js"
+      ],
+      "revision": "selected-v1-94223dfd355441165bb48f02d0f26a7baf0aa52c8d5018d409628d5c58c6456d",
+      "registrySha256": "b7c00c4b59d0150aaba7776be1c51650967498c3cad4b47a517c103e864e4873",
+      "compositionSha256": "4dda9130928fe894ee5c92f4885410f07b005f06d39803bd9d8d647c163ac3d9",
+      "policySha256": "fdb876483f251213b240b6fc6ad371bc42a81c2fa606445a9fa0bd45918a01fc"
+    },
+    {
+      "selector": "manual-titles-variants",
+      "beforePackageHash": "139766f52dd81d8e14941e830af92631a28860c9c00c7541e29ba63464cb7ad6",
+      "afterPackageHash": "da720337f92e71b42c0f751d93477b08f4d9ca33cefa6573b2fcbde7c3e721d9",
+      "files": 115,
+      "added": [],
+      "removed": [],
+      "changed": [
+        "runtime/composition-spec.js",
+        "runtime/stdio-entry.js"
+      ],
+      "revision": "selected-v1-54245300b41697c25347d8a4ff743ab6ea8699c8f54add8d17bb703ffff3a3f1",
+      "registrySha256": "0868e0fa3167d670138d79b3f49c4143687031239e86d02e5f9c18a5ad89f032",
+      "compositionSha256": "592ed9c3097eacd7993d391130a80c38f7f0811c26a6705bb02bb04d0ebc49fb",
+      "policySha256": "0206bc554342887dd86d56acf08f903bdc4a7de120e08acdd2bc0737a415fa98"
+    },
+    {
+      "selector": "operator-render-jobs",
+      "beforePackageHash": "82d2e105fd50358b2719d55da19badec396c73ed23a0c0ad43d991944cc99d7b",
+      "afterPackageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+      "files": 164,
+      "added": [],
+      "removed": [],
+      "changed": [
+        "runtime/composition-spec.js",
+        "runtime/stdio-entry.js"
+      ],
+      "revision": "selected-v1-084e8e8ad437be7d290f16a36bf57547822f52878ec6509d4f62b853298e2500",
+      "registrySha256": "fe86886c863232911e8eefefed0712b0ba2f6ab549335eb4283c2390a367e6fb",
+      "compositionSha256": "b8e1eb1ed443494e5bb93a2378cb16141524d61e24e6f852a8ceaab926ae9bdb",
+      "policySha256": "317c28ca20a19e834da1e749ec6672cc0273e8da79c3c8d2424a91c831500931"
+    }
+  ],
+  "selected": 61,
+  "deferred": 9,
+  "report": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-b3-961601e5b2ef4acf9b6a02033e6eab0c\\b3-validation.json"
+}

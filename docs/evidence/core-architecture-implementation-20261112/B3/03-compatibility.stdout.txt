@@ -1,0 +1,46 @@
+✔ release policy exact supported format2: 4.0.0 (122.6655ms)
+✔ release policy exact supported format2: 4.1.0 (110.508ms)
+✔ release policy exact supported format2: 4.1.1 (134.9712ms)
+✔ release policy exact supported format2: 4.1.2 (138.0883ms)
+✔ release policy exact supported format2: 4.2.1 (109.2497ms)
+✔ release policy exact supported format2: 4.2.2 (99.6274ms)
+✔ release policy exact supported format2: 4.2.3 (120.7604ms)
+✔ release policy exact supported format2: 4.2.4 (109.7217ms)
+✔ release policy exact supported format2: 4.2.5 (112.9973ms)
+✔ release policy exact supported format2: 4.2.6 (103.4678ms)
+✔ release policy legacy format1 is exact and future versions fail before reading composition (375.1966ms)
+✔ release policy current registry and panel markers remain mandatory (103.7702ms)
+✔ portable owned-text profile actual package has independent pins and retains fixed-profile refusals (1031.1932ms)
+✔ portable owned-text profile actual runtime factory HTTP receipt and sibling readback (3443.1048ms)
+✖ portable owned-text profile native cancellation stays rejected with unchanged readback (3209.7828ms)
+✔ portable owned-text profile invalid original receipt cannot succeed or replay (3348.9263ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 15
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12815.9668
+
+✖ failing tests:
+
+test at core4\test\version-profile-compatibility.test.js:91:1
+✖ portable owned-text profile native cancellation stays rejected with unchanged readback (3209.7828ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'stopped'
+  - 'rejected'
+  
+      at TestContext.<anonymous> (C:\Users\Ant\Documents\Codex\AE_Agent_Core\core4\test\version-profile-compatibility.test.js:93:120)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'stopped',
+    expected: 'rejected',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
