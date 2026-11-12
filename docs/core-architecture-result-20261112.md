@@ -64,4 +64,11 @@ Production incident-repair pin прежний, frozen MSIX rebase не возо�
 TEMP endpoint. Новый выпуск, установка, MCP/CEP cutover и native приёмка
 пользовательского проекта не входят в выполненный source scope.
 
+По следующему отдельному поручению пользователя `operator-render-jobs/owner`
+`950d180c…` установлен на DESKTOP-32974QF штатным stopped update. Identity,
+пользовательские AEP и защищённая история сохранены; новая CEP и одно native
+чтение пустого проекта свежим effective-config клиентом PASS. Cached MCP этого
+чата остался `owner_unavailable`; его обновление не заявляется. Live-мутация
+учитывается следующим этапом [install/live-плана](../plans/core-architecture-install-live-20261112.md).
+
 [План, решения и проверки](../plans/core-architecture-implementation-20261112.md).

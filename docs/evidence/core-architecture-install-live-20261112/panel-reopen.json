@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "kind": "native-ui-observation",
+  "runtime": "bundled node_repl @oai/sky",
+  "controller": "root; exclusive UI interval delegated by install_final_candidate",
+  "windowId": 1706264,
+  "windowTitle": "Adobe After Effects 2026 - Untitled Project.aep",
+  "before": "AE Agent Core 4.2.6: Остановлено: transport_unavailable",
+  "actions": [
+    "Activated returned AE window",
+    "Closed only Core CEP panel through its own Close Panel menu",
+    "Opened Window > Extensions > AE Agent Core"
+  ],
+  "after": "AE Agent Core 4.2.6: Канал Core 4.2.6 готов к командам; Подключение готово. Допуск к изменению проекта выдаётся отдельно.",
+  "projectActions": 0,
+  "aeRestart": false,
+  "initialInputFailure": {
+    "action": "panel options menu element 20",
+    "outcome": "element not available in cached app state; no action performed",
+    "recovery": "fresh screenshot; coordinate-selected same menu"
+  },
+  "scope": "Visual loaded panel and empty Untitled observation. Authenticated identity and native project state require subsequent typed read.",
+  "uiBlockFinished": true,
+  "completion": "Stopped UI calls immediately after observing ready panel. Documented native sky API has no teardown method; controller returned to installation worker."
+}

@@ -683,6 +683,12 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Validation
 
+- После завершения A/B/C пользователь отдельно поручил установку и live AE.
+  Этап I [продолжения](core-architecture-install-live-20261112.md) завершён:
+  operator-render-jobs/owner `950d180c…` установлен штатным stopped update,
+  CEP и свежий effective-config native read PASS. Это отдельное installed
+  evidence; пределы завершённой source-приёмки не переписываются.
+
 - Финальный source coverage SHA:
   032a12aa3d0a3a9277336d79992ab318b1be9ba35912e0738a8f0e123afac261.
   Verifier повторно проверил current Git union, hashes43 source files, protected

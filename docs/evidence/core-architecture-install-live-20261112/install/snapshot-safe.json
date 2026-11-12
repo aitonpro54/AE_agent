@@ -1,0 +1,73 @@
+{
+  "id": "372abe58-e8d9-4595-ad04-fbc10a077ed8",
+  "target": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-install-live-20261112\\private-backup-372abe58-e8d9-4595-ad04-fbc10a077ed8",
+  "manifest": {
+    "file": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-install-live-20261112\\private-backup-372abe58-e8d9-4595-ad04-fbc10a077ed8\\manifest.json",
+    "sha256": "7b854d80b5d27cc48950539c6aa80cf9c5ed5ccb2d0357262cd5e9d50f0eb55d"
+  },
+  "roles": [
+    {
+      "role": "installation",
+      "files": 392,
+      "bytes": 11219632
+    },
+    {
+      "role": "cep",
+      "files": 8,
+      "bytes": 272073
+    },
+    {
+      "role": "preferences",
+      "files": 88,
+      "bytes": 8459121
+    },
+    {
+      "role": "project-config",
+      "files": 1,
+      "bytes": 1121
+    },
+    {
+      "role": "global-config",
+      "files": 1,
+      "bytes": 21566
+    },
+    {
+      "role": "aep-0",
+      "files": 1,
+      "bytes": 276729
+    },
+    {
+      "role": "aep-1",
+      "files": 1,
+      "bytes": 95724372
+    },
+    {
+      "role": "aep-2",
+      "files": 1,
+      "bytes": 95724372
+    },
+    {
+      "role": "aep-3",
+      "files": 1,
+      "bytes": 95762386
+    }
+  ],
+  "protectedPreferenceFiles": 88,
+  "historicalPreferenceFiles": 91,
+  "absentHistoricalPreferences": [
+    "Logs\\UXPLogs_2026-11-09_22-33-21_042857.log",
+    "Logs\\UXPLogs_2026-11-09_22-38-17_951721.log",
+    "Logs\\UXPLogs_2026-11-09_22-44-19_570022.log",
+    "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000136.ldb",
+    "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000138.ldb",
+    "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000141.ldb",
+    "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000144.ldb",
+    "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\000145.log",
+    "26.3\\UXP\\PluginsStorage\\Internal\\com.adobe.ccx.start\\LocalStorage\\MANIFEST-000143"
+  ],
+  "protectedAepFiles": 4,
+  "allInstallationHistoryArchived": true,
+  "verified": "byte-exact",
+  "sourceUnchanged": true,
+  "productionWrites": 0
+}

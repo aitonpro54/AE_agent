@@ -1,0 +1,215 @@
+{
+  "version": 1,
+  "createdAt": "2026-11-12T15:54:20.315Z",
+  "purpose": "desktop-core-ae-panel-startup-candidate-update",
+  "result": "installed-enabled-runtime-not-started",
+  "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+  "oldPackageHash": "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9",
+  "newPackageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+  "distributionHash": "799b23e38839bc53a16ae003c63b5289c79d448de11cfb3a2ea2053e330d2420",
+  "candidateVersion": "4.2.6",
+  "oldDescriptorHash": "07d906b98298242f6a46cf026439f08a8b73c40c9eb4db227e17b7127794b0e1",
+  "effectiveConfigSha256": "21258cf5d0d466a58ceb1e98838a181a6d38b0d9653df07dfd96703466bd45b1",
+  "snapshotManifest": {
+    "file": "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-install-live-20261112\\private-backup-372abe58-e8d9-4595-ad04-fbc10a077ed8\\manifest.json",
+    "sha256": "7b854d80b5d27cc48950539c6aa80cf9c5ed5ccb2d0357262cd5e9d50f0eb55d"
+  },
+  "stopId": "37539102-1019-4f08-8825-ca0c93ccb6c0",
+  "steps": [
+    {
+      "name": "01-stop",
+      "mode": "stop",
+      "attemptId": "77c512fb-cca7-4378-b0fc-e0d1953a05ae",
+      "attempts": 1,
+      "startedAt": "2026-11-12T15:54:20.319Z",
+      "arguments": [
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "37539102-1019-4f08-8825-ca0c93ccb6c0",
+        "--expected-package-hash",
+        "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9"
+      ],
+      "exitCode": 0,
+      "completedAt": "2026-11-12T15:54:21.838Z",
+      "stdoutSha256": "fd6c7741f11f5b80b40a016488c7c6d1134141413b386eb9c893b4b83f2b293c",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "phase": "draining",
+        "id": "37539102-1019-4f08-8825-ca0c93ccb6c0",
+        "accepted": true
+      },
+      "error": null
+    },
+    {
+      "name": "02-inspect-stop-00",
+      "mode": "inspect",
+      "attemptId": "616c1df5-7226-438d-8256-f1b3f9513f15",
+      "attempts": 1,
+      "startedAt": "2026-11-12T15:54:21.842Z",
+      "arguments": [
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "37539102-1019-4f08-8825-ca0c93ccb6c0",
+        "--expected-package-hash",
+        "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9"
+      ],
+      "exitCode": 0,
+      "completedAt": "2026-11-12T15:54:24.226Z",
+      "stdoutSha256": "efd62cd3e5bdafa631ecf0fbba935189fa2947fcd6e177f169d872232d9897a8",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "phase": "stopped",
+        "id": "37539102-1019-4f08-8825-ca0c93ccb6c0",
+        "proofHash": "49a2a04f94ef4b7f58319d8d08c1e73f9aefb395ad36eb8a489afe2ec0a66a02",
+        "inspectionOnly": true
+      },
+      "error": null
+    },
+    {
+      "name": "03-owner-update",
+      "mode": "owner-update",
+      "attemptId": "7b6d1fa9-9448-49da-81c0-9ba7109d5c67",
+      "attempts": 1,
+      "startedAt": "2026-11-12T15:54:25.183Z",
+      "arguments": [
+        "--expected-distribution-hash",
+        "799b23e38839bc53a16ae003c63b5289c79d448de11cfb3a2ea2053e330d2420",
+        "--expected-package-hash",
+        "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+        "--expected-current-package-hash",
+        "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9",
+        "--expected-previous-descriptor-hash",
+        "07d906b98298242f6a46cf026439f08a8b73c40c9eb4db227e17b7127794b0e1",
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "37539102-1019-4f08-8825-ca0c93ccb6c0",
+        "--config",
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex\\config.toml"
+      ],
+      "exitCode": 0,
+      "completedAt": "2026-11-12T15:55:04.868Z",
+      "stdoutSha256": "11844a3f81b8b0e7ba43893fb3dec234fb9e8cabbf333eac39a09ebdd32ef3a2",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "phase": "update-stopped",
+        "transactionId": "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+        "updated": true,
+        "runtimeStarted": false,
+        "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+      },
+      "error": null
+    },
+    {
+      "name": "04-update-inspect",
+      "mode": "update-inspect",
+      "attemptId": "a936584d-8f64-473e-9a7f-11bde8504775",
+      "attempts": 1,
+      "startedAt": "2026-11-12T15:55:04.874Z",
+      "arguments": [
+        "--expected-distribution-hash",
+        "799b23e38839bc53a16ae003c63b5289c79d448de11cfb3a2ea2053e330d2420",
+        "--expected-package-hash",
+        "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+        "--expected-current-package-hash",
+        "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9",
+        "--expected-previous-descriptor-hash",
+        "07d906b98298242f6a46cf026439f08a8b73c40c9eb4db227e17b7127794b0e1",
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "90a876b9-32d2-4c96-b2d9-ee1725d7a779"
+      ],
+      "exitCode": 0,
+      "completedAt": "2026-11-12T15:55:08.022Z",
+      "stdoutSha256": "8e4727684697f02b907e67727dad7b78c4c2c23174dfe4f5fc7b8b4f4b1d3024",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "phase": "update-stopped",
+        "transactionId": "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+        "proofHash": "94a782212f6394b13e8b8470bf8d711cef658bf27ac4d406060ff99660edd303",
+        "inspectionOnly": true,
+        "runtimeStarted": false,
+        "stopped": true
+      },
+      "error": null
+    },
+    {
+      "name": "05-update-enable",
+      "mode": "update-enable",
+      "attemptId": "c6ea848f-6fa1-44d9-9724-377c51d69c4e",
+      "attempts": 1,
+      "startedAt": "2026-11-12T15:55:09.595Z",
+      "arguments": [
+        "--expected-distribution-hash",
+        "799b23e38839bc53a16ae003c63b5289c79d448de11cfb3a2ea2053e330d2420",
+        "--expected-package-hash",
+        "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+        "--expected-current-package-hash",
+        "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9",
+        "--expected-previous-descriptor-hash",
+        "07d906b98298242f6a46cf026439f08a8b73c40c9eb4db227e17b7127794b0e1",
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+        "--expected-proof-hash",
+        "94a782212f6394b13e8b8470bf8d711cef658bf27ac4d406060ff99660edd303"
+      ],
+      "exitCode": 0,
+      "completedAt": "2026-11-12T15:55:17.029Z",
+      "stdoutSha256": "f02b40147b7aef5248facdc3774490ed10cb5dfe01a5bd0c36369e813f2d5d19",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "transactionId": "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+        "enabled": true,
+        "runtimeStarted": false,
+        "sameDescriptor": true,
+        "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+      },
+      "error": null
+    }
+  ],
+  "preservedBeforeFiles": 470,
+  "appendOnlyApplicationLogs": 10,
+  "stop": {
+    "accepted": true,
+    "aeAuthority": false,
+    "automaticReplay": false,
+    "id": "37539102-1019-4f08-8825-ca0c93ccb6c0",
+    "phase": "draining"
+  },
+  "originalStop": {
+    "phase": "stopped",
+    "id": "37539102-1019-4f08-8825-ca0c93ccb6c0",
+    "proofHash": "49a2a04f94ef4b7f58319d8d08c1e73f9aefb395ad36eb8a489afe2ec0a66a02",
+    "inspectionOnly": true
+  },
+  "transactionId": "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+  "inspection": {
+    "phase": "update-stopped",
+    "transactionId": "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+    "proofHash": "94a782212f6394b13e8b8470bf8d711cef658bf27ac4d406060ff99660edd303",
+    "inspectionOnly": true,
+    "runtimeStarted": false,
+    "stopped": true
+  },
+  "readback": {
+    "verified": true,
+    "descriptorHash": "79266cc306d9a080a94d0d1007c26e23b55f1398d640b0dfcbc9f8f6f2e3903b",
+    "credentialsRotated": true,
+    "distinctRoles": true,
+    "configOnlyExpectedPackagePath": true,
+    "preservedFiles": 470
+  },
+  "enabled": {
+    "transactionId": "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+    "enabled": true,
+    "runtimeStarted": false,
+    "sameDescriptor": true,
+    "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+  },
+  "finishedAt": "2026-11-12T15:55:17.934Z"
+}

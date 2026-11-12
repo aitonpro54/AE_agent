@@ -1,0 +1,134 @@
+{
+  "observedAt": "2026-11-12T15:58:08.706Z",
+  "exactProtectedFiles": 469,
+  "unchangedPreferences": 78,
+  "aep": [
+    {
+      "role": "aep-0",
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\slideshow-s1-msi-20261107\\slideshow-s1-desktop-working.aep",
+      "sha256": "773c86afc5ac63c2b8b3bf5b116414297700039a2bf9c2b94fe8aeaf54bdd663",
+      "same": true
+    },
+    {
+      "role": "aep-1",
+      "path": "C:\\Проекты 21\\2026.11.09 - Анатомия хитов (ШМП, Мунивер, СЭБ)\\муз универ_ШМПушка_СЭБ_АНАТОМИЯ ХИТОВ folder\\муз универ_ШМПушка_СЭБ_АНАТОМИЯ ХИТОВ.aep",
+      "sha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+      "same": true
+    },
+    {
+      "role": "aep-2",
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\p2-visible-probe.aep",
+      "sha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+      "same": true
+    },
+    {
+      "role": "aep-3",
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\p2-visible-installed.aep",
+      "sha256": "794f0c50fd1fc02abdf0702b9f36694e20bfad3525c8577c0c68cd59ade791a6",
+      "same": true
+    }
+  ],
+  "prefixes": [
+    {
+      "role": "installation",
+      "file": "state/production/receiver/completions.ndjson",
+      "beforeBytes": 11289,
+      "afterBytes": 16071,
+      "prefixSha256": "171adef1de0a7dc2f7b9495e8a3a2c8cfac421a0b4303a4c20a819234a5469e7",
+      "afterSha256": "e7e08430a91fcc7b9821d2557f8eb42dfc7a10b281fcb55ba76ccf3d7853dfc2"
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-09_22-52-28_700939.log",
+      "beforeBytes": 200,
+      "afterBytes": 200,
+      "prefixSha256": "cadd5885b7db7b9b7b7df33898ec1e1c6b09d6a80de47bb77fd0170f265f7bed",
+      "afterSha256": "cadd5885b7db7b9b7b7df33898ec1e1c6b09d6a80de47bb77fd0170f265f7bed"
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-10_09-05-32_490308.log",
+      "beforeBytes": 200,
+      "afterBytes": 200,
+      "prefixSha256": "71deed142dd1dd84bc99a5cad37d91bf4bf10554d957971a7ef429720d24236c",
+      "afterSha256": "71deed142dd1dd84bc99a5cad37d91bf4bf10554d957971a7ef429720d24236c"
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-10_09-23-17_722110.log",
+      "beforeBytes": 200,
+      "afterBytes": 200,
+      "prefixSha256": "dd1a23cf6fb968ff3c1a4ebc127cc16a60f5c2ee887defb2064012746e0b11ad",
+      "afterSha256": "dd1a23cf6fb968ff3c1a4ebc127cc16a60f5c2ee887defb2064012746e0b11ad"
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-10_09-37-44_440504.log",
+      "beforeBytes": 200,
+      "afterBytes": 200,
+      "prefixSha256": "500cac35765ffb8d778ab5171c4e4e43aa0d7b74aad06a29fc6c8c164a27990e",
+      "afterSha256": "500cac35765ffb8d778ab5171c4e4e43aa0d7b74aad06a29fc6c8c164a27990e"
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-10_10-23-44_984687.log",
+      "beforeBytes": 200,
+      "afterBytes": 200,
+      "prefixSha256": "05996c97f88724257e0b348865387b302e8db6eb1bd03241d26c0493b8aaf9dd",
+      "afterSha256": "05996c97f88724257e0b348865387b302e8db6eb1bd03241d26c0493b8aaf9dd"
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-10_10-47-58_489073.log",
+      "beforeBytes": 199,
+      "afterBytes": 199,
+      "prefixSha256": "ab4a2c610e193e8c9ac1bd2d930398b7fb427a9b02880eaece25120d83d1c6a1",
+      "afterSha256": "ab4a2c610e193e8c9ac1bd2d930398b7fb427a9b02880eaece25120d83d1c6a1"
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-10_11-12-23_910084.log",
+      "beforeBytes": 200,
+      "afterBytes": 200,
+      "prefixSha256": "423c5a2c737e6c0a6e065e4b4e6e8112fc8ff1241e522c26534be9f3478d07a5",
+      "afterSha256": "423c5a2c737e6c0a6e065e4b4e6e8112fc8ff1241e522c26534be9f3478d07a5"
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-11_15-02-02_176715.log",
+      "beforeBytes": 43208,
+      "afterBytes": 43208,
+      "prefixSha256": "c45aaaf55ddd4f4cf65312ba3789e6cff1baaeabc6f0de296bc6290fc54c63e9",
+      "afterSha256": "c45aaaf55ddd4f4cf65312ba3789e6cff1baaeabc6f0de296bc6290fc54c63e9"
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-12_09-55-41_884734.log",
+      "beforeBytes": 24266,
+      "afterBytes": 24266,
+      "prefixSha256": "a2936f8a52209da8d97e49e5876f2605e2abc8f87e9e84742ee0c4b6f7e15960",
+      "afterSha256": "a2936f8a52209da8d97e49e5876f2605e2abc8f87e9e84742ee0c4b6f7e15960"
+    },
+    {
+      "role": "preferences",
+      "file": "Logs/UXPLogs_2026-11-12_11-59-40_431989.log",
+      "beforeBytes": 42888,
+      "afterBytes": 42888,
+      "prefixSha256": "2b97f5792cf9e3f90e52df90df5638c8fa1da7fdedbc3888ff4f38c6c2cce7ed",
+      "afterSha256": "2b97f5792cf9e3f90e52df90df5638c8fa1da7fdedbc3888ff4f38c6c2cce7ed"
+    }
+  ],
+  "changed": [],
+  "skippedExpectedRuntimeFiles": [
+    "core-client.json",
+    "installation.json",
+    "state/production/broker/broker-owner.lock",
+    "state/production/receiver/owner",
+    "state/production/runtime-owner.json"
+  ],
+  "installationIdentityPreserved": true,
+  "installedReleaseAndCepVerified": true,
+  "configOnlyExpectedPackagePath": true,
+  "descriptorSha256": "79266cc306d9a080a94d0d1007c26e23b55f1398d640b0dfcbc9f8f6f2e3903b",
+  "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+}

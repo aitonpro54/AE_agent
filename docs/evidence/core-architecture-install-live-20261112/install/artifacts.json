@@ -1,0 +1,42 @@
+{
+  "observedAt": "2026-11-12T15:59:15.5411878Z",
+  "leaseTokenValuesRedacted": true,
+  "files": [
+    {
+      "sha256": "72dd14e67c25fba777bfbf7b983b66f0e0aa936e1ceffe4e79dabebb7b77f740",
+      "bytes": 445,
+      "file": "candidate-pins.json"
+    },
+    {
+      "sha256": "e800ceef36bae6a1a225c7237b7c09db948489af5a2c10e930ed12b8d0a7024c",
+      "bytes": 5580,
+      "file": "final-preservation.json"
+    },
+    {
+      "sha256": "ef935c15ed864ceca9350696c3422b7c725015fee2c51d8ea0ebc6fd87bfcd87",
+      "bytes": 52667,
+      "file": "installed-native-01.json"
+    },
+    {
+      "sha256": "06b644c94052cea0b32446fed0b03559461800038b797f58c957e8ea9fa618d0",
+      "bytes": 11599,
+      "file": "installed-preflight-01.json"
+    },
+    {
+      "sha256": "50ef77ef3a8012a75df30a68ad8095ef91423bc258e03980d1aa27e8ddf7f1f6",
+      "bytes": 2157,
+      "file": "snapshot-safe.json"
+    },
+    {
+      "sha256": "6e903d84f5c34ce689776c0a0efbf13de0ffb5a8e9f128a96c367f28be508e4e",
+      "bytes": 19163,
+      "file": "summary.json"
+    },
+    {
+      "sha256": "27504c87021e56f6192b008e6e720b00e115cf6ceb344fb56078eba14cf65bbe",
+      "bytes": 8734,
+      "file": "update-once.json"
+    }
+  ],
+  "currentAndPreviousRoleCredentialsAbsent": true
+}

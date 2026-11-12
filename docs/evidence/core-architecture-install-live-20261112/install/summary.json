@@ -1,0 +1,467 @@
+{
+  "recordedAt": "2026-11-12T15:58:42.5630747Z",
+  "result": "installed-and-fresh-effective-config-native-read-pass",
+  "sourceCommit": "1f837b32a14eed9332b9f0aa61642dc68deabc68",
+  "version": "4.2.6",
+  "composition": "operator-render-jobs/owner",
+  "oldPackageHash": "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9",
+  "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+  "distributionHash": "799b23e38839bc53a16ae003c63b5289c79d448de11cfb3a2ea2053e330d2420",
+  "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+  "stopId": "37539102-1019-4f08-8825-ca0c93ccb6c0",
+  "transactionId": "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+  "steps": [
+    {
+      "name": "01-stop",
+      "mode": "stop",
+      "attemptId": "77c512fb-cca7-4378-b0fc-e0d1953a05ae",
+      "attempts": 1,
+      "startedAt": "2026-11-12T15:54:20.319Z",
+      "arguments": [
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "37539102-1019-4f08-8825-ca0c93ccb6c0",
+        "--expected-package-hash",
+        "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9"
+      ],
+      "exitCode": 0,
+      "completedAt": "2026-11-12T15:54:21.838Z",
+      "stdoutSha256": "fd6c7741f11f5b80b40a016488c7c6d1134141413b386eb9c893b4b83f2b293c",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "phase": "draining",
+        "id": "37539102-1019-4f08-8825-ca0c93ccb6c0",
+        "accepted": true
+      },
+      "error": null
+    },
+    {
+      "name": "02-inspect-stop-00",
+      "mode": "inspect",
+      "attemptId": "616c1df5-7226-438d-8256-f1b3f9513f15",
+      "attempts": 1,
+      "startedAt": "2026-11-12T15:54:21.842Z",
+      "arguments": [
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "37539102-1019-4f08-8825-ca0c93ccb6c0",
+        "--expected-package-hash",
+        "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9"
+      ],
+      "exitCode": 0,
+      "completedAt": "2026-11-12T15:54:24.226Z",
+      "stdoutSha256": "efd62cd3e5bdafa631ecf0fbba935189fa2947fcd6e177f169d872232d9897a8",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "phase": "stopped",
+        "id": "37539102-1019-4f08-8825-ca0c93ccb6c0",
+        "proofHash": "49a2a04f94ef4b7f58319d8d08c1e73f9aefb395ad36eb8a489afe2ec0a66a02",
+        "inspectionOnly": true
+      },
+      "error": null
+    },
+    {
+      "name": "03-owner-update",
+      "mode": "owner-update",
+      "attemptId": "7b6d1fa9-9448-49da-81c0-9ba7109d5c67",
+      "attempts": 1,
+      "startedAt": "2026-11-12T15:54:25.183Z",
+      "arguments": [
+        "--expected-distribution-hash",
+        "799b23e38839bc53a16ae003c63b5289c79d448de11cfb3a2ea2053e330d2420",
+        "--expected-package-hash",
+        "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+        "--expected-current-package-hash",
+        "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9",
+        "--expected-previous-descriptor-hash",
+        "07d906b98298242f6a46cf026439f08a8b73c40c9eb4db227e17b7127794b0e1",
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "37539102-1019-4f08-8825-ca0c93ccb6c0",
+        "--config",
+        "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex\\config.toml"
+      ],
+      "exitCode": 0,
+      "completedAt": "2026-11-12T15:55:04.868Z",
+      "stdoutSha256": "11844a3f81b8b0e7ba43893fb3dec234fb9e8cabbf333eac39a09ebdd32ef3a2",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "phase": "update-stopped",
+        "transactionId": "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+        "updated": true,
+        "runtimeStarted": false,
+        "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+      },
+      "error": null
+    },
+    {
+      "name": "04-update-inspect",
+      "mode": "update-inspect",
+      "attemptId": "a936584d-8f64-473e-9a7f-11bde8504775",
+      "attempts": 1,
+      "startedAt": "2026-11-12T15:55:04.874Z",
+      "arguments": [
+        "--expected-distribution-hash",
+        "799b23e38839bc53a16ae003c63b5289c79d448de11cfb3a2ea2053e330d2420",
+        "--expected-package-hash",
+        "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+        "--expected-current-package-hash",
+        "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9",
+        "--expected-previous-descriptor-hash",
+        "07d906b98298242f6a46cf026439f08a8b73c40c9eb4db227e17b7127794b0e1",
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "90a876b9-32d2-4c96-b2d9-ee1725d7a779"
+      ],
+      "exitCode": 0,
+      "completedAt": "2026-11-12T15:55:08.022Z",
+      "stdoutSha256": "8e4727684697f02b907e67727dad7b78c4c2c23174dfe4f5fc7b8b4f4b1d3024",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "phase": "update-stopped",
+        "transactionId": "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+        "proofHash": "94a782212f6394b13e8b8470bf8d711cef658bf27ac4d406060ff99660edd303",
+        "inspectionOnly": true,
+        "runtimeStarted": false,
+        "stopped": true
+      },
+      "error": null
+    },
+    {
+      "name": "05-update-enable",
+      "mode": "update-enable",
+      "attemptId": "c6ea848f-6fa1-44d9-9724-377c51d69c4e",
+      "attempts": 1,
+      "startedAt": "2026-11-12T15:55:09.595Z",
+      "arguments": [
+        "--expected-distribution-hash",
+        "799b23e38839bc53a16ae003c63b5289c79d448de11cfb3a2ea2053e330d2420",
+        "--expected-package-hash",
+        "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+        "--expected-current-package-hash",
+        "6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9",
+        "--expected-previous-descriptor-hash",
+        "07d906b98298242f6a46cf026439f08a8b73c40c9eb4db227e17b7127794b0e1",
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+        "--expected-proof-hash",
+        "94a782212f6394b13e8b8470bf8d711cef658bf27ac4d406060ff99660edd303"
+      ],
+      "exitCode": 0,
+      "completedAt": "2026-11-12T15:55:17.029Z",
+      "stdoutSha256": "f02b40147b7aef5248facdc3774490ed10cb5dfe01a5bd0c36369e813f2d5d19",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "value": {
+        "transactionId": "90a876b9-32d2-4c96-b2d9-ee1725d7a779",
+        "enabled": true,
+        "runtimeStarted": false,
+        "sameDescriptor": true,
+        "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+      },
+      "error": null
+    }
+  ],
+  "installedReadback": {
+    "verified": true,
+    "descriptorHash": "79266cc306d9a080a94d0d1007c26e23b55f1398d640b0dfcbc9f8f6f2e3903b",
+    "credentialsRotated": true,
+    "distinctRoles": true,
+    "configOnlyExpectedPackagePath": true,
+    "preservedFiles": 470
+  },
+  "effectiveConfig": {
+    "enabled": true,
+    "command": "C:\\Program Files\\nodejs\\node.exe",
+    "args": [
+      "C:\\Users\\Ant\\AEAgentCore4\\releases\\950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80\\runtime\\client-entry.js",
+      "--client-descriptor",
+      "C:\\Users\\Ant\\AEAgentCore4\\core-client.json"
+    ],
+    "cwd": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core",
+    "env": null,
+    "env_vars": [],
+    "sourceSha256": "3888c46be38e3cbd723ea7f02954d5565dfe85824f48717e417e8445f785bc33"
+  },
+  "clientPid": 23540,
+  "ownerPid": 5604,
+  "ownerBirth": "639300957328159230",
+  "peer": {
+    "acceptedIdentity": {
+      "extensionId": "com.codex.aeagentcore4.panel",
+      "panelBuildId": "574cffbc4489a568630268e694dcb8c202f8e7bce93380094584067b5e52c712",
+      "productVersion": "4.2.6",
+      "protocolVersion": 1,
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+    },
+    "connected": true,
+    "identityEpoch": "http-6ab8ed7f-41bc-4191-bf66-587256325df6",
+    "identityObservedAt": 1794499049910,
+    "origin": "file://",
+    "peerId": "panel-dbc8a0674c15d54062622fb8c54fdd4cef2d58e138f00e98",
+    "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+    "registryReady": true
+  },
+  "inspection": {
+    "authority": false,
+    "continuity": false,
+    "contractId": "b25529075602e5a6baa8bf109cd8ea26cda06f2e1d44524f36f46d3ac66c77b9",
+    "evidenceRef": "observation-26a736b5-ca78-4cb3-8a7b-efb474bfce88",
+    "moduleId": "project-inspection",
+    "observation": {
+      "activeComp": null,
+      "aeVersion": "26.3x87",
+      "compositions": [],
+      "coverage": {
+        "displayNamesShortened": false,
+        "inventory": {
+          "itemsScanned": 0,
+          "nextCursor": null,
+          "startItemIndex": 1,
+          "status": "complete",
+          "throughItemIndex": 0
+        },
+        "layers": {
+          "returned": 0,
+          "total": 0
+        },
+        "lookup": {
+          "compId": null,
+          "method": "none",
+          "status": "not_requested"
+        }
+      },
+      "dirty": false,
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "Несохранённый проект",
+        "numItems": 0,
+        "saved": false
+      },
+      "projectRevision": 1,
+      "target": {
+        "compId": null,
+        "projectId": null
+      },
+      "truncated": false
+    },
+    "originalBinding": {
+      "channelEpoch": "http-6ab8ed7f-41bc-4191-bf66-587256325df6",
+      "commandId": "inspect-3f069492-0b8f-4665-862e-fb6db9364dbd",
+      "controllerId": "controller-48c0e4e6-586c-4a09-8162-eebbade109dc",
+      "executorHash": "a33134d736c8b638edde6f61ea3f241d900a735afdd992dd451d18920ddad01d",
+      "moduleId": "project-inspection",
+      "operationId": "inspect",
+      "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "phase": "inspect",
+      "receiptRef": "ea2b6a4f2e7ea006e3793ea1f84796cf7a35e6da2c5aca002dda5c20a3e84e16",
+      "receiverStoreIdentity": "receiver-store-cd2c90f0-3e8e-4184-924c-e245b98f8fef"
+    },
+    "pins": {
+      "executorHash": "a33134d736c8b638edde6f61ea3f241d900a735afdd992dd451d18920ddad01d",
+      "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+      "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+    }
+  },
+  "controllerReleased": true,
+  "holder": null,
+  "pending": null,
+  "unknown": false,
+  "ledgerFault": false,
+  "ownershipFault": null,
+  "storeFault": false,
+  "resourceProvider": {
+    "adopted": false,
+    "coverage": {
+      "core4Lane": "cooperating-Core4-only",
+      "hostProcess": "unavailable",
+      "legacyEndpoints": "named-probes-only",
+      "legacyPhysicalQueue": "not-proven",
+      "otherAEActors": "outside-coverage",
+      "sharedOutputs": "not-requested"
+    },
+    "origin": null
+  },
+  "workSession": {
+    "aeAuthority": false,
+    "baselineRequired": false,
+    "mode": "legacy",
+    "resetId": null,
+    "resetPending": false,
+    "sessionId": null
+  },
+  "preservation": {
+    "observedAt": "2026-11-12T15:58:08.706Z",
+    "exactProtectedFiles": 469,
+    "unchangedPreferences": 78,
+    "aep": [
+      {
+        "role": "aep-0",
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\slideshow-s1-msi-20261107\\slideshow-s1-desktop-working.aep",
+        "sha256": "773c86afc5ac63c2b8b3bf5b116414297700039a2bf9c2b94fe8aeaf54bdd663",
+        "same": true
+      },
+      {
+        "role": "aep-1",
+        "path": "C:\\Проекты 21\\2026.11.09 - Анатомия хитов (ШМП, Мунивер, СЭБ)\\муз универ_ШМПушка_СЭБ_АНАТОМИЯ ХИТОВ folder\\муз универ_ШМПушка_СЭБ_АНАТОМИЯ ХИТОВ.aep",
+        "sha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+        "same": true
+      },
+      {
+        "role": "aep-2",
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\p2-visible-probe.aep",
+        "sha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+        "same": true
+      },
+      {
+        "role": "aep-3",
+        "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\p2-visible-installed.aep",
+        "sha256": "794f0c50fd1fc02abdf0702b9f36694e20bfad3525c8577c0c68cd59ade791a6",
+        "same": true
+      }
+    ],
+    "prefixes": [
+      {
+        "role": "installation",
+        "file": "state/production/receiver/completions.ndjson",
+        "beforeBytes": 11289,
+        "afterBytes": 16071,
+        "prefixSha256": "171adef1de0a7dc2f7b9495e8a3a2c8cfac421a0b4303a4c20a819234a5469e7",
+        "afterSha256": "e7e08430a91fcc7b9821d2557f8eb42dfc7a10b281fcb55ba76ccf3d7853dfc2"
+      },
+      {
+        "role": "preferences",
+        "file": "Logs/UXPLogs_2026-11-09_22-52-28_700939.log",
+        "beforeBytes": 200,
+        "afterBytes": 200,
+        "prefixSha256": "cadd5885b7db7b9b7b7df33898ec1e1c6b09d6a80de47bb77fd0170f265f7bed",
+        "afterSha256": "cadd5885b7db7b9b7b7df33898ec1e1c6b09d6a80de47bb77fd0170f265f7bed"
+      },
+      {
+        "role": "preferences",
+        "file": "Logs/UXPLogs_2026-11-10_09-05-32_490308.log",
+        "beforeBytes": 200,
+        "afterBytes": 200,
+        "prefixSha256": "71deed142dd1dd84bc99a5cad37d91bf4bf10554d957971a7ef429720d24236c",
+        "afterSha256": "71deed142dd1dd84bc99a5cad37d91bf4bf10554d957971a7ef429720d24236c"
+      },
+      {
+        "role": "preferences",
+        "file": "Logs/UXPLogs_2026-11-10_09-23-17_722110.log",
+        "beforeBytes": 200,
+        "afterBytes": 200,
+        "prefixSha256": "dd1a23cf6fb968ff3c1a4ebc127cc16a60f5c2ee887defb2064012746e0b11ad",
+        "afterSha256": "dd1a23cf6fb968ff3c1a4ebc127cc16a60f5c2ee887defb2064012746e0b11ad"
+      },
+      {
+        "role": "preferences",
+        "file": "Logs/UXPLogs_2026-11-10_09-37-44_440504.log",
+        "beforeBytes": 200,
+        "afterBytes": 200,
+        "prefixSha256": "500cac35765ffb8d778ab5171c4e4e43aa0d7b74aad06a29fc6c8c164a27990e",
+        "afterSha256": "500cac35765ffb8d778ab5171c4e4e43aa0d7b74aad06a29fc6c8c164a27990e"
+      },
+      {
+        "role": "preferences",
+        "file": "Logs/UXPLogs_2026-11-10_10-23-44_984687.log",
+        "beforeBytes": 200,
+        "afterBytes": 200,
+        "prefixSha256": "05996c97f88724257e0b348865387b302e8db6eb1bd03241d26c0493b8aaf9dd",
+        "afterSha256": "05996c97f88724257e0b348865387b302e8db6eb1bd03241d26c0493b8aaf9dd"
+      },
+      {
+        "role": "preferences",
+        "file": "Logs/UXPLogs_2026-11-10_10-47-58_489073.log",
+        "beforeBytes": 199,
+        "afterBytes": 199,
+        "prefixSha256": "ab4a2c610e193e8c9ac1bd2d930398b7fb427a9b02880eaece25120d83d1c6a1",
+        "afterSha256": "ab4a2c610e193e8c9ac1bd2d930398b7fb427a9b02880eaece25120d83d1c6a1"
+      },
+      {
+        "role": "preferences",
+        "file": "Logs/UXPLogs_2026-11-10_11-12-23_910084.log",
+        "beforeBytes": 200,
+        "afterBytes": 200,
+        "prefixSha256": "423c5a2c737e6c0a6e065e4b4e6e8112fc8ff1241e522c26534be9f3478d07a5",
+        "afterSha256": "423c5a2c737e6c0a6e065e4b4e6e8112fc8ff1241e522c26534be9f3478d07a5"
+      },
+      {
+        "role": "preferences",
+        "file": "Logs/UXPLogs_2026-11-11_15-02-02_176715.log",
+        "beforeBytes": 43208,
+        "afterBytes": 43208,
+        "prefixSha256": "c45aaaf55ddd4f4cf65312ba3789e6cff1baaeabc6f0de296bc6290fc54c63e9",
+        "afterSha256": "c45aaaf55ddd4f4cf65312ba3789e6cff1baaeabc6f0de296bc6290fc54c63e9"
+      },
+      {
+        "role": "preferences",
+        "file": "Logs/UXPLogs_2026-11-12_09-55-41_884734.log",
+        "beforeBytes": 24266,
+        "afterBytes": 24266,
+        "prefixSha256": "a2936f8a52209da8d97e49e5876f2605e2abc8f87e9e84742ee0c4b6f7e15960",
+        "afterSha256": "a2936f8a52209da8d97e49e5876f2605e2abc8f87e9e84742ee0c4b6f7e15960"
+      },
+      {
+        "role": "preferences",
+        "file": "Logs/UXPLogs_2026-11-12_11-59-40_431989.log",
+        "beforeBytes": 42888,
+        "afterBytes": 42888,
+        "prefixSha256": "2b97f5792cf9e3f90e52df90df5638c8fa1da7fdedbc3888ff4f38c6c2cce7ed",
+        "afterSha256": "2b97f5792cf9e3f90e52df90df5638c8fa1da7fdedbc3888ff4f38c6c2cce7ed"
+      }
+    ],
+    "changed": [],
+    "skippedExpectedRuntimeFiles": [
+      "core-client.json",
+      "installation.json",
+      "state/production/broker/broker-owner.lock",
+      "state/production/receiver/owner",
+      "state/production/runtime-owner.json"
+    ],
+    "installationIdentityPreserved": true,
+    "installedReleaseAndCepVerified": true,
+    "configOnlyExpectedPackagePath": true,
+    "descriptorSha256": "79266cc306d9a080a94d0d1007c26e23b55f1398d640b0dfcbc9f8f6f2e3903b",
+    "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+  },
+  "limits": [
+    "Fresh standard stdio client from actual effective project MCP config passed; root cached in-chat core_status returned owner_unavailable once after update. Cached client remains unrefreshed.",
+    "AE16072 was preserved; only root-controlled CEP close/reopen, no AE restart.",
+    "One readonly project-inspection of empty unsaved project. No project mutation, save/reopen or product acceptance.",
+    "Native read grants no AE authority, adoption or continuity.",
+    "Broad source acceptance A/B/C was reused, not rerun.",
+    "Historical frozen MSIX cutover incident remains outside scope."
+  ],
+  "scripts": [
+    {
+      "file": "client-proof.cjs",
+      "sha256": "e89488ef2feb39b5e88a2837b17ea040780bc25dadb1917918bc49a001db2e33"
+    },
+    {
+      "file": "final-preservation.cjs",
+      "sha256": "7fa28954e4c166cf51f3929ddcabf3648bd4706800d059575172c957c4599f3d"
+    },
+    {
+      "file": "snapshot.cjs",
+      "sha256": "c34eb8c84c000c7bf78d521e4a4c674dceb1b9a9faeb67359cdd0634200ca941"
+    },
+    {
+      "file": "update-once.cjs",
+      "sha256": "a995c73876e6aa94b510755efb9f30759dd48dca4a008e03e8eed86d9b456216"
+    }
+  ],
+  "cachedRootClient": {
+    "result": "owner_unavailable",
+    "freshClientProofUnaffected": true,
+    "readOnly": true,
+    "attempts": 1,
+    "observationSource": "root direct configured MCP core_status after update",
+    "repaired": false
+  }
+}
