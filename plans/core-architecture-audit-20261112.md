@@ -101,3 +101,28 @@ evidence в полном проекте. Новых исправлений, inst
 downstream использования. Response/request дополнения не содержат совпадений
 secret-patterns/email; allowlist для Argon проверена. CU-блок Pro завершён
 перед передачей Argon. Ответ Argon ещё ожидается.
+
+## Локальная сверка Pro
+
+### Progress
+
+`local-pro-triage.md` содержит разбор AE-01–AE-08 и дополнительных утверждений
+по полному локальному source, существующим тестам и evidence. Подтверждены
+частичная модульность и дефект ожидания повторного нижнего close; верхний
+Owner guard ограничивает последний. Текущая поломка Titles из AE-06 не следует:
+active HTTP validator принимает transactionReceipt.
+
+### Decision Log
+
+Исторические recovery/native проверки существуют. Их отсутствие в выбранном
+bundle не объявляется отсутствием в проекте. Из проверенных прежних keys
+применим exact controller-lease PASS; несовпадение других closures означает
+отказ от автоматического reuse, а не найденную регрессию. Рекомендации Pro
+остаются предложениями для будущих задач, без назначения новых acceptance gates.
+
+### Validation
+
+Source/test/docs reads, read-only evidence-key/schema comparison. Для одного
+component reuse подтверждены key и SHA полного stdout PASS 16/16. Новых тестов
+и live операций не было; offline close experiment не потребовался. Продуктовые
+исходники сохранены.
