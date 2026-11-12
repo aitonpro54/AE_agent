@@ -7,6 +7,17 @@
 
 ## Progress
 
+- **Итог после полного перезапуска Codex пользователем: обязательный MCP proof
+  текущего чата PASS.** Прямой namespace подтвердил package `75a95aa5…`,
+  `file://`, panel `2754542e…` и registry ready. Acquire → connect → одна
+  fresh `project-inspection` → release завершены. Observation
+  `03e5b86d-bed8-4b1d-bbaf-487207c53122`, command
+  `inspect-d2872d0c-cf8a-4ea8-a4ea-7d769be0e271`; own project comp 1,
+  revision 72, dirty=false. Final holder=null, pending/UNKNOWN/fault отсутствуют.
+  Новый app-server 30808/client 46604 загрузил текущий release; AE 39220 и
+  owner 31260/boot `e7ca4384…` остались прежними. Ниже сохранены предыдущие
+  checkpoints до пользовательского restart; их открытый статус больше не итог.
+
 - Начальная проверка встроенного `core_status` этого чата по-прежнему даёт
   `owner_unavailable`. Работа свежего отдельного CLI-клиента из прошлого этапа
   не считается доказательством обновления этого чата.
@@ -73,8 +84,22 @@
   не включает. Project entries намеренно read-only. Restart SSH/WSL и sidebar
   error recovery не являются подтверждённым путём для healthy local host.
   Искусственного изменения глобальных MCP ради этой кнопки не выполнялось.
+- Пользователь уточнил, что сам перезапустит Codex целиком; дальнейший поиск
+  UI Restart прекращён. На момент передачи old thin client 42676 ещё существовал,
+  actual reload не наблюдался. После запуска продолжить в этом же чате: прямой
+  namespace `core_status` → проверить package `75a95aa5…`, connected/registryReady
+  и свободную healthy lane → acquire по свежему workSession.sessionId → connect
+  → свежий contract/project-inspection → release и preservation. Не повторять
+  installation IDs, owner-restart proof или source tests. Панельный milestone
+  уже зафиксирован отдельным коммитом `5f42f78`; текущий MCP proof остаётся открыт.
 
 ## Decision Log
+
+- Последнее уточнение пользователя выбирает полный restart Codex самим
+  пользователем. Это закрыло refresh клиента; автоматический reload активного
+  Codex этим результатом не заявляется. Root проверил именно MCP текущего чата,
+  потому что проверка helper/CLI не заменяет эту границу. Повтор source tests,
+  install, owner-restart или AE UI для финального proof не выполнялся.
 
 - Это новый инженерный блок, отдельный от завершённой install/live приёмки.
   Ownership/UNKNOWN/latches, authentication/Origin и project grants сохраняются.
@@ -108,6 +133,23 @@
 
 ## Validation
 
+- [Прямой current-chat MCP proof](../docs/evidence/core-mcp-panel-background-reconnect-20261112/current-chat-mcp.json),
+  [сохранность](../docs/evidence/core-mcp-panel-background-reconnect-20261112/current-chat-preservation.json)
+  и [процессы](../docs/evidence/core-mcp-panel-background-reconnect-20261112/current-chat-processes.json)
+  закрывают обязательный итог этого блока. Fresh native dispatch ровно один;
+  release=true, пять AEP и пять Core binding files неизменны, 14 prefixes
+  сохранены, receiver 79437 → 82090 (два исходных receipt records), ledger
+  140900 неизменён. Пользовательские dirty files сохранены.
+- Independent Luna `ae_scout` read-only consistency review: scoped ACCEPT
+  direct namespace/native proof и итоговой сохранности. Проверки не повторял.
+- Global config после пользовательского полного restart отличается от прежнего
+  snapshot: семь ключей notify/command/runtime paths. Root его не изменял и не
+  восстанавливал; неизменность всех global bytes через пользовательский restart
+  не заявляется. Приватная проверка сохранности сначала исправила ошибочный путь
+  к CEP installation.js, затем зафиксировала эту global delta. Нативных повторов
+  и production writes не было; завершён только собственный ошибочный read-only
+  verifier с проверенными PID/birth/path. Frozen MSIX incident не возобновлялся.
+
 - Обязательный итог: встроенный MCP этого чата подтверждает actual новый
   package/owner и выполняет native inspection с освобождением lease.
 - Фоновая live-проверка должна включать реальный owner restart с открытой
@@ -130,7 +172,7 @@
   Без packet capture exact403 против transport ветки в live не различаем;
   обе address-tested offline. Последующий реальный package/marker update в
   live открыт; второй synthetic update не выполнялся.
-- Текущий MCP чата ещё не обновлён: два прямых namespace `core_status` дали
+- До полного restart пользователем MCP чата не был обновлён: два прямых namespace `core_status` дали
   `owner_unavailable`. Source/live panel milestone завершён отдельно; весь
   пользовательский запрос нельзя считать закрытым до прямого configured
   namespace native proof текущего чата после разрешённого refresh.

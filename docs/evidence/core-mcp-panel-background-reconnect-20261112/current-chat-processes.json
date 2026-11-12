@@ -1,0 +1,30 @@
+{
+  "observedAt": "2026-11-12T18:11:19.568Z",
+  "userPerformedFullCodexRestart": true,
+  "oldAppServerPid": 35608,
+  "oldStaleCoreClientPid": 42676,
+  "currentAppServer": {
+    "pid": 30808,
+    "parentPid": 9340,
+    "createdAt": "2026-11-12T23:01:25.418305+05:00"
+  },
+  "currentCoreClient": {
+    "pid": 46604,
+    "parentPid": 30808,
+    "createdAt": "2026-11-12T23:01:40.874687+05:00",
+    "packageHash": "75a95aa5738f313f4d00e0f40b80c57048de1d818acb64c0d072cc0b6cbe3c45"
+  },
+  "sameAE": {
+    "pid": 39220,
+    "createdAt": "2026-11-12T21:28:50.085309+05:00",
+    "previousBirthUtc": "2026-11-12T16:28:50.0853090Z",
+    "same": true
+  },
+  "failedReadOnlyVerifier": {
+    "pid": 10376,
+    "exactTaskPathAndBirthChecked": true,
+    "stopped": true,
+    "coreClientOrOwnerTerminated": false
+  },
+  "agentUiRestartClicks": 0
+}

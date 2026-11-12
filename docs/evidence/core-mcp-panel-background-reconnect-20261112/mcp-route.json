@@ -60,6 +60,14 @@
     "https://learn.chatgpt.com/docs/app-server",
     "https://learn.chatgpt.com/docs/extend/mcp?surface=cli"
   ],
-  "currentChatRefreshProven": false,
-  "result": "No exposed supported active-runtime reload endpoint found. UI Restart blocked by bundled Computer Use rule. Current-chat refresh remains open; separate CLI proof does not close it."
+  "currentChatRefreshProven": true,
+  "resolution": {
+    "method": "Full Codex restart performed by the user after explicit clarification.",
+    "proof": "current-chat-mcp.json",
+    "result": "PASS-current-chat-configured-native",
+    "agentUiRestartClicks": 0,
+    "automaticActiveRuntimeReloadProven": false,
+    "separateCliUsedAsProof": false
+  },
+  "result": "RESOLVED by user full Codex restart and direct current-chat namespace native read/release. Earlier missing-endpoint/UI-restriction investigation above is historical."
 }

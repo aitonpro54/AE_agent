@@ -39,11 +39,25 @@
       "unchanged": true
     }
   },
+  "currentChatFollowup": {
+    "reviewRole": "ae_scout / Luna High",
+    "mode": "Independent read-only file consistency review; no live calls or writes.",
+    "result": "Scoped ACCEPT",
+    "proof": "current-chat-mcp.json",
+    "preservation": "current-chat-preservation.json",
+    "directNamespaceConfirmed": true,
+    "freshObservation": "observation-03e5b86d-bed8-4b1d-bbaf-487207c53122",
+    "leaseReleasedAndHealthy": true,
+    "nativeDispatchAttempts": 1,
+    "fiveAepAndFiveCoreFixedFilesPreserved": true,
+    "fourteenPrefixesPreserved": true,
+    "globalConfigLimit": "Changed versus snapshot before user full Codex restart. Delta recorded, not restored or attributed to Core inspection; no all-global-bytes preservation claim."
+  },
   "limits": [
     "Initial CU activation excluded from background acceptance.",
     "Exact403 versus transport-loss live subpath not identified without packet capture.",
     "Subsequent real package-marker update remains open.",
-    "Current-chat MCP not refreshed; separate CLI proof does not close it.",
+    "At initial review current-chat MCP was not refreshed. Subsequent user restart and direct-namespace follow-up above close this item.",
     "Full release and MSI live portability not certified."
   ]
 }
