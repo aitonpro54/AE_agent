@@ -1,0 +1,67 @@
+{
+  "activeComp": {
+    "compId": 1,
+    "time": 0,
+    "workAreaDuration": 50,
+    "workAreaStart": 0
+  },
+  "aeVersion": "26.3x87",
+  "compositions": [
+    {
+      "compId": 1,
+      "duration": 50,
+      "name": "Core Architecture Live 20261112",
+      "numLayers": 1
+    }
+  ],
+  "coverage": {
+    "displayNamesShortened": false,
+    "inventory": {
+      "itemsScanned": 1,
+      "nextCursor": null,
+      "startItemIndex": 1,
+      "status": "complete",
+      "throughItemIndex": 1
+    },
+    "layers": {
+      "returned": 1,
+      "total": 1
+    },
+    "lookup": {
+      "compId": 1,
+      "method": "item_by_id",
+      "status": "found"
+    }
+  },
+  "dirty": false,
+  "layers": [
+    {
+      "context": {
+        "enabled": true,
+        "guideLayer": false,
+        "inPoint": 0,
+        "outPoint": 50,
+        "solo": false,
+        "sourceId": null,
+        "stretch": 100,
+        "timeRemapEnabled": false
+      },
+      "index": 1,
+      "layerId": 14,
+      "name": "CORE 4.2.6 LIVE",
+      "textLayer": true
+    }
+  ],
+  "observationVersion": 1,
+  "project": {
+    "name": "live-ae.aep",
+    "numItems": 1,
+    "saved": true
+  },
+  "projectRevision": 72,
+  "target": {
+    "compId": 1,
+    "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+  },
+  "truncated": false
+}

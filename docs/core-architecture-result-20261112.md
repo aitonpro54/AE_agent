@@ -68,7 +68,20 @@ TEMP endpoint. Новый выпуск, установка, MCP/CEP cutover и n
 `950d180c…` установлен на DESKTOP-32974QF штатным stopped update. Identity,
 пользовательские AEP и защищённая история сохранены; новая CEP и одно native
 чтение пустого проекта свежим effective-config клиентом PASS. Cached MCP этого
-чата остался `owner_unavailable`; его обновление не заявляется. Live-мутация
-учитывается следующим этапом [install/live-плана](../plans/core-architecture-install-live-20261112.md).
+чата остался `owner_unavailable`; его обновление не заявляется.
+
+На собственном статичном 2D point-text стенде нативно прошли replacement
+`ИФ` → `CORE 4.2.6 LIVE`, fresh проверка всех 16 полей стиля, PNG кадра0 и
+project-save с exact checkpoint прежних AEP bytes. Исходные квитанции получили
+`succeeded`, финальный проект чист, lease освобождён, текущие
+pending/UNKNOWN/fault отсутствуют. Кадр действительно просмотрен.
+
+Практический предел: собственный baseline требует активной Fill и Stroke;
+dormant stroke, для которого AE не отдаёт цвет, отклонён. Два прежних read UNKNOWN
+сохранены и штатно архивированы; причину modal refusal не установили. После
+owner restart исходный startup был завершён через manual panel recovery и тот
+же UUID, без повторного ensure. Поэтому полное фоновое переподключение, работа
+с произвольными шаблонами и full release не заявляются. Source не менялся ради
+этих результатов. [Install/live-план и evidence](../plans/core-architecture-install-live-20261112.md).
 
 [План, решения и проверки](../plans/core-architecture-implementation-20261112.md).

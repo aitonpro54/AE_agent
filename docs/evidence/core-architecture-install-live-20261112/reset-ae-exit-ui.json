@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "resetId": "fff4d550-28bf-436b-8ca5-c2591855c679",
+  "purpose": "Fulfil required AE exit for original read UNKNOWN reset; preserve saved own project and history",
+  "controller": "root; exclusive requested UI interval",
+  "windowId": 1706264,
+  "before": "Task-owned live-ae.aep visible, no dirty asterisk, one own composition/text layer",
+  "action": "Clicked standard close button of main AE window once",
+  "observation": "Subsequent sky.list_windows returned no AfterFX windows; no Save/Discard dialog appeared",
+  "projectSaveOrDiscardAction": false,
+  "processExitProof": "Window absence alone is not PID/birth exit proof; typed worker establishes it before reset finish",
+  "uiBlockFinished": true,
+  "completion": "Stopped native sky calls immediately after observed closure; no teardown API. Control returned to typed worker for original reset completion."
+}

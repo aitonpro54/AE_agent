@@ -422,6 +422,13 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Progress
 
+- Отдельное поручение после source A/B/C выполнено в
+  [install/live-продолжении](core-architecture-install-live-20261112.md):
+  штатная установка operator-render-jobs/owner `950d180c…`, native Titles,
+  PNG кадра0, project-save с checkpoint и свежие read-backs. I commit `89a6b85`;
+  II завершён с native PASS и независимым ACCEPT, оформляется отдельным
+  milestone-коммитом. Source A/B/C bytes не изменялись.
+
 - **A → B → C завершены в разрешённом source scope.** Финальный verified join:
   82/82 current checks, 72 distinct batches, 1338/1338 Node records PASS,
   fail/cancel/skip/todo 0. Итог MULTI_CONTEXT_SELECTED_PASS, 4 записанных runtime
@@ -608,6 +615,12 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Decision Log
 
+- Install/live продолжение не расширяет source certification до full release.
+  Native срез — один собственный однородный 2D point text с активными Fill/Stroke.
+  Unknown чтения сохранены, reset архивы exact; исходный startup reconciled
+  тем же UUID после ручного восстановления панели. Это установленные пределы,
+  не основание ослаблять gates или менять source без доказанной причины.
+
 - C завершён без нового incident rebase: package maker моделирует известную
   legacy4.2.5 policy только в synthetic fixture, сохраняя current executable
   bytes и отдельное provenance. Это не byte-identical исторический4.2.5 пакет
@@ -684,10 +697,13 @@ reviewable commits, контракты и затронутая closure пров�
 ## Validation
 
 - После завершения A/B/C пользователь отдельно поручил установку и live AE.
-  Этап I [продолжения](core-architecture-install-live-20261112.md) завершён:
-  operator-render-jobs/owner `950d180c…` установлен штатным stopped update,
-  CEP и свежий effective-config native read PASS. Это отдельное installed
-  evidence; пределы завершённой source-приёмки не переписываются.
+  I/II [продолжения](core-architecture-install-live-20261112.md): пакет
+  operator-render-jobs/owner `950d180c…` установлен штатным stopped update;
+  CEP/native read, текст с 16 exact style fields, PNG и typed save PASS.
+  Исходные receipts/read-backs/checkpoint, визуальный просмотр, освобождённый
+  lease и сохранность четырёх пользовательских AEP учитываются отдельно от
+  source evidence. Финальный AEP после save не переоткрывался; full release
+  не заявляется. Пределы завершённой source-приёмки не переписываются.
 
 - Финальный source coverage SHA:
   032a12aa3d0a3a9277336d79992ab318b1be9ba35912e0738a8f0e123afac261.

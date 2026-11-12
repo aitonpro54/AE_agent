@@ -1,0 +1,145 @@
+{
+  "recordedAt": "2026-11-12T16:50:02.019Z",
+  "result": "typed-titles-frame0-save-readback-pass-awaiting-root-visual-review",
+  "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+  "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+  "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62",
+  "ae": {
+    "aePid": 39220,
+    "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+    "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+    "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "machineId": "DESKTOP-32974QF"
+  },
+  "owner": {
+    "birthTicks": "639300978217466260",
+    "historyAtStartup": {
+      "ledger": {
+        "byteHash": null,
+        "eventCount": 0,
+        "present": false,
+        "settled": true,
+        "unresolvedCount": 0
+      },
+      "receiver": {
+        "byteHash": "94cc4509de90554be726bc4c85646d832e219084855ed6f904fa144104170018",
+        "eventCount": 5,
+        "present": true,
+        "settled": true,
+        "unresolvedCount": 0
+      }
+    },
+    "mode": "active",
+    "pid": 44952,
+    "processBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+    "reason": null,
+    "recoveryRequired": false
+  },
+  "mutations": [
+    {
+      "label": "title-supported",
+      "taskId": "task-941bb11e-bfe8-4448-abef-1deaded6e7b7",
+      "proposalId": "proposal-16f7ecad-6098-4426-a365-14b6965a1326",
+      "runId": "run-62eed287-152f-4d71-a1b5-e9763a8556b2",
+      "commandId": "command-e07fac8f-bb71-4920-9e8d-a52968f3687c",
+      "state": "succeeded",
+      "submissionCount": 1,
+      "source": "host",
+      "receiverRecordHash": "dcd0b3b5f3a7f39c6ab09fe895c713c1490ad3934d4c2bbebb42435bb0cbc21d",
+      "operatorConfirmation": "exact CLI permit replaces native modal"
+    },
+    {
+      "label": "frame0",
+      "taskId": "task-5e28c5ba-0ec7-42cf-8c0a-54f9d3cccfd6",
+      "proposalId": "proposal-ff130c99-df93-4698-a32d-83e0dd2e0711",
+      "runId": "run-a678da78-adea-40db-9ac8-541b5d360008",
+      "commandId": "command-d633550a-d837-422e-a170-e8631d0a2201",
+      "state": "succeeded",
+      "submissionCount": 1,
+      "source": "host",
+      "receiverRecordHash": "deb2a22293b9cb7547ee848cf39d7500ac8b5a9a4d41e6c061a8bfc482aa2c02",
+      "operatorConfirmation": "exact CLI permit replaces native modal"
+    },
+    {
+      "label": "save",
+      "taskId": "task-162d0a67-c633-464f-9861-7c4ae49f424d",
+      "proposalId": "proposal-fef687a8-5069-4585-b3f8-ec3040c033f8",
+      "runId": "run-3c15e858-283f-49c6-a4fa-fc63b60e6580",
+      "commandId": "command-5a3d07d9-b535-4652-8438-3dd264eb14b3",
+      "state": "succeeded",
+      "submissionCount": 1,
+      "source": "host",
+      "receiverRecordHash": "d158c1c79339133a33c24c33241b74daf0bd0575f20643f381d8097996c27aa0",
+      "operatorConfirmation": "exact CLI permit replaces native modal"
+    }
+  ],
+  "checks": {
+    "style16Exact": true,
+    "oneOwnedCompositionAndLayer": true,
+    "text": "CORE 4.2.6 LIVE",
+    "dirty": false,
+    "sourceRuntimeConfigEdits": 0,
+    "leaseReleased": true,
+    "pending": false,
+    "unknown": false,
+    "ledgerFault": false,
+    "storeFault": false,
+    "ownershipFault": null,
+    "startupUnresolved": false
+  },
+  "artifacts": {
+    "aep": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+      "bytes": 103533,
+      "sha256": "e9bfd6813ae411ad46c207c5633f65e7f30c14f1a108f2ea0a7f9861d33d6edc"
+    },
+    "checkpoint": {
+      "bytes": 82265,
+      "path": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\project-save-checkpoints\\checkpoint-abd745e6-9a99-4601-8191-ab2776bdb1bf.aep",
+      "scope": "on-disk-before-save",
+      "sha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49",
+      "verified": true
+    },
+    "png": {
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\frames-output\\core-426-live-frame0-20261112.png",
+      "evidenceCopy": "core-426-live-frame0.png",
+      "bytes": 83350,
+      "sha256": "39d8dec2f0f9928d620b1322a5673cf9038285b239763999c30198f4612760e9",
+      "width": 1920,
+      "height": 1080,
+      "frame": 0
+    }
+  },
+  "journals": {
+    "receiver": {
+      "file": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\receiver\\completions.ndjson",
+      "bytes": 66650,
+      "sha256": "d6c13e3c6f69db2e687ca22295683bf66e1067d948357c0515610bfebd615e5b",
+      "records": 39,
+      "lastRecordHash": "b557ac5af853619b709e23ea16bb8fc412a1044995038b24932167a5c16c63df",
+      "chainVerified": true
+    },
+    "ledger": {
+      "file": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\broker\\ledger.ndjson",
+      "bytes": 140900,
+      "sha256": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+      "records": 42,
+      "lastRecordHash": "f4bfc52cb978aa77d201b1dd71fcb0f9f563c5b50badc67023c4731acebad88e",
+      "chainVerified": true
+    }
+  },
+  "scope": {
+    "ownSavedProjectOnly": true,
+    "renderQueueOrAME": false,
+    "reopenPerformed": false,
+    "nativeModalConfirmation": false,
+    "operatorPermits": 3,
+    "fullReleaseCertification": false
+  },
+  "history": "Earlier UNKNOWN and style/startup refusal evidence remains immutable in sibling diagnostic-no-cu and previous live evidence. Final scope starts after supported own baseline UI enabled active Stroke; native proof preserves all 16 fields from that baseline.",
+  "limits": [
+    "Root visual review of exported PNG is separate and pending at this packaging time.",
+    "Checkpoint protects on-disk pre-save AEP; unsaved UI baseline and live edits are not represented by that earlier on-disk checkpoint.",
+    "No generic Computer Use causality is claimed; panel-only UI recovery preceded successful typed flow."
+  ]
+}

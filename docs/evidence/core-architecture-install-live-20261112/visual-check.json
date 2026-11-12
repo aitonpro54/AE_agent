@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "reviewer": "root",
+  "method": "Decoded and viewed original native PNG using view_image; no Computer Use or AE state change",
+  "project": "own live-ae.aep",
+  "compId": 1,
+  "layerId": 14,
+  "frame": 0,
+  "width": 1920,
+  "height": 1080,
+  "text": "CORE 4.2.6 LIVE",
+  "observation": "Entire readable title visible within frame, light fill and thin blue stroke, no visible clipping",
+  "result": "PASS-static-frame",
+  "png": {
+    "original": "C:/Users/Ant/Documents/Codex/AE_Agent_Core/.codex-runtime/core-architecture-live-20261112/frames-output/core-426-live-frame0-20261112.png",
+    "evidenceCopy": "frame-0000.png",
+    "bytes": 83350,
+    "sha256": "39d8dec2f0f9928d620b1322a5673cf9038285b239763999c30198f4612760e9"
+  },
+  "savedAepSha256IndependentlyRead": "e9bfd6813ae411ad46c207c5633f65e7f30c14f1a108f2ea0a7f9861d33d6edc",
+  "limits": "Static owned point-text stand only. No animation, MP4/AME/R1 render, arbitrary templates, save/reopen-after-final-save or full release certification claimed. Earlier reopen established initial baseline, not final saved bytes."
+}

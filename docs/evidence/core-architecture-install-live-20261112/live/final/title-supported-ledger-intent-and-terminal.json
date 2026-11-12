@@ -1,0 +1,415 @@
+{
+  "source": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\broker\\ledger.ndjson",
+  "intent": {
+    "attemptId": "attempt-e7ee38dd-14a0-4ed1-9f00-796795698adc",
+    "before": {
+      "protected": "{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}",
+      "revision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1,\"layerId\":14},\"ИФ\",{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}]",
+      "target": {
+        "compId": 1,
+        "layerId": 14,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+      },
+      "text": "ИФ"
+    },
+    "checkpoint": {
+      "digest": "9c2c805d9211af1d427a7a409d21676e42b7915bde714dff5738ef64a969e7ee",
+      "kind": "manual-text-preimage-v1",
+      "ref": "checkpoint-c94d6957-d324-4067-ad4d-8ff23536df89"
+    },
+    "commandId": "command-e07fac8f-bb71-4920-9e8d-a52968f3687c",
+    "dispatchBinding": {
+      "channelEpoch": "channel-c4dbde7b-740f-46b8-bedc-577901a0623c",
+      "commandId": "command-e07fac8f-bb71-4920-9e8d-a52968f3687c",
+      "controllerId": "controller-6c045c6e-e79a-4bcb-b7c3-44f23331acc9",
+      "executorHash": "f439be6df6abb5a3de9372c85c91e895a05283e8d15d53784d9e7ba808701eb4",
+      "moduleId": "titles-current-target",
+      "operationId": "set-current-text",
+      "payloadHash": "d91fa30b0aba9283bd8a00565a43e96f59a2e9640cf3e4499cd23dcd68a585d5",
+      "phase": "mutate",
+      "receiptRef": "9221ddc6d264378ccb9b00cc50a4b552998de6e63db320e96c95fc0ea17cc83b",
+      "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688"
+    },
+    "dispatchedAt": 1794501953229,
+    "executionPolicy": {
+      "executionScope": {
+        "origin": {
+          "aePid": 39220,
+          "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+          "machineId": "DESKTOP-32974QF"
+        },
+        "schemaVersion": 2,
+        "target": {
+          "compId": 1,
+          "layerId": 14,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+        }
+      },
+      "operatorConfirmation": true,
+      "pin": "5598599bb4bcd941d18ee9058b054c8455a2e2f6c97bbb7b688d9a2f92251357",
+      "policyId": "current-matching-target-after-local-confirmation-v1",
+      "verificationKind": "local-transaction-receipt"
+    },
+    "grant": {
+      "allowedEffect": "layer.text",
+      "approvalDigest": "3e04bcc0fe7a131a64741c2124c010a62d0522a835ebbb4bf07ce47d8acc6125",
+      "checkpointRef": "checkpoint-c94d6957-d324-4067-ad4d-8ff23536df89",
+      "executionScope": {
+        "origin": {
+          "aePid": 39220,
+          "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+          "machineId": "DESKTOP-32974QF"
+        },
+        "schemaVersion": 2,
+        "target": {
+          "compId": 1,
+          "layerId": 14,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+        }
+      },
+      "operatorConfirmation": {
+        "digest": "b9e3f03d32ccdf31928f68e4fd679448290d1200ff99095c959cbc4544c435e0",
+        "expiresAt": 1794502072088
+      },
+      "owner": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+      "provenance": "local-operator-exact-confirmation-v1",
+      "reservationRef": "reservation-91a3c694-6b2a-4990-bb59-ca1974c3ec65"
+    },
+    "input": {
+      "compId": 1,
+      "expectedRevision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1,\"layerId\":14},\"ИФ\",{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}]",
+      "expectedText": "ИФ",
+      "layerId": 14,
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+      "text": "CORE 4.2.6 LIVE"
+    },
+    "inputDigest": "72eff7ffef3acbc39ac2788e9880031cfffa0309984ad1085364b37c9bf79ae4",
+    "physicalInput": {
+      "_execution": {
+        "baselineDigest": "8dd70503acec925dfb5152be96ebb56b986d8647d8eb238f979f230adc8d00f9",
+        "baselineProtected": "{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}",
+        "baselineRevision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1,\"layerId\":14},\"ИФ\",{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}]",
+        "checkpointDigest": "9c2c805d9211af1d427a7a409d21676e42b7915bde714dff5738ef64a969e7ee",
+        "checkpointRef": "checkpoint-c94d6957-d324-4067-ad4d-8ff23536df89",
+        "operatorConfirmation": {
+          "digest": "b9e3f03d32ccdf31928f68e4fd679448290d1200ff99095c959cbc4544c435e0",
+          "expiresAt": 1794502072088
+        },
+        "pins": {
+          "core": "c39eda2f40cabd19239aa8ace9f1d90ca2611beb61dad78d4bd1b4466d1750a9",
+          "engine": null,
+          "modules": [
+            {
+              "admission": "b9a6fea6d4dd5239b19569f6ecd71a373ad8b56bc2802d64b8c379b727f25dcb",
+              "dependencies": {},
+              "executionPolicy": {
+                "executionScope": {
+                  "origin": {
+                    "aePid": 39220,
+                    "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+                    "machineId": "DESKTOP-32974QF"
+                  },
+                  "schemaVersion": 2,
+                  "target": {
+                    "compId": 1,
+                    "layerId": 14,
+                    "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+                  }
+                },
+                "operatorConfirmation": true,
+                "pin": "5598599bb4bcd941d18ee9058b054c8455a2e2f6c97bbb7b688d9a2f92251357",
+                "policyId": "current-matching-target-after-local-confirmation-v1",
+                "verificationKind": "local-transaction-receipt"
+              },
+              "module": "704e67f0793eb9ebcf7fafc41e0d777ed6d3cd4d801d9f847da08eefb892e284",
+              "stepId": "s1"
+            }
+          ],
+          "protocol": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+          "transport": "200198c13f3c9aa94bf80adf6ac71f5c05dd224c7569fd76c3090f87c87b05eb"
+        },
+        "planDigest": "7995bfc998a4611eec8ed05003e59021cb343b3a005c149b039a20b25bacef7a",
+        "policyId": "current-matching-target-after-local-confirmation-v1",
+        "proposalId": "proposal-16f7ecad-6098-4426-a365-14b6965a1326",
+        "stepId": "s1",
+        "target": {
+          "compId": 1,
+          "layerId": 14,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+        },
+        "taskEpoch": 0,
+        "taskId": "task-941bb11e-bfe8-4448-abef-1deaded6e7b7"
+      },
+      "compId": 1,
+      "expectedRevision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1,\"layerId\":14},\"ИФ\",{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}]",
+      "expectedText": "ИФ",
+      "layerId": 14,
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+      "text": "CORE 4.2.6 LIVE"
+    },
+    "planDigest": "7995bfc998a4611eec8ed05003e59021cb343b3a005c149b039a20b25bacef7a",
+    "planRevision": "revision-78eade70-714c-4791-aee2-e430eae256a1",
+    "previousHash": "7cb33dbe121443c911a9b3fe21a77f15aab02faeb3f44709a68ca46f61fb6c9e",
+    "proposalId": "proposal-16f7ecad-6098-4426-a365-14b6965a1326",
+    "recordContext": {
+      "contextId": "core-architecture-live-20261112",
+      "lifetime": "ephemeral_check",
+      "project": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+      },
+      "purpose": "technical_check",
+      "resources": [
+        {
+          "identity": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+          "kind": "project"
+        }
+      ]
+    },
+    "recordHash": "3ac12629c030e4a2804058e0aa25cc9426b9aa5b72cc08614e8e3e42aaaa45d7",
+    "runId": "run-62eed287-152f-4d71-a1b5-e9763a8556b2",
+    "selected": {
+      "admission": {
+        "artifactHash": "704e67f0793eb9ebcf7fafc41e0d777ed6d3cd4d801d9f847da08eefb892e284",
+        "effectPolicyHash": "2dce26553f76310412f1e4e4e53a487b23d0da68bdf6abf1edd22ccc0bbd3d2f",
+        "executorHash": "f439be6df6abb5a3de9372c85c91e895a05283e8d15d53784d9e7ba808701eb4",
+        "moduleId": "titles-current-target",
+        "operationId": "set-current-text",
+        "protocolVersion": 1,
+        "resultSchemaHash": "4bc17d85c2f755387cbff3dacc49936549a94f002bdb3ed7a18d34919e9edd7b",
+        "revoked": false,
+        "schemaHash": "a7e30a791d0584a1e512eb14766545aca8eb26f6504214065799ca6a67cddde1",
+        "trustApprovalId": "M1-source-review-titles-current-target-20261026"
+      },
+      "admissionPath": "config/admissions/titles-current-target.json",
+      "contract": {
+        "buildSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "layerId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "text": {
+              "maxLength": 2048,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "layerId",
+            "text"
+          ],
+          "type": "object"
+        },
+        "effectPolicy": {
+          "checkpointKind": "manual-text-preimage-v1",
+          "confirmation": "native-current-target",
+          "effect": "layer.text",
+          "expectedBindings": {
+            "expectedRevision": "revision",
+            "expectedText": "text"
+          },
+          "preserve": [
+            "protected"
+          ],
+          "requiresCheckpoint": true,
+          "resultBindings": {
+            "text": "text"
+          },
+          "targetFields": [
+            "projectId",
+            "compId",
+            "layerId"
+          ]
+        },
+        "executionPolicy": "current-matching-target-after-local-confirmation-v1",
+        "inputSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "expectedRevision": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "expectedText": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "layerId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "text": {
+              "maxLength": 2048,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "layerId",
+            "text",
+            "expectedRevision",
+            "expectedText"
+          ],
+          "type": "object"
+        },
+        "moduleId": "titles-current-target",
+        "operationId": "set-current-text",
+        "protocolVersion": 1,
+        "snapshotSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "protected": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "revision": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            },
+            "target": {
+              "additionalProperties": false,
+              "properties": {
+                "compId": {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "layerId": {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "projectId": {
+                  "maxLength": 8192,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "projectId",
+                "compId",
+                "layerId"
+              ],
+              "type": "object"
+            },
+            "text": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "target",
+            "revision",
+            "protected",
+            "text"
+          ],
+          "type": "object"
+        },
+        "targetSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "layerId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "layerId"
+          ],
+          "type": "object"
+        }
+      },
+      "executor": "(function () {\n    function fault(code) { var e = new Error(code); e.coreCode = code; throw e; }\n    var characterFields = ['font', 'fontSize', 'applyFill', 'fillColor', 'applyStroke', 'strokeColor', 'strokeWidth', 'tracking', 'baselineShift', 'horizontalScale', 'verticalScale', 'fauxBold', 'fauxItalic'];\n    var paragraphFields = ['justification', 'leading', 'autoLeading'];\n    var fieldAliases = { font: 'font', fontSize: 'font_size', applyFill: 'apply_fill', fillColor: 'fill_color', applyStroke: 'apply_stroke', strokeColor: 'stroke_color', strokeWidth: 'stroke_width', tracking: 'tracking', baselineShift: 'baseline_shift', horizontalScale: 'horizontal_scale', verticalScale: 'vertical_scale', fauxBold: 'faux_bold', fauxItalic: 'faux_italic', justification: 'justification', leading: 'leading', autoLeading: 'auto_leading' };\n    var moduleReadFaults = ['project_cas', 'comp_cas', 'layer_cas', 'unsupported_animated_text', 'unsupported_style_proof', 'unsupported_style_api', 'unsupported_mixed_style', 'unsupported_justification_enum'];\n    function contains(values, value) { for (var i = 0; i < values.length; i++) if (values[i] === value) return true; return false; }\n    function readFault(code, coreCode) { var e = new Error('titles_read_failure'); e.coreReadCode = code; if (coreCode) e.coreCode = coreCode; throw e; }\n    function readCode(code) {\n        if (contains(moduleReadFaults, code) || contains(['titles_native_target', 'titles_native_document', 'titles_native_text', 'titles_native_range', 'titles_native_serialization'], code)) return true;\n        for (var name in fieldAliases) if (fieldAliases.hasOwnProperty(name) && (code === 'titles_native_' + fieldAliases[name] || code === 'titles_missing_' + fieldAliases[name])) return true;\n        return false;\n    }\n    function field(object, name) {\n        var value;\n        try { value = object[name]; } catch (e) { readFault('titles_native_' + fieldAliases[name]); }\n        if (typeof value === 'undefined' || value === null) readFault('titles_missing_' + fieldAliases[name], 'unsupported_style_api');\n        return value;\n    }\n    function range(doc, index) {\n        try {\n            if (typeof doc.characterRange !== 'function') fault('unsupported_style_proof');\n            var value = doc.characterRange(index, index + 1);\n            if (!value) fault('unsupported_style_proof');\n            return value;\n        } catch (e) { if (e && e.coreCode === 'unsupported_style_proof') throw e; readFault('titles_native_range'); }\n    }\n    function serialized(value) { try { return JSON.stringify(value); } catch (e) { readFault('titles_native_serialization'); } }\n    function target(p) {\n        if (!app.project || !app.project.file || String(app.project.file.fsName) !== p.projectId) fault('project_cas');\n        var comp = null, layer = null, i;\n        for (i = 1; i <= app.project.numItems; i++) if (app.project.item(i).id === p.compId) comp = app.project.item(i);\n        if (!(comp instanceof CompItem)) fault('comp_cas');\n        for (i = 1; i <= comp.numLayers; i++) if (comp.layer(i).id === p.layerId) layer = comp.layer(i);\n        if (!layer || layer.locked) fault('layer_cas');\n        var group = layer.property('ADBE Text Properties'), prop = group && group.property('ADBE Text Document');\n        if (!prop || prop.numKeys !== 0 || prop.isTimeVarying || prop.expressionEnabled || prop.expression) fault('unsupported_animated_text');\n        return { comp: comp, layer: layer, prop: prop };\n    }\n    function fields(object, names) {\n        var out = {}, i, value;\n        for (i = 0; i < names.length; i++) {\n            value = field(object, names[i]);\n            try {\n            if (names[i] === 'justification' && typeof value === 'object') {\n                if (typeof ParagraphJustification === 'undefined') fault('unsupported_justification_enum');\n                var enumNames = ['LEFT_JUSTIFY', 'RIGHT_JUSTIFY', 'CENTER_JUSTIFY', 'FULL_JUSTIFY_LASTLINE_LEFT', 'FULL_JUSTIFY_LASTLINE_RIGHT', 'FULL_JUSTIFY_LASTLINE_CENTER', 'FULL_JUSTIFY_LASTLINE_FULL'];\n                var enumValue = Number(value), supported = false, e;\n                if (!isFinite(enumValue)) fault('unsupported_justification_enum');\n                for (e = 0; e < enumNames.length; e++) if (typeof ParagraphJustification[enumNames[e]] !== 'undefined' && Number(ParagraphJustification[enumNames[e]]) === enumValue && String(ParagraphJustification[enumNames[e]]) === String(value)) supported = true;\n                if (!supported) fault('unsupported_justification_enum');\n                value = enumValue;\n            }\n            if (names[i] === 'justification' && (typeof value !== 'number' || !isFinite(value))) fault('unsupported_justification_enum');\n            } catch (e) { if (e && e.coreCode === 'unsupported_justification_enum') throw e; readFault('titles_native_justification'); }\n            out[names[i]] = value;\n        }\n        return out;\n    }\n    function snapshot(p) {\n        var t, doc, text, i;\n        try { t = target(p); } catch (e) { if (contains(moduleReadFaults, e && e.coreCode)) throw e; readFault('titles_native_target'); }\n        try { doc = t.prop.value; } catch (e) { readFault('titles_native_document'); }\n        try { text = doc && doc.text; } catch (e) { readFault('titles_native_text'); }\n        if (!doc || typeof text !== 'string' || text.length === 0 || /[\\r\\n]/.test(text)) fault('unsupported_style_proof');\n        // TextDocument inactive fill/stroke colors throw. CharacterRange supports\n        // reading them, so keep the COMPLETE existing proof, including dormant\n        // colors, with no fabricated RGB or dropped fields.\n        var uniform = fields(range(doc, 0), characterFields);\n        for (i = 0; i < text.length; i++) if (serialized(fields(range(doc, i), characterFields)) !== serialized(uniform)) fault('unsupported_mixed_style');\n        var style = { character: uniform, paragraph: fields(doc, paragraphFields) };\n        var resource = { projectId: p.projectId, compId: t.comp.id, layerId: t.layer.id };\n        return { target: resource, text: text, 'protected': serialized(style), revision: serialized([resource, text, style]) };\n    }\n    function readSnapshot(p) {\n        try { return snapshot(p); }\n        catch (e) { var code = 'inspection_failed'; try { if (e && readCode(e.coreReadCode)) code = e.coreReadCode; else if (e && readCode(e.coreCode)) code = e.coreCode; } catch (ignored) {} return { readFailureVersion: 1, outcome: 'rejected', code: code }; }\n    }\n    function mutate(p) {\n        var started = false;\n        try {\n            var before = snapshot(p);\n            if (p.expectedRevision !== before.revision || p.expectedText !== before.text) fault('stale_target');\n            if (typeof p.text !== 'string' || p.text.length === 0 || /[\\r\\n]/.test(p.text)) fault('unsupported_text');\n            var proof = p._execution;\n            if (!proof || proof.policyId !== 'current-matching-target-after-local-confirmation-v1' || proof.baselineRevision !== before.revision || proof.baselineProtected !== before['protected'] || !proof.target || proof.target.projectId !== before.target.projectId || proof.target.compId !== before.target.compId || proof.target.layerId !== before.target.layerId) fault('manual_approval_binding');\n            var message = 'Изменить текст в текущей совпадающей цели?\\nПодтверждение относится к текущему проекту, в том числе после повторного открытия.\\nПроект: ' + p.projectId + '\\ncompId: ' + p.compId + '\\nlayerId: ' + p.layerId + '\\nСтарый текст: ' + JSON.stringify(before.text) + '\\nНовый текст: ' + JSON.stringify(p.text);\n            var operator = proof.operatorConfirmation;\n            if (operator) {\n                if (!/^[a-f0-9]{64}$/.test(operator.digest) || typeof operator.expiresAt !== 'number' || operator.expiresAt <= new Date().getTime()) fault('operator_confirmation_expired');\n            } else if (confirm(message, true, 'AE Agent Core4 — изменение текста') !== true) return { outcome: 'rejected', code: 'local_cancelled' };\n            // Fresh resolution/CAS after modal boundary, then one synchronous setter\n            // and separate local snapshot; no scheduling/modal/Node yield follows.\n            before = snapshot(p);\n            if (p.expectedRevision !== before.revision || p.expectedText !== before.text || proof.baselineProtected !== before['protected']) fault('stale_target');\n            var t = target(p), doc = t.prop.value; doc.text = p.text;\n            started = true; t.prop.setValue(doc);\n            var after = snapshot(p);\n            if (after.text !== p.text || after['protected'] !== before['protected']) fault('readback_mismatch');\n            var verified = snapshot(p);\n            if (verified.text !== p.text || verified['protected'] !== before['protected']) fault('local_transaction_readback');\n            return { outcome: 'applied', snapshot: verified, transactionReceipt: { version: 1, policyId: proof.policyId, proposalId: proof.proposalId, planDigest: proof.planDigest, taskId: proof.taskId, taskEpoch: proof.taskEpoch, stepId: proof.stepId, checkpointRef: proof.checkpointRef, checkpointDigest: proof.checkpointDigest, baselineDigest: proof.baselineDigest, baselineRevision: proof.baselineRevision, target: verified.target, desiredText: p.text, protectedFields: verified['protected'] } };\n        } catch (e) { return { outcome: started ? 'unknown' : 'rejected', code: e.coreCode || 'ae_error' }; }\n    }\n    return { inspect: readSnapshot, mutate: mutate, verify: readSnapshot };\n}())\n",
+      "manifest": {
+        "entry": "implementation.js",
+        "hashes": {
+          "contract.json": "318a5d6021bc94690323ab00ca324c694c6b66dd520a28989eda87643c1d3ce0",
+          "executor.jsx": "f439be6df6abb5a3de9372c85c91e895a05283e8d15d53784d9e7ba808701eb4",
+          "implementation.js": "1b31cd96b475f6af3e286fdd5c009d46e09b18b271db88ce951e9ec8d7fc580b"
+        },
+        "id": "titles-current-target",
+        "publicDependencies": {},
+        "version": "4.0.0"
+      },
+      "moduleId": "titles-current-target",
+      "path": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\broker\\artifacts\\704e67f0793eb9ebcf7fafc41e0d777ed6d3cd4d801d9f847da08eefb892e284",
+      "pin": "704e67f0793eb9ebcf7fafc41e0d777ed6d3cd4d801d9f847da08eefb892e284",
+      "publicDependencies": {}
+    },
+    "seq": 9,
+    "stepId": "s1",
+    "target": {
+      "compId": 1,
+      "layerId": 14,
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+    },
+    "taskEpoch": 0,
+    "taskId": "task-941bb11e-bfe8-4448-abef-1deaded6e7b7",
+    "transportIdentity": "200198c13f3c9aa94bf80adf6ac71f5c05dd224c7569fd76c3090f87c87b05eb",
+    "type": "intent",
+    "workflowId": "workflow-69766a52-2e29-4729-8794-8319c1b3753a"
+  },
+  "terminal": {
+    "after": {
+      "protected": "{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}",
+      "revision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1,\"layerId\":14},\"CORE 4.2.6 LIVE\",{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}]",
+      "target": {
+        "compId": 1,
+        "layerId": 14,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+      },
+      "text": "CORE 4.2.6 LIVE"
+    },
+    "commandId": "command-e07fac8f-bb71-4920-9e8d-a52968f3687c",
+    "previousHash": "1d54ca9dc1804865fa5b2daa5c4df855259913c6271da1367fc314b0aef8591b",
+    "recordHash": "88c60502fe558d0b8b6ae20523682a8053b9869a3bfdf0ad26b948c0fb044504",
+    "seq": 11,
+    "state": "succeeded",
+    "type": "command",
+    "verificationKind": "local-transaction-receipt"
+  }
+}

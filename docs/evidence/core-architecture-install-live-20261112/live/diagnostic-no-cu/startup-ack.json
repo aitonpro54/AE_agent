@@ -1,0 +1,14 @@
+{
+  "code": "menu_executed",
+  "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+  "requestNonce": "[redacted]",
+  "deadline": 1794501135865,
+  "checkedAt": 1794501049885,
+  "hostFacts": {
+    "appVersion": "26.3x87",
+    "projectPresent": true,
+    "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+    "dirty": false,
+    "numItems": 1
+  }
+}

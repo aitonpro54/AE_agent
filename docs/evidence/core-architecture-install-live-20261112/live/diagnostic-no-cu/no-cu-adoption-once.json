@@ -1,0 +1,177 @@
+{
+  "createdAt": "2026-11-12T16:29:52.204Z",
+  "stopId": "982a72c9-5f94-4f41-8d3c-b39cb8a7935a",
+  "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+  "baseline": {
+    "descriptor": "79266cc306d9a080a94d0d1007c26e23b55f1398d640b0dfcbc9f8f6f2e3903b",
+    "client": "520ae395d2ffe3066f9288198de9d694854468e2068c9890b1b04d27e14ef938",
+    "config": "9d64cea171afe3d453355c79c1a3010dcb84a21f1cc72a8b89ea73b5b2665e23",
+    "aep": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49"
+  },
+  "steps": [
+    {
+      "name": "stop",
+      "args": [
+        "stop",
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "982a72c9-5f94-4f41-8d3c-b39cb8a7935a",
+        "--expected-package-hash",
+        "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+      ],
+      "attempts": 1,
+      "attemptId": "8aef29e1-c5c0-453f-8b6e-078fd98b6f77",
+      "startedAt": "2026-11-12T16:29:52.206Z",
+      "exitCode": 0,
+      "stdoutSha256": "4804ed40ad7993656b5f58be415c2549648bf52e15727cfedf55d92f854056f8",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "finishedAt": "2026-11-12T16:29:53.412Z",
+      "value": {
+        "accepted": true,
+        "aeAuthority": false,
+        "automaticReplay": false,
+        "id": "982a72c9-5f94-4f41-8d3c-b39cb8a7935a",
+        "phase": "draining"
+      }
+    },
+    {
+      "name": "inspect-stop-0",
+      "args": [
+        "inspect",
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "982a72c9-5f94-4f41-8d3c-b39cb8a7935a",
+        "--expected-package-hash",
+        "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+      ],
+      "attempts": 1,
+      "attemptId": "cf1dbcce-c9c9-4e50-943f-63c1d8dfa5e1",
+      "startedAt": "2026-11-12T16:29:53.415Z",
+      "exitCode": 0,
+      "stdoutSha256": "75b5e711932ac3bc311fbd4996dd77e8efaa79810cea9c495c5cfe16970aae55",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "finishedAt": "2026-11-12T16:29:55.295Z",
+      "value": {
+        "aeAuthority": false,
+        "id": "982a72c9-5f94-4f41-8d3c-b39cb8a7935a",
+        "inspectionOnly": true,
+        "phase": "stopped",
+        "proofHash": "8100b6f088f69bfef21481d68f6a24e75428795321de7a82b58490ebee3aa9a6"
+      }
+    },
+    {
+      "name": "adopt-host",
+      "args": [
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--witness",
+        "C:\\Users\\Ant\\AppData\\Local\\Temp\\core4-architecture-live-20261112\\no-cu-adoption-witness.json"
+      ],
+      "attempts": 1,
+      "attemptId": "a03061d6-94a8-480e-9515-5743ec7e0296",
+      "startedAt": "2026-11-12T16:29:56.000Z",
+      "exitCode": 0,
+      "stdoutSha256": "5589c41461d2c8f81b0e330bd2f1b6403d25c8c87495bbfccb26aad160a6a742",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "finishedAt": "2026-11-12T16:29:58.212Z",
+      "value": {
+        "adopted": true,
+        "adoptionDigest": "8a747669426843de95c8d3aa30fadf058c539979ff9bc82517234fb6ed8e5a40",
+        "allowedProject": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+        "host": {
+          "aePid": 39220,
+          "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "machineId": "DESKTOP-32974QF"
+        },
+        "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+        "lifecycleEpoch": false,
+        "mutationGrant": false
+      }
+    },
+    {
+      "name": "inspect-after-adoption",
+      "args": [
+        "inspect",
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "982a72c9-5f94-4f41-8d3c-b39cb8a7935a",
+        "--expected-package-hash",
+        "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+      ],
+      "attempts": 1,
+      "attemptId": "39f7d402-e314-40fa-babf-c6131d9d0424",
+      "startedAt": "2026-11-12T16:29:58.212Z",
+      "exitCode": 0,
+      "stdoutSha256": "75b5e711932ac3bc311fbd4996dd77e8efaa79810cea9c495c5cfe16970aae55",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "finishedAt": "2026-11-12T16:30:00.070Z",
+      "value": {
+        "aeAuthority": false,
+        "id": "982a72c9-5f94-4f41-8d3c-b39cb8a7935a",
+        "inspectionOnly": true,
+        "phase": "stopped",
+        "proofHash": "8100b6f088f69bfef21481d68f6a24e75428795321de7a82b58490ebee3aa9a6"
+      }
+    },
+    {
+      "name": "resume",
+      "args": [
+        "resume",
+        "--installation",
+        "C:\\Users\\Ant\\AEAgentCore4\\installation.json",
+        "--operation",
+        "982a72c9-5f94-4f41-8d3c-b39cb8a7935a",
+        "--expected-package-hash",
+        "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+        "--expected-proof-hash",
+        "8100b6f088f69bfef21481d68f6a24e75428795321de7a82b58490ebee3aa9a6"
+      ],
+      "attempts": 1,
+      "attemptId": "f201be7f-1614-4898-a315-66990a08f127",
+      "startedAt": "2026-11-12T16:30:00.071Z",
+      "exitCode": 0,
+      "stdoutSha256": "89233730d9a7a3f57c3e77af040352c2214471675ad4743442c0889fca61ddba",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "finishedAt": "2026-11-12T16:30:03.101Z",
+      "value": {
+        "aeAuthority": false,
+        "id": "982a72c9-5f94-4f41-8d3c-b39cb8a7935a",
+        "recoveredLeaseOnly": false,
+        "resumed": true,
+        "runtimeStarted": false,
+        "sameDescriptor": true
+      }
+    }
+  ],
+  "result": "adopted-resumed-runtime-not-started",
+  "witnessSha256": "02f16fdaf326528850688342fd1f1f8c1ee51eeffcdae53d1fab8db09e47cbfb",
+  "adoption": {
+    "adopted": true,
+    "adoptionDigest": "8a747669426843de95c8d3aa30fadf058c539979ff9bc82517234fb6ed8e5a40",
+    "allowedProject": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+    "host": {
+      "aePid": 39220,
+      "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+      "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+      "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+      "machineId": "DESKTOP-32974QF"
+    },
+    "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+    "lifecycleEpoch": false,
+    "mutationGrant": false
+  },
+  "resume": {
+    "aeAuthority": false,
+    "id": "982a72c9-5f94-4f41-8d3c-b39cb8a7935a",
+    "recoveredLeaseOnly": false,
+    "resumed": true,
+    "runtimeStarted": false,
+    "sameDescriptor": true
+  },
+  "finishedAt": "2026-11-12T16:30:03.104Z"
+}

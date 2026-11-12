@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "controller": "root; exclusive diagnostic UI interval from typed controller",
+  "originalCommandId": "inspect-997e1ab4-0f2d-4c86-a498-880388ecd4fe",
+  "windowId": 1706264,
+  "project": "task-owned live-ae.aep; saved title without asterisk",
+  "observedModal": "Unable to execute script at line 0. After Effects error: Cannot run a script while a modal dialog is waiting for response.",
+  "actions": ["Acknowledged only this AE error using OK"],
+  "after": "Core panel: Требуется восстановление: Unexpected end of JSON input; own composition and ИФ text remain visible",
+  "projectMutationByDiagnostics": false,
+  "reloadOrRestart": false,
+  "outcomeLimit": "Visual observation does not settle original receiver callback or UNKNOWN. Typed controller must establish original durable status; no replay authorized by this record.",
+  "uiBlockFinished": true,
+  "completion": "Stopped native sky UI calls immediately after result. Native API exposes no teardown. Control returned to typed worker."
+}

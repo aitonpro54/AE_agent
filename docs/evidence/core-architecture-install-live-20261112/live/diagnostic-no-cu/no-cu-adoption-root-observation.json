@@ -1,0 +1,31 @@
+{
+  "observedAt": "2026-11-12T16:29:55.995Z",
+  "nativeReadSha256": "3afe345370d7e963dca867a0151036e2196931f7c531ba31e9d451d85a7b5e9f",
+  "uiSetupSha256": "989520a96fce11d4ef0ab71c97b0f16b0cf210fb07b50933a3ef62d1a144a3b2",
+  "hostObservation": {
+    "version": 1,
+    "hostname": "DESKTOP-32974QF",
+    "observedAt": "2026-11-12T16:29:55.993Z",
+    "processes": [
+      {
+        "pid": 39220,
+        "birth": "2026-11-12T16:28:50.0853090Z",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executableLength": 5931016
+      }
+    ],
+    "endpoints": [
+      {
+        "port": 3456,
+        "state": "observed-absent"
+      },
+      {
+        "port": 8787,
+        "state": "observed-absent"
+      }
+    ],
+    "completedAt": 1794500995995
+  },
+  "allowedProject": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+}

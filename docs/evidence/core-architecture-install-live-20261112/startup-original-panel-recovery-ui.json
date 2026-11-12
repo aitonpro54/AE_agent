@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+  "controller": "root; exclusive original-startup recovery UI interval",
+  "boundary": "Specialist verified same original UUID may reconcile exact menu ACK with fresh authenticated panel and same host; no new ensure/raw/eval/replay",
+  "aePid": 39220,
+  "windowId": 5769924,
+  "mode": "Screenshot-only; include_text=false",
+  "before": "Own saved AEP visible without dirty asterisk; Core panel absent",
+  "action": "Opened Window > Extensions > AE Agent Core once",
+  "after": "Core 4.2.6 panel: Канал Core 4.2.6 готов к командам; Подключение готово. Допуск к изменению проекта выдаётся отдельно.",
+  "projectActions": 0,
+  "newEnsureCalls": 0,
+  "inputGuard": "Initial activate reported user input detected and required state refresh. Refreshed state, then activated exact AE; no application input before refresh.",
+  "uiBlockFinished": true,
+  "completion": "Stopped native sky UI calls immediately after ready observation; no teardown API. Typed controller must settle original startup status and verify lane."
+}

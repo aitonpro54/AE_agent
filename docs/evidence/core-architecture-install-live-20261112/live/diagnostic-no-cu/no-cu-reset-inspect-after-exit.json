@@ -1,0 +1,18 @@
+{
+  "actors": [
+    {
+      "birthTicks": "639300967741674810",
+      "bootId": "4c14cf2d-c56e-4770-b66c-99db620d2a93",
+      "pid": 42200
+    }
+  ],
+  "aeAuthority": false,
+  "id": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+  "intentHash": "26faf5d5945e32e514265e5106618ef1e5eef9c717cc1137ad5583b543ec5930",
+  "inventoryRecorded": true,
+  "newSessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62",
+  "phase": "stop-requested",
+  "requiresAEExit": true,
+  "resetComplete": false,
+  "resetPermit": false
+}

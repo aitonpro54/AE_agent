@@ -1,0 +1,11 @@
+{
+  "historyArchiveSha256": "f6cbbd03ad70852bff7864e42831ff7d6f99264994a1edd70d23b0fc2ead31b6",
+  "ownAepSha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49",
+  "resetComplete": true,
+  "resetId": "fff4d550-28bf-436b-8ca5-c2591855c679",
+  "explicitFinishResult": "start_over_endpoint_busy before action; automatic driver completed between first inspection and explicit finish",
+  "recordedAt": "2026-11-12T16:15:21.7775964Z",
+  "historyArchiveBytes": 17713,
+  "historyExact": true,
+  "finishRetried": false
+}

@@ -1,0 +1,46 @@
+{
+  "recordedAt": "2026-11-12T16:19:42.4072636Z",
+  "commandId": "inspect-d851a63d-bfbe-482b-a365-65111380320f",
+  "command": {
+    "channelEpoch": "http-67a14a55-25cb-43bb-8ab1-4b67a7a7f5f2",
+    "commandId": "inspect-d851a63d-bfbe-482b-a365-65111380320f",
+    "controllerId": "controller-57518d94-7e89-4497-a0dc-151d2aad4e0f",
+    "executorHash": "a33134d736c8b638edde6f61ea3f241d900a735afdd992dd451d18920ddad01d",
+    "moduleId": "project-inspection",
+    "operationId": "inspect",
+    "payload": {},
+    "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "phase": "inspect",
+    "protocolVersion": 1
+  },
+  "commandDigest": "d1cf60fdcf868028fa2133283b33204ce758e992499d30da65e007a49155ddc4",
+  "originalBinding": {
+    "channelEpoch": "http-67a14a55-25cb-43bb-8ab1-4b67a7a7f5f2",
+    "commandId": "inspect-d851a63d-bfbe-482b-a365-65111380320f",
+    "controllerId": "controller-57518d94-7e89-4497-a0dc-151d2aad4e0f",
+    "executorHash": "a33134d736c8b638edde6f61ea3f241d900a735afdd992dd451d18920ddad01d",
+    "moduleId": "project-inspection",
+    "operationId": "inspect",
+    "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "phase": "inspect",
+    "receiptRef": "0156038b0fae900ca587f8e8cdb5c955b62f8f0f8d1f983cc5ae0262aa6e414e",
+    "receiverStoreIdentity": "receiver-store-c1340bf7-98b0-48f0-80a9-89f5b97fb82b"
+  },
+  "recordHash": "475d6824bad3145bfaff03c544c24370d6daad2172ddd3b4eb53e8d9a1773291",
+  "provenance": "exact current durable receiver begin; actual evalScript string not captured",
+  "installedFiles": [
+    {
+      "sha256": "ef2c1b1479dccfdca370e67a946aefaaca47f823098a6554c869fa831cb8e2de",
+      "relative": "cep/js/poll-dispatcher.js"
+    },
+    {
+      "sha256": "fe86886c863232911e8eefefed0712b0ba2f6ab549335eb4283c2390a367e6fb",
+      "relative": "cep/jsx/registry.jsx"
+    },
+    {
+      "sha256": "a33134d736c8b638edde6f61ea3f241d900a735afdd992dd451d18920ddad01d",
+      "relative": "modules/project-inspection/executor.jsx"
+    }
+  ],
+  "actualCepDispatcherSha256": "ef2c1b1479dccfdca370e67a946aefaaca47f823098a6554c869fa831cb8e2de"
+}

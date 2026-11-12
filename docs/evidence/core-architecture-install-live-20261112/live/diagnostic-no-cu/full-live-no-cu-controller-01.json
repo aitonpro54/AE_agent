@@ -1,0 +1,1600 @@
+{
+  "createdAt": "2026-11-12T16:30:07.194Z",
+  "effectiveConfigSha256": "3888c46be38e3cbd723ea7f02954d5565dfe85824f48717e417e8445f785bc33",
+  "effectiveArgs": [
+    "C:\\Users\\Ant\\AEAgentCore4\\releases\\950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80\\runtime\\client-entry.js",
+    "--client-descriptor",
+    "C:\\Users\\Ant\\AEAgentCore4\\core-client.json"
+  ],
+  "calls": [
+    {
+      "name": "core_status",
+      "payload": {},
+      "startedAt": "2026-11-12T16:30:21.282Z",
+      "completedAt": "2026-11-12T16:30:26.397Z",
+      "response": {
+        "attachmentOwner": {
+          "accepted": 0,
+          "activity": {
+            "fault": false,
+            "pending": false,
+            "unresolved": false
+          },
+          "attachments": 1,
+          "bootId": "3a646818-b9a1-4b15-a4f0-f934056140ae",
+          "closed": false,
+          "fenced": false,
+          "frozen": false,
+          "generation": 0,
+          "holderClientId": null,
+          "mode": "idle",
+          "pending": false,
+          "workSession": {
+            "baselineRequired": false,
+            "resetPending": false,
+            "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+          }
+        },
+        "automaticLifecycle": "unavailable",
+        "closed": false,
+        "composition": "operator-render-jobs",
+        "connection": "unavailable",
+        "coreIdentity": "c39eda2f40cabd19239aa8ace9f1d90ca2611beb61dad78d4bd1b4466d1750a9",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionPolicy": "read-only-current-observation-v1",
+        "installation": {
+          "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+          "machineId": "DESKTOP-32974QF",
+          "nodeVerified": true,
+          "nodeVersion": "24.15.0",
+          "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+        },
+        "ledgerFault": false,
+        "lifecycle": {
+          "birthTicks": "639300978217466260",
+          "historyAtStartup": {
+            "ledger": {
+              "byteHash": null,
+              "eventCount": 0,
+              "present": false,
+              "settled": true,
+              "unresolvedCount": 0
+            },
+            "receiver": {
+              "byteHash": "94cc4509de90554be726bc4c85646d832e219084855ed6f904fa144104170018",
+              "eventCount": 5,
+              "present": true,
+              "settled": true,
+              "unresolvedCount": 0
+            }
+          },
+          "mode": "active",
+          "pid": 44952,
+          "processBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+          "reason": null,
+          "recoveryRequired": false
+        },
+        "maintenance": {
+          "fault": null,
+          "id": null,
+          "phase": "running",
+          "requested": false
+        },
+        "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+        "ownershipFault": null,
+        "physical": {
+          "automaticLifecycle": "unavailable",
+          "expectedPanelIdentity": {
+            "extensionId": "com.codex.aeagentcore4.panel",
+            "panelBuildId": "574cffbc4489a568630268e694dcb8c202f8e7bce93380094584067b5e52c712",
+            "productVersion": "4.2.6",
+            "protocolVersion": 1,
+            "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+          },
+          "externalLegacyCoverage": "unobserved",
+          "inspectionAvailable": false,
+          "lastCommandOutcome": null,
+          "lastPanelRejection": null,
+          "lastPhysicalFault": null,
+          "lastReadFailure": null,
+          "listening": true,
+          "peer": {
+            "connected": false,
+            "origin": null
+          },
+          "pending": null,
+          "port": 3457,
+          "readiness": {
+            "baselineRequired": false,
+            "cepConnected": false,
+            "native": "unverified",
+            "process": {
+              "fresh": false,
+              "state": "not-observed"
+            }
+          },
+          "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688",
+          "registryBootstrap": null,
+          "startOverFrozen": false,
+          "storeClosed": false,
+          "storeFault": false,
+          "unknown": false
+        },
+        "pid": 44952,
+        "product": "AE Agent Core 4.2.6",
+        "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+        "ready": true,
+        "resourceProvider": {
+          "adopted": true,
+          "coverage": {
+            "core4Lane": "cooperating-Core4-only",
+            "hostProcess": "adopted-reprobe-required",
+            "legacyEndpoints": "named-probes-only",
+            "legacyPhysicalQueue": "not-proven",
+            "otherAEActors": "outside-coverage",
+            "sharedOutputs": "not-requested"
+          },
+          "origin": {
+            "aePid": 39220,
+            "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+            "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+            "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+            "machineId": "DESKTOP-32974QF"
+          }
+        },
+        "startOver": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "eligibility": {
+            "action": "request",
+            "reason": "start_over_ready"
+          },
+          "fault": null,
+          "id": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+          "ownerBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+          "phase": "ready",
+          "requiresAEExit": false,
+          "resetComplete": true,
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        },
+        "startupActivity": {
+          "operationId": null,
+          "pending": false,
+          "unresolved": false
+        },
+        "synthetic": false,
+        "unavailableReason": null,
+        "unresolved": [],
+        "workSession": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "mode": "work-session",
+          "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+          "resetPending": false,
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        },
+        "worker": {
+          "epoch": 0,
+          "lateReplies": 0,
+          "loaded": [],
+          "pending": 0,
+          "pid": null
+        }
+      },
+      "isError": false
+    },
+    {
+      "name": "core_status",
+      "payload": {},
+      "startedAt": "2026-11-12T16:30:26.399Z",
+      "completedAt": "2026-11-12T16:30:26.432Z",
+      "response": {
+        "attachmentOwner": {
+          "accepted": 0,
+          "activity": {
+            "fault": false,
+            "pending": false,
+            "unresolved": false
+          },
+          "attachments": 1,
+          "bootId": "3a646818-b9a1-4b15-a4f0-f934056140ae",
+          "closed": false,
+          "fenced": false,
+          "frozen": false,
+          "generation": 0,
+          "holderClientId": null,
+          "mode": "idle",
+          "pending": false,
+          "workSession": {
+            "baselineRequired": false,
+            "resetPending": false,
+            "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+          }
+        },
+        "automaticLifecycle": "unavailable",
+        "closed": false,
+        "composition": "operator-render-jobs",
+        "connection": "unavailable",
+        "coreIdentity": "c39eda2f40cabd19239aa8ace9f1d90ca2611beb61dad78d4bd1b4466d1750a9",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionPolicy": "read-only-current-observation-v1",
+        "installation": {
+          "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+          "machineId": "DESKTOP-32974QF",
+          "nodeVerified": true,
+          "nodeVersion": "24.15.0",
+          "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+        },
+        "ledgerFault": false,
+        "lifecycle": {
+          "birthTicks": "639300978217466260",
+          "historyAtStartup": {
+            "ledger": {
+              "byteHash": null,
+              "eventCount": 0,
+              "present": false,
+              "settled": true,
+              "unresolvedCount": 0
+            },
+            "receiver": {
+              "byteHash": "94cc4509de90554be726bc4c85646d832e219084855ed6f904fa144104170018",
+              "eventCount": 5,
+              "present": true,
+              "settled": true,
+              "unresolvedCount": 0
+            }
+          },
+          "mode": "active",
+          "pid": 44952,
+          "processBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+          "reason": null,
+          "recoveryRequired": false
+        },
+        "maintenance": {
+          "fault": null,
+          "id": null,
+          "phase": "running",
+          "requested": false
+        },
+        "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+        "ownershipFault": null,
+        "physical": {
+          "automaticLifecycle": "unavailable",
+          "expectedPanelIdentity": {
+            "extensionId": "com.codex.aeagentcore4.panel",
+            "panelBuildId": "574cffbc4489a568630268e694dcb8c202f8e7bce93380094584067b5e52c712",
+            "productVersion": "4.2.6",
+            "protocolVersion": 1,
+            "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+          },
+          "externalLegacyCoverage": "unobserved",
+          "inspectionAvailable": false,
+          "lastCommandOutcome": null,
+          "lastPanelRejection": null,
+          "lastPhysicalFault": null,
+          "lastReadFailure": null,
+          "listening": true,
+          "peer": {
+            "connected": false,
+            "origin": null
+          },
+          "pending": null,
+          "port": 3457,
+          "readiness": {
+            "baselineRequired": false,
+            "cepConnected": false,
+            "native": "unverified",
+            "process": {
+              "fresh": false,
+              "state": "not-observed"
+            }
+          },
+          "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688",
+          "registryBootstrap": null,
+          "startOverFrozen": false,
+          "storeClosed": false,
+          "storeFault": false,
+          "unknown": false
+        },
+        "pid": 44952,
+        "product": "AE Agent Core 4.2.6",
+        "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+        "ready": true,
+        "resourceProvider": {
+          "adopted": true,
+          "coverage": {
+            "core4Lane": "cooperating-Core4-only",
+            "hostProcess": "adopted-reprobe-required",
+            "legacyEndpoints": "named-probes-only",
+            "legacyPhysicalQueue": "not-proven",
+            "otherAEActors": "outside-coverage",
+            "sharedOutputs": "not-requested"
+          },
+          "origin": {
+            "aePid": 39220,
+            "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+            "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+            "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+            "machineId": "DESKTOP-32974QF"
+          }
+        },
+        "startOver": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "eligibility": {
+            "action": "request",
+            "reason": "start_over_ready"
+          },
+          "fault": null,
+          "id": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+          "ownerBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+          "phase": "ready",
+          "requiresAEExit": false,
+          "resetComplete": true,
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        },
+        "startupActivity": {
+          "operationId": null,
+          "pending": false,
+          "unresolved": false
+        },
+        "synthetic": false,
+        "unavailableReason": null,
+        "unresolved": [],
+        "workSession": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "mode": "work-session",
+          "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+          "resetPending": false,
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        },
+        "worker": {
+          "epoch": 0,
+          "lateReplies": 0,
+          "loaded": [],
+          "pending": 0,
+          "pid": null
+        }
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_acquire",
+      "payload": {
+        "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+      },
+      "startedAt": "2026-11-12T16:30:26.433Z",
+      "completedAt": "2026-11-12T16:30:26.448Z",
+      "response": {
+        "bootId": "3a646818-b9a1-4b15-a4f0-f934056140ae",
+        "generation": 1,
+        "leaseToken": "[redacted]",
+        "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+      },
+      "isError": false
+    },
+    {
+      "name": "get_module_contract",
+      "payload": {
+        "moduleId": "titles-current-target"
+      },
+      "startedAt": "2026-11-12T16:30:26.449Z",
+      "completedAt": "2026-11-12T16:30:26.475Z",
+      "response": {
+        "admissionPin": "b9a6fea6d4dd5239b19569f6ecd71a373ad8b56bc2802d64b8c379b727f25dcb",
+        "contract": {
+          "buildSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "compId": {
+                "maximum": 2147483647,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "layerId": {
+                "maximum": 2147483647,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "projectId": {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              },
+              "text": {
+                "maxLength": 2048,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "projectId",
+              "compId",
+              "layerId",
+              "text"
+            ],
+            "type": "object"
+          },
+          "effectPolicy": {
+            "checkpointKind": "manual-text-preimage-v1",
+            "confirmation": "native-current-target",
+            "effect": "layer.text",
+            "expectedBindings": {
+              "expectedRevision": "revision",
+              "expectedText": "text"
+            },
+            "preserve": [
+              "protected"
+            ],
+            "requiresCheckpoint": true,
+            "resultBindings": {
+              "text": "text"
+            },
+            "targetFields": [
+              "projectId",
+              "compId",
+              "layerId"
+            ]
+          },
+          "executionPolicy": "current-matching-target-after-local-confirmation-v1",
+          "inputSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "compId": {
+                "maximum": 2147483647,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "expectedRevision": {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              },
+              "expectedText": {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              },
+              "layerId": {
+                "maximum": 2147483647,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "projectId": {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              },
+              "text": {
+                "maxLength": 2048,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "projectId",
+              "compId",
+              "layerId",
+              "text",
+              "expectedRevision",
+              "expectedText"
+            ],
+            "type": "object"
+          },
+          "moduleId": "titles-current-target",
+          "operationId": "set-current-text",
+          "protocolVersion": 1,
+          "snapshotSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "protected": {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              },
+              "revision": {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              },
+              "target": {
+                "additionalProperties": false,
+                "properties": {
+                  "compId": {
+                    "maximum": 2147483647,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "layerId": {
+                    "maximum": 2147483647,
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "projectId": {
+                    "maxLength": 8192,
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "projectId",
+                  "compId",
+                  "layerId"
+                ],
+                "type": "object"
+              },
+              "text": {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "target",
+              "revision",
+              "protected",
+              "text"
+            ],
+            "type": "object"
+          },
+          "targetSchema": {
+            "additionalProperties": false,
+            "properties": {
+              "compId": {
+                "maximum": 2147483647,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "layerId": {
+                "maximum": 2147483647,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "projectId": {
+                "maxLength": 8192,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "projectId",
+              "compId",
+              "layerId"
+            ],
+            "type": "object"
+          }
+        },
+        "contractId": "cb814cd8c377d7107a96845da79e3aeb8395d1dde6f61fd43b53dbc2a0e740c1",
+        "moduleId": "titles-current-target",
+        "modulePin": "704e67f0793eb9ebcf7fafc41e0d777ed6d3cd4d801d9f847da08eefb892e284",
+        "operationId": "set-current-text",
+        "operatorConfirmation": "local-operator-exact-confirmation-v1"
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:30:32.964Z",
+      "completedAt": "2026-11-12T16:30:32.980Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "core_status",
+      "payload": {},
+      "startedAt": "2026-11-12T16:30:35.991Z",
+      "completedAt": "2026-11-12T16:30:36.050Z",
+      "response": {
+        "attachmentOwner": {
+          "accepted": 0,
+          "activity": {
+            "fault": false,
+            "pending": false,
+            "unresolved": false
+          },
+          "attachments": 1,
+          "bootId": "3a646818-b9a1-4b15-a4f0-f934056140ae",
+          "closed": false,
+          "fenced": false,
+          "frozen": false,
+          "generation": 1,
+          "holderClientId": "161dc39f-da5f-4254-83dc-c2b3aa11c28a",
+          "mode": "held",
+          "pending": false,
+          "workSession": {
+            "baselineRequired": false,
+            "resetPending": false,
+            "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+          }
+        },
+        "automaticLifecycle": "unavailable",
+        "closed": false,
+        "composition": "operator-render-jobs",
+        "connection": "unavailable",
+        "coreIdentity": "c39eda2f40cabd19239aa8ace9f1d90ca2611beb61dad78d4bd1b4466d1750a9",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionPolicy": "read-only-current-observation-v1",
+        "installation": {
+          "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+          "machineId": "DESKTOP-32974QF",
+          "nodeVerified": true,
+          "nodeVersion": "24.15.0",
+          "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+        },
+        "ledgerFault": false,
+        "lifecycle": {
+          "birthTicks": "639300978217466260",
+          "historyAtStartup": {
+            "ledger": {
+              "byteHash": null,
+              "eventCount": 0,
+              "present": false,
+              "settled": true,
+              "unresolvedCount": 0
+            },
+            "receiver": {
+              "byteHash": "94cc4509de90554be726bc4c85646d832e219084855ed6f904fa144104170018",
+              "eventCount": 5,
+              "present": true,
+              "settled": true,
+              "unresolvedCount": 0
+            }
+          },
+          "mode": "active",
+          "pid": 44952,
+          "processBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+          "reason": null,
+          "recoveryRequired": false
+        },
+        "maintenance": {
+          "fault": null,
+          "id": null,
+          "phase": "running",
+          "requested": false
+        },
+        "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+        "ownershipFault": null,
+        "physical": {
+          "automaticLifecycle": "unavailable",
+          "expectedPanelIdentity": {
+            "extensionId": "com.codex.aeagentcore4.panel",
+            "panelBuildId": "574cffbc4489a568630268e694dcb8c202f8e7bce93380094584067b5e52c712",
+            "productVersion": "4.2.6",
+            "protocolVersion": 1,
+            "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+          },
+          "externalLegacyCoverage": "unobserved",
+          "inspectionAvailable": false,
+          "lastCommandOutcome": null,
+          "lastPanelRejection": null,
+          "lastPhysicalFault": null,
+          "lastReadFailure": null,
+          "listening": true,
+          "peer": {
+            "connected": false,
+            "origin": null
+          },
+          "pending": null,
+          "port": 3457,
+          "readiness": {
+            "baselineRequired": false,
+            "cepConnected": false,
+            "native": "unverified",
+            "process": {
+              "fresh": false,
+              "state": "not-observed"
+            }
+          },
+          "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688",
+          "registryBootstrap": null,
+          "startOverFrozen": false,
+          "storeClosed": false,
+          "storeFault": false,
+          "unknown": false
+        },
+        "pid": 44952,
+        "product": "AE Agent Core 4.2.6",
+        "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+        "ready": true,
+        "resourceProvider": {
+          "adopted": true,
+          "coverage": {
+            "core4Lane": "cooperating-Core4-only",
+            "hostProcess": "adopted-reprobe-required",
+            "legacyEndpoints": "named-probes-only",
+            "legacyPhysicalQueue": "not-proven",
+            "otherAEActors": "outside-coverage",
+            "sharedOutputs": "not-requested"
+          },
+          "origin": {
+            "aePid": 39220,
+            "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+            "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+            "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+            "machineId": "DESKTOP-32974QF"
+          }
+        },
+        "startOver": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "eligibility": {
+            "action": "none",
+            "reason": "start_over_controller_held"
+          },
+          "fault": null,
+          "id": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+          "ownerBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+          "phase": "ready",
+          "requiresAEExit": false,
+          "resetComplete": true,
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        },
+        "startupActivity": {
+          "operationId": null,
+          "pending": false,
+          "unresolved": false
+        },
+        "synthetic": false,
+        "unavailableReason": null,
+        "unresolved": [],
+        "workSession": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "mode": "work-session",
+          "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+          "resetPending": false,
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        },
+        "worker": {
+          "epoch": 0,
+          "lateReplies": 0,
+          "loaded": [],
+          "pending": 0,
+          "pid": null
+        }
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:30:39.469Z",
+      "completedAt": "2026-11-12T16:30:39.491Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "core_ensure_ae_panel",
+      "payload": {
+        "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+        "timeoutMs": 90000
+      },
+      "startedAt": "2026-11-12T16:30:44.672Z",
+      "completedAt": "2026-11-12T16:32:15.885Z",
+      "response": {
+        "ack": {
+          "checkedAt": 1794501049885,
+          "code": "menu_executed",
+          "deadline": 1794501135865,
+          "hostFacts": {
+            "appVersion": "26.3x87",
+            "dirty": false,
+            "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+            "numItems": 1,
+            "projectPresent": true
+          },
+          "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+          "requestNonce": "[redacted]"
+        },
+        "attempt": {
+          "bootstrapHash": "a032cb013715df88f8c27aa8c3fb5adfb4d9bfea5d0de286d47f1babc7fa3dba",
+          "deadline": 1794501135865,
+          "dispatchProtocol": 3,
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "initialPeer": null,
+          "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+          "original": {
+            "birth": "2026-11-12T16:28:50.0853090Z",
+            "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+            "pid": 39220
+          },
+          "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+          "requestHash": "e49c43d6b02e39746fdfe62671f3e3414013c31740762afc9fc098a04b7678d5",
+          "requestNonce": "[redacted]"
+        },
+        "code": "startup_outcome_unresolved",
+        "completion": null,
+        "nativeVerified": false,
+        "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+        "outcome": "unknown",
+        "panel": null
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:30:45.970Z",
+      "completedAt": "2026-11-12T16:30:45.979Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:30:52.475Z",
+      "completedAt": "2026-11-12T16:30:52.486Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:30:58.986Z",
+      "completedAt": "2026-11-12T16:30:58.998Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:31:05.490Z",
+      "completedAt": "2026-11-12T16:31:05.500Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:31:12.002Z",
+      "completedAt": "2026-11-12T16:31:12.011Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:31:18.510Z",
+      "completedAt": "2026-11-12T16:31:18.521Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:31:25.024Z",
+      "completedAt": "2026-11-12T16:31:25.037Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:31:31.529Z",
+      "completedAt": "2026-11-12T16:31:31.538Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:31:38.030Z",
+      "completedAt": "2026-11-12T16:31:38.041Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:31:44.530Z",
+      "completedAt": "2026-11-12T16:31:44.542Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:31:51.033Z",
+      "completedAt": "2026-11-12T16:31:51.042Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:31:57.539Z",
+      "completedAt": "2026-11-12T16:31:57.554Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:32:04.047Z",
+      "completedAt": "2026-11-12T16:32:04.065Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:32:10.558Z",
+      "completedAt": "2026-11-12T16:32:10.565Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:32:17.069Z",
+      "completedAt": "2026-11-12T16:32:17.078Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:32:23.574Z",
+      "completedAt": "2026-11-12T16:32:23.588Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "core_ae_panel_startup_status",
+      "payload": {
+        "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff"
+      },
+      "startedAt": "2026-11-12T16:32:26.503Z",
+      "completedAt": "2026-11-12T16:32:27.205Z",
+      "response": {
+        "ack": {
+          "checkedAt": 1794501049885,
+          "code": "menu_executed",
+          "deadline": 1794501135865,
+          "hostFacts": {
+            "appVersion": "26.3x87",
+            "dirty": false,
+            "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+            "numItems": 1,
+            "projectPresent": true
+          },
+          "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+          "requestNonce": "[redacted]"
+        },
+        "attempt": {
+          "bootstrapHash": "a032cb013715df88f8c27aa8c3fb5adfb4d9bfea5d0de286d47f1babc7fa3dba",
+          "deadline": 1794501135865,
+          "dispatchProtocol": 3,
+          "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+          "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+          "initialPeer": null,
+          "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+          "original": {
+            "birth": "2026-11-12T16:28:50.0853090Z",
+            "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+            "pid": 39220
+          },
+          "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+          "requestHash": "e49c43d6b02e39746fdfe62671f3e3414013c31740762afc9fc098a04b7678d5",
+          "requestNonce": "[redacted]"
+        },
+        "code": "startup_outcome_unresolved",
+        "completion": null,
+        "nativeVerified": false,
+        "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+        "outcome": "unknown",
+        "panel": null
+      },
+      "isError": false
+    },
+    {
+      "name": "core_diagnostics",
+      "payload": {},
+      "startedAt": "2026-11-12T16:32:27.206Z",
+      "completedAt": "2026-11-12T16:32:27.987Z",
+      "response": {
+        "attachmentOwner": {
+          "accepted": 0,
+          "activity": {
+            "fault": false,
+            "pending": false,
+            "unresolved": false
+          },
+          "attachments": 1,
+          "bootId": "3a646818-b9a1-4b15-a4f0-f934056140ae",
+          "closed": false,
+          "fenced": false,
+          "frozen": false,
+          "generation": 1,
+          "holderClientId": "161dc39f-da5f-4254-83dc-c2b3aa11c28a",
+          "mode": "held",
+          "pending": false,
+          "workSession": {
+            "baselineRequired": false,
+            "resetPending": false,
+            "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+          }
+        },
+        "automaticLifecycle": "unavailable",
+        "catalogError": null,
+        "catalogRevision": "selected-v1-084e8e8ad437be7d290f16a36bf57547822f52878ec6509d4f62b853298e2500",
+        "closed": false,
+        "composition": "operator-render-jobs",
+        "connection": "unavailable",
+        "controllerBusy": false,
+        "coreIdentity": "c39eda2f40cabd19239aa8ace9f1d90ca2611beb61dad78d4bd1b4466d1750a9",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionPolicy": "read-only-current-observation-v1",
+        "installation": {
+          "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+          "machineId": "DESKTOP-32974QF",
+          "nodeVerified": true,
+          "nodeVersion": "24.15.0",
+          "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+        },
+        "ledgerFault": false,
+        "lifecycle": {
+          "birthTicks": "639300978217466260",
+          "historyAtStartup": {
+            "ledger": {
+              "byteHash": null,
+              "eventCount": 0,
+              "present": false,
+              "settled": true,
+              "unresolvedCount": 0
+            },
+            "receiver": {
+              "byteHash": "94cc4509de90554be726bc4c85646d832e219084855ed6f904fa144104170018",
+              "eventCount": 5,
+              "present": true,
+              "settled": true,
+              "unresolvedCount": 0
+            }
+          },
+          "mode": "active",
+          "pid": 44952,
+          "processBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+          "reason": null,
+          "recoveryRequired": false
+        },
+        "maintenance": {
+          "fault": null,
+          "id": null,
+          "phase": "running",
+          "requested": false
+        },
+        "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+        "ownershipFault": null,
+        "physical": {
+          "automaticLifecycle": "unavailable",
+          "expectedPanelIdentity": {
+            "extensionId": "com.codex.aeagentcore4.panel",
+            "panelBuildId": "574cffbc4489a568630268e694dcb8c202f8e7bce93380094584067b5e52c712",
+            "productVersion": "4.2.6",
+            "protocolVersion": 1,
+            "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+          },
+          "externalLegacyCoverage": "unobserved",
+          "inspectionAvailable": false,
+          "lastCommandOutcome": null,
+          "lastPanelRejection": null,
+          "lastPhysicalFault": null,
+          "lastReadFailure": null,
+          "listening": true,
+          "peer": {
+            "connected": false,
+            "origin": null
+          },
+          "pending": null,
+          "port": 3457,
+          "readiness": {
+            "baselineRequired": false,
+            "cepConnected": false,
+            "native": "unverified",
+            "process": {
+              "birth": "2026-11-12T16:28:50.0853095Z",
+              "coverage": "visible-top-level-windows-in-observer-desktop",
+              "dialogs": [],
+              "fresh": true,
+              "observedAt": 1794501147943,
+              "pid": 39220,
+              "state": "window-responsive"
+            }
+          },
+          "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688",
+          "registryBootstrap": null,
+          "startOverFrozen": false,
+          "storeClosed": false,
+          "storeFault": false,
+          "unknown": false
+        },
+        "pid": 44952,
+        "product": "AE Agent Core 4.2.6",
+        "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+        "ready": true,
+        "resourceDiagnostics": [],
+        "resourceProvider": {
+          "adopted": true,
+          "coverage": {
+            "core4Lane": "cooperating-Core4-only",
+            "hostProcess": "adopted-reprobe-required",
+            "legacyEndpoints": "named-probes-only",
+            "legacyPhysicalQueue": "not-proven",
+            "otherAEActors": "outside-coverage",
+            "sharedOutputs": "not-requested"
+          },
+          "origin": {
+            "aePid": 39220,
+            "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+            "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+            "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+            "machineId": "DESKTOP-32974QF"
+          }
+        },
+        "startOver": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "eligibility": {
+            "action": "none",
+            "reason": "start_over_controller_held"
+          },
+          "fault": null,
+          "id": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+          "ownerBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+          "phase": "ready",
+          "requiresAEExit": false,
+          "resetComplete": true,
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        },
+        "startupActivity": {
+          "operationId": null,
+          "pending": false,
+          "unresolved": true
+        },
+        "synthetic": false,
+        "unavailableReason": null,
+        "unresolved": [],
+        "workSession": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "mode": "work-session",
+          "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+          "resetPending": false,
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        },
+        "worker": {
+          "epoch": 0,
+          "lateReplies": 0,
+          "loaded": [],
+          "pending": 0,
+          "pid": null
+        }
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:32:30.087Z",
+      "completedAt": "2026-11-12T16:32:30.100Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:32:36.599Z",
+      "completedAt": "2026-11-12T16:32:36.619Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:32:43.110Z",
+      "completedAt": "2026-11-12T16:32:43.119Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:32:49.612Z",
+      "completedAt": "2026-11-12T16:32:49.623Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_renew",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:32:56.125Z",
+      "completedAt": "2026-11-12T16:32:56.147Z",
+      "response": {
+        "renewed": true
+      },
+      "isError": false
+    },
+    {
+      "name": "controller_release",
+      "payload": {
+        "leaseToken": "[redacted]"
+      },
+      "startedAt": "2026-11-12T16:32:57.226Z",
+      "completedAt": "2026-11-12T16:32:57.244Z",
+      "response": {
+        "released": true
+      },
+      "isError": false
+    },
+    {
+      "name": "core_status",
+      "payload": {},
+      "startedAt": "2026-11-12T16:32:57.245Z",
+      "completedAt": "2026-11-12T16:32:57.277Z",
+      "response": {
+        "attachmentOwner": {
+          "accepted": 0,
+          "activity": {
+            "fault": false,
+            "pending": false,
+            "unresolved": false
+          },
+          "attachments": 1,
+          "bootId": "3a646818-b9a1-4b15-a4f0-f934056140ae",
+          "closed": false,
+          "fenced": false,
+          "frozen": false,
+          "generation": 1,
+          "holderClientId": null,
+          "mode": "idle",
+          "pending": false,
+          "workSession": {
+            "baselineRequired": false,
+            "resetPending": false,
+            "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+          }
+        },
+        "automaticLifecycle": "unavailable",
+        "closed": false,
+        "composition": "operator-render-jobs",
+        "connection": "unavailable",
+        "coreIdentity": "c39eda2f40cabd19239aa8ace9f1d90ca2611beb61dad78d4bd1b4466d1750a9",
+        "externalLegacyCoverage": "unobserved",
+        "inspectionPolicy": "read-only-current-observation-v1",
+        "installation": {
+          "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+          "machineId": "DESKTOP-32974QF",
+          "nodeVerified": true,
+          "nodeVersion": "24.15.0",
+          "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+        },
+        "ledgerFault": false,
+        "lifecycle": {
+          "birthTicks": "639300978217466260",
+          "historyAtStartup": {
+            "ledger": {
+              "byteHash": null,
+              "eventCount": 0,
+              "present": false,
+              "settled": true,
+              "unresolvedCount": 0
+            },
+            "receiver": {
+              "byteHash": "94cc4509de90554be726bc4c85646d832e219084855ed6f904fa144104170018",
+              "eventCount": 5,
+              "present": true,
+              "settled": true,
+              "unresolvedCount": 0
+            }
+          },
+          "mode": "active",
+          "pid": 44952,
+          "processBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+          "reason": null,
+          "recoveryRequired": false
+        },
+        "maintenance": {
+          "fault": null,
+          "id": null,
+          "phase": "running",
+          "requested": false
+        },
+        "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+        "ownershipFault": null,
+        "physical": {
+          "automaticLifecycle": "unavailable",
+          "expectedPanelIdentity": {
+            "extensionId": "com.codex.aeagentcore4.panel",
+            "panelBuildId": "574cffbc4489a568630268e694dcb8c202f8e7bce93380094584067b5e52c712",
+            "productVersion": "4.2.6",
+            "protocolVersion": 1,
+            "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+          },
+          "externalLegacyCoverage": "unobserved",
+          "inspectionAvailable": false,
+          "lastCommandOutcome": null,
+          "lastPanelRejection": null,
+          "lastPhysicalFault": null,
+          "lastReadFailure": null,
+          "listening": true,
+          "peer": {
+            "connected": false,
+            "origin": null
+          },
+          "pending": null,
+          "port": 3457,
+          "readiness": {
+            "baselineRequired": false,
+            "cepConnected": false,
+            "native": "unverified",
+            "process": {
+              "birth": "2026-11-12T16:28:50.0853095Z",
+              "coverage": "visible-top-level-windows-in-observer-desktop",
+              "dialogs": [],
+              "fresh": false,
+              "observedAt": 1794501147943,
+              "pid": 39220,
+              "state": "window-responsive"
+            }
+          },
+          "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688",
+          "registryBootstrap": null,
+          "startOverFrozen": false,
+          "storeClosed": false,
+          "storeFault": false,
+          "unknown": false
+        },
+        "pid": 44952,
+        "product": "AE Agent Core 4.2.6",
+        "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+        "ready": true,
+        "resourceProvider": {
+          "adopted": true,
+          "coverage": {
+            "core4Lane": "cooperating-Core4-only",
+            "hostProcess": "adopted-reprobe-required",
+            "legacyEndpoints": "named-probes-only",
+            "legacyPhysicalQueue": "not-proven",
+            "otherAEActors": "outside-coverage",
+            "sharedOutputs": "not-requested"
+          },
+          "origin": {
+            "aePid": 39220,
+            "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+            "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+            "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+            "machineId": "DESKTOP-32974QF"
+          }
+        },
+        "startOver": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "eligibility": {
+            "action": "request",
+            "reason": "start_over_ready"
+          },
+          "fault": null,
+          "id": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+          "ownerBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+          "phase": "ready",
+          "requiresAEExit": false,
+          "resetComplete": true,
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        },
+        "startupActivity": {
+          "operationId": null,
+          "pending": false,
+          "unresolved": true
+        },
+        "synthetic": false,
+        "unavailableReason": null,
+        "unresolved": [],
+        "workSession": {
+          "aeAuthority": false,
+          "baselineRequired": false,
+          "mode": "work-session",
+          "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+          "resetPending": false,
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        },
+        "worker": {
+          "epoch": 0,
+          "lateReplies": 0,
+          "loaded": [],
+          "pending": 0,
+          "pid": null
+        }
+      },
+      "isError": false
+    }
+  ],
+  "actions": [
+    {
+      "command": {
+        "action": "tool",
+        "name": "core_status"
+      },
+      "at": "2026-11-12T16:30:21.280Z"
+    },
+    {
+      "command": {
+        "action": "acquire"
+      },
+      "at": "2026-11-12T16:30:26.399Z"
+    },
+    {
+      "command": {
+        "action": "tool",
+        "name": "get_module_contract",
+        "payload": {
+          "moduleId": "titles-current-target"
+        }
+      },
+      "at": "2026-11-12T16:30:26.449Z"
+    },
+    {
+      "command": {
+        "action": "tool",
+        "name": "core_status"
+      },
+      "at": "2026-11-12T16:30:35.990Z"
+    },
+    {
+      "command": {
+        "action": "tool",
+        "name": "core_ensure_ae_panel",
+        "payload": {
+          "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+          "timeoutMs": 90000
+        }
+      },
+      "at": "2026-11-12T16:30:44.671Z"
+    },
+    {
+      "command": {
+        "action": "tool",
+        "name": "core_ae_panel_startup_status",
+        "payload": {
+          "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff"
+        }
+      },
+      "at": "2026-11-12T16:32:26.502Z"
+    },
+    {
+      "command": {
+        "action": "tool",
+        "name": "core_diagnostics"
+      },
+      "at": "2026-11-12T16:32:27.205Z"
+    },
+    {
+      "command": {
+        "action": "release"
+      },
+      "at": "2026-11-12T16:32:57.224Z"
+    },
+    {
+      "command": {
+        "action": "tool",
+        "name": "core_status"
+      },
+      "at": "2026-11-12T16:32:57.245Z"
+    },
+    {
+      "command": {
+        "action": "close"
+      },
+      "at": "2026-11-12T16:32:57.278Z"
+    }
+  ],
+  "clientPid": 35680,
+  "initialize": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {
+      "tools": {
+        "listChanged": false
+      }
+    },
+    "serverInfo": {
+      "name": "ae-agent-core4",
+      "version": "4.2.6"
+    }
+  },
+  "clientExit": {
+    "code": 0,
+    "signal": null
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "controller": "root; exclusive UI-only baseline setup",
+  "precondition": "Fresh installed native project-inspection: unsaved, dirty=false, numItems=0; no user project open",
+  "project": "C:/Users/Ant/Documents/Codex/AE_Agent_Core/.codex-runtime/core-architecture-live-20261112/live-ae.aep",
+  "composition": "Core Architecture Live 20261112",
+  "geometry": { "width": 1920, "height": 1080, "fps": 25, "durationSeconds": 50, "resolution": "Full" },
+  "layers": 1,
+  "baselineVisibleText": "ИФ",
+  "baselineDescription": "Static point text, default installed script font and white fill, visually at composition centre; exact IDs/style require typed inspection",
+  "setupObservations": [
+    "Initial UIA element setters were rejected as unavailable in cached app state before any action; coordinate input used after re-observation",
+    "Attempt to choose preset closed popup and focused pixel aspect; no setting changed; final width/height entered and verified explicitly",
+    "Initial width entry appended text; corrected to 1920 before creating composition",
+    "AE text type_text inserted existing clipboard text instead of requested ASCII baseline; Escape cancelled that newly-created layer; final baseline created using observed keyboard input, whose current layout produced ИФ",
+    "Ctrl+Return committed final point-text layer",
+    "Save As field displayed exact new task-owned path before Save; saved AE title showed that path without dirty asterisk"
+  ],
+  "existingAepActions": 0,
+  "rawScriptExecution": false,
+  "uiBlockFinished": true,
+  "completion": "Observed saved own stand, stopped native sky UI calls immediately. Native API has no teardown method. Further changes delegated to typed installed Core with current gates."
+}

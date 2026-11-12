@@ -1,0 +1,484 @@
+{
+  "source": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\broker\\ledger.ndjson",
+  "intent": {
+    "attemptId": "attempt-28103ed4-4310-4252-8046-de33b0840434",
+    "before": {
+      "checkpointRoot": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\project-save-checkpoints",
+      "dirty": true,
+      "fileStamp": {
+        "bytes": 82265,
+        "modifiedMs": 1794499635000
+      },
+      "protected": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+      "revision": "[72,true,82265,1794499635000]",
+      "savedFileSha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49",
+      "target": {
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+        "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+      }
+    },
+    "checkpoint": {
+      "digest": "57fc5140117267a72cb61579d4cd29dcadbf0df260c1210fabf0bc9a41a8a92a",
+      "kind": "project-save-disk-preimage-v1",
+      "ref": "checkpoint-abd745e6-9a99-4601-8191-ab2776bdb1bf"
+    },
+    "commandId": "command-5a3d07d9-b535-4652-8438-3dd264eb14b3",
+    "dispatchBinding": {
+      "channelEpoch": "channel-c4dbde7b-740f-46b8-bedc-577901a0623c",
+      "commandId": "command-5a3d07d9-b535-4652-8438-3dd264eb14b3",
+      "controllerId": "controller-6c045c6e-e79a-4bcb-b7c3-44f23331acc9",
+      "executorHash": "259652812007d78f344e5da2ac5dad304b9e340df4f5e4b73e5934d29a74bef0",
+      "moduleId": "project-save",
+      "operationId": "save-current-project",
+      "payloadHash": "71dd6c1cf6282b56a2e9a340bedd773bea6445084af382fde199e80208773103",
+      "phase": "mutate",
+      "receiptRef": "6683d3028f926c44bad56cefebb9232f31b6b82d3a06944dda198ffb11a569bf",
+      "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688"
+    },
+    "dispatchedAt": 1794502041088,
+    "executionPolicy": {
+      "executionScope": {
+        "origin": {
+          "aePid": 39220,
+          "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+          "machineId": "DESKTOP-32974QF"
+        },
+        "schemaVersion": 2,
+        "target": {
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        }
+      },
+      "operatorConfirmation": true,
+      "pin": "fb515199a9e4bd5420fd82eb26090b3d1deae246f5ecb3c7b45e5ea478220425",
+      "policyId": "current-matching-target-after-local-confirmation-v1",
+      "verificationKind": "local-transaction-receipt"
+    },
+    "grant": {
+      "allowedEffect": "project-save-in-place",
+      "approvalDigest": "94ea9edee3d175aa4eaaf4007003a9503ab89883da07309088cb0d02553d29df",
+      "checkpointRef": "checkpoint-abd745e6-9a99-4601-8191-ab2776bdb1bf",
+      "executionScope": {
+        "origin": {
+          "aePid": 39220,
+          "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+          "machineId": "DESKTOP-32974QF"
+        },
+        "schemaVersion": 2,
+        "target": {
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        }
+      },
+      "operatorConfirmation": {
+        "digest": "8fe7f9f46c5cd54ccf7e3c916fd3de7b46cbce0861ec4c766f11d415055317bc",
+        "expiresAt": 1794502159951
+      },
+      "owner": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+      "provenance": "local-operator-exact-confirmation-v1",
+      "reservationRef": "reservation-a25de7a2-a974-411b-961b-5ea68d0406ea"
+    },
+    "input": {
+      "checkpointRoot": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\project-save-checkpoints",
+      "expectedFileStamp": {
+        "bytes": 82265,
+        "modifiedMs": 1794499635000
+      },
+      "expectedRevision": "[72,true,82265,1794499635000]",
+      "expectedSavedSha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49",
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+      "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+    },
+    "inputDigest": "4e7e62d98f341d1b6a145e1d9e5e7df759c98725dab2e587b768ccfe90c63443",
+    "physicalInput": {
+      "_execution": {
+        "baselineDigest": "b7b3710f11d3ff20fb004f384d4ca553ff05bc5d20e7386aaecbd24b46161101",
+        "baselineProtected": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+        "baselineRevision": "[72,true,82265,1794499635000]",
+        "checkpointDigest": "57fc5140117267a72cb61579d4cd29dcadbf0df260c1210fabf0bc9a41a8a92a",
+        "checkpointRef": "checkpoint-abd745e6-9a99-4601-8191-ab2776bdb1bf",
+        "operatorConfirmation": {
+          "digest": "8fe7f9f46c5cd54ccf7e3c916fd3de7b46cbce0861ec4c766f11d415055317bc",
+          "expiresAt": 1794502159951
+        },
+        "pins": {
+          "core": "c39eda2f40cabd19239aa8ace9f1d90ca2611beb61dad78d4bd1b4466d1750a9",
+          "engine": null,
+          "modules": [
+            {
+              "admission": "1b8c208a37a44b8dfda41d848421419289705849ccbd744fafd7e2a253b6ec7d",
+              "dependencies": {},
+              "executionPolicy": {
+                "executionScope": {
+                  "origin": {
+                    "aePid": 39220,
+                    "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+                    "machineId": "DESKTOP-32974QF"
+                  },
+                  "schemaVersion": 2,
+                  "target": {
+                    "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+                    "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+                  }
+                },
+                "operatorConfirmation": true,
+                "pin": "fb515199a9e4bd5420fd82eb26090b3d1deae246f5ecb3c7b45e5ea478220425",
+                "policyId": "current-matching-target-after-local-confirmation-v1",
+                "verificationKind": "local-transaction-receipt"
+              },
+              "module": "6e383c5c9a6ee78b7f917aefff5b493d109a9da341d44ada432ae6b88077c24c",
+              "stepId": "s1"
+            }
+          ],
+          "protocol": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+          "transport": "200198c13f3c9aa94bf80adf6ac71f5c05dd224c7569fd76c3090f87c87b05eb"
+        },
+        "planDigest": "ff233ee6cfbf5e31e5073c3be4a7af3cd1f00c7e9348d1849531521cde580ee1",
+        "policyId": "current-matching-target-after-local-confirmation-v1",
+        "proposalId": "proposal-fef687a8-5069-4585-b3f8-ec3040c033f8",
+        "stepId": "s1",
+        "target": {
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+          "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+        },
+        "taskEpoch": 0,
+        "taskId": "task-162d0a67-c633-464f-9861-7c4ae49f424d"
+      },
+      "checkpointRoot": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\project-save-checkpoints",
+      "expectedFileStamp": {
+        "bytes": 82265,
+        "modifiedMs": 1794499635000
+      },
+      "expectedRevision": "[72,true,82265,1794499635000]",
+      "expectedSavedSha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49",
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+      "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+    },
+    "planDigest": "ff233ee6cfbf5e31e5073c3be4a7af3cd1f00c7e9348d1849531521cde580ee1",
+    "planRevision": "revision-47d1a561-76b8-469b-8350-dc8da25c9ac5",
+    "previousHash": "53f4ee8795997710e14e9a55e06c09fec4ca4d10568ac3779bbb4f648e54d39f",
+    "proposalId": "proposal-fef687a8-5069-4585-b3f8-ec3040c033f8",
+    "recordContext": {
+      "contextId": "core-architecture-live-20261112",
+      "lifetime": "ephemeral_check",
+      "project": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+      },
+      "purpose": "technical_check",
+      "resources": [
+        {
+          "identity": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+          "kind": "project"
+        }
+      ]
+    },
+    "recordHash": "acf7be565bf19221e72f64084de6605262d90ed6b6118727a4f828d968827ead",
+    "runId": "run-3c15e858-283f-49c6-a4fa-fc63b60e6580",
+    "selected": {
+      "admission": {
+        "artifactHash": "6e383c5c9a6ee78b7f917aefff5b493d109a9da341d44ada432ae6b88077c24c",
+        "effectPolicyHash": "ab757ca003ea7823f4013c6f4e33b32a52fbb38912300890560f99a63ec74c5b",
+        "executorHash": "259652812007d78f344e5da2ac5dad304b9e340df4f5e4b73e5934d29a74bef0",
+        "moduleId": "project-save",
+        "operationId": "save-current-project",
+        "protocolVersion": 1,
+        "resultSchemaHash": "5256e33c8f74150aa94dee5d5f7b64b4f0389a21dcdb242cb1cfa3e9582c4d4b",
+        "revoked": false,
+        "schemaHash": "b3dec9d496d8653ab11e31c2067ab2efc6b325339ab53f158091a42a90950d92",
+        "trustApprovalId": "source-review-project-save-20261107"
+      },
+      "admissionPath": "config/admissions/project-save.json",
+      "contract": {
+        "buildSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "projectId": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "sessionId": {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "sessionId",
+            "projectId"
+          ],
+          "type": "object"
+        },
+        "effectPolicy": {
+          "checkpointKind": "project-save-disk-preimage-v1",
+          "confirmation": "native-current-target",
+          "effect": "project-save-in-place",
+          "expectedBindings": {
+            "checkpointRoot": "checkpointRoot",
+            "expectedFileStamp": "fileStamp",
+            "expectedRevision": "revision",
+            "expectedSavedSha256": "savedFileSha256"
+          },
+          "preserve": [
+            "protected",
+            "checkpointRoot"
+          ],
+          "requiresCheckpoint": true,
+          "resultBindings": {},
+          "targetFields": [
+            "sessionId",
+            "projectId"
+          ]
+        },
+        "executionPolicy": "current-matching-target-after-local-confirmation-v1",
+        "inputSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "checkpointRoot": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "expectedFileStamp": {
+              "additionalProperties": false,
+              "properties": {
+                "bytes": {
+                  "maximum": 100663296,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "modifiedMs": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "bytes",
+                "modifiedMs"
+              ],
+              "type": "object"
+            },
+            "expectedRevision": {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            "expectedSavedSha256": {
+              "maxLength": 64,
+              "minLength": 64,
+              "type": "string"
+            },
+            "projectId": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "sessionId": {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "sessionId",
+            "projectId",
+            "expectedRevision",
+            "expectedSavedSha256",
+            "expectedFileStamp",
+            "checkpointRoot"
+          ],
+          "type": "object"
+        },
+        "moduleId": "project-save",
+        "operationId": "save-current-project",
+        "snapshotSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "checkpoint": {
+              "additionalProperties": false,
+              "properties": {
+                "bytes": {
+                  "maximum": 100663296,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "path": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "scope": {
+                  "enum": [
+                    "on-disk-before-save"
+                  ],
+                  "type": "string"
+                },
+                "sha256": {
+                  "maxLength": 64,
+                  "minLength": 64,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path",
+                "sha256",
+                "bytes",
+                "scope"
+              ],
+              "type": "object"
+            },
+            "checkpointRoot": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "dirty": {
+              "type": "boolean"
+            },
+            "fileStamp": {
+              "additionalProperties": false,
+              "properties": {
+                "bytes": {
+                  "maximum": 100663296,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "modifiedMs": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "bytes",
+                "modifiedMs"
+              ],
+              "type": "object"
+            },
+            "protected": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "revision": {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            },
+            "savedFileSha256": {
+              "maxLength": 64,
+              "minLength": 64,
+              "type": "string"
+            },
+            "target": {
+              "additionalProperties": false,
+              "properties": {
+                "projectId": {
+                  "maxLength": 4096,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "sessionId": {
+                  "maxLength": 160,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sessionId",
+                "projectId"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "target",
+            "revision",
+            "protected",
+            "dirty",
+            "fileStamp",
+            "savedFileSha256",
+            "checkpointRoot"
+          ],
+          "type": "object"
+        },
+        "targetSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "projectId": {
+              "maxLength": 4096,
+              "minLength": 1,
+              "type": "string"
+            },
+            "sessionId": {
+              "maxLength": 160,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "sessionId",
+            "projectId"
+          ],
+          "type": "object"
+        }
+      },
+      "executor": "(function () {\n    var policy = 'current-matching-target-after-local-confirmation-v1';\n\n    function fault(code) { var error = new Error(code); error.coreCode = code; throw error; }\n    function current(p) {\n        var project = app.project;\n        if (!project || !project.file || String(project.file.fsName) !== p.projectId || !/\\.aep$/i.test(p.projectId)) fault('save_project_changed');\n        return project;\n    }\n    function snapshot(p) {\n        var project = current(p), file = project.file, revision = project.revision;\n        if (typeof revision !== 'number' || !isFinite(revision) || Math.floor(revision) !== revision || revision < 0) fault('save_revision_unavailable');\n        if (typeof project.dirty !== 'boolean') fault('save_dirty_unavailable');\n        if (!file.exists || file.alias || file.length < 1 || !file.modified) fault('save_file_unavailable');\n        var stamp = { bytes: file.length, modifiedMs: file.modified.getTime() }, dirty = project.dirty;\n        return { target: { sessionId: p.sessionId, projectId: p.projectId },\n            revision: JSON.stringify([revision, dirty, stamp.bytes, stamp.modifiedMs]), 'protected': p.projectId,\n            dirty: dirty, fileStamp: stamp };\n    }\n    function read(p) {\n        try { return snapshot(p); }\n        catch (error) { return { readFailureVersion: 1, outcome: 'rejected', code: error.coreCode || 'inspection_failed' }; }\n    }\n    function key(path) { return String(path).replace(/\\\\/g, '/'); }\n    function checkBytes(original, checkpoint, bytes) {\n        var originalOpen = false, checkpointOpen = false;\n        try {\n            if (!checkpoint.exists || checkpoint.alias || checkpoint.length !== bytes || original.length !== bytes) fault('save_checkpoint_changed');\n            original.encoding = checkpoint.encoding = 'BINARY';\n            originalOpen = original.open('r'); checkpointOpen = checkpoint.open('r');\n            if (!originalOpen || !checkpointOpen || !original.seek(0, 0) || !checkpoint.seek(0, 0)) fault('save_checkpoint_unreadable');\n            for (var offset = 0; offset < bytes; offset += 65536) {\n                var count = Math.min(65536, bytes - offset), chunk = original.read(count);\n                if (chunk.length !== count || chunk !== checkpoint.read(count) || original.error || checkpoint.error) fault('save_checkpoint_changed');\n            }\n        } finally {\n            try { if (originalOpen) original.close(); }\n            finally { if (checkpointOpen) checkpoint.close(); }\n        }\n    }\n    function apply(p, confirmAction) {\n        var started = false, preMutationError = 'save_native_baseline_error';\n        try {\n            var before = snapshot(p), proof = p._execution;\n            if (before.revision !== p.expectedRevision) fault('stale_target');\n            if (!proof || proof.policyId !== policy || proof.baselineRevision !== before.revision ||\n                proof.baselineProtected !== before['protected'] || !proof.target || proof.target.sessionId !== p.sessionId ||\n                proof.target.projectId !== p.projectId || !/^checkpoint-[0-9a-f-]{36}$/.test(proof.checkpointRef)) fault('manual_approval_binding');\n            preMutationError = 'save_native_file_setup_error';\n            var file = key(p.checkpointRoot) + '/' + proof.checkpointRef + '.aep', checkpoint = new File(file);\n            if (key(checkpoint.fsName) !== file || !checkpoint.exists) fault('save_checkpoint_unavailable');\n            var message = 'Сохранить текущий проект After Effects?\\nПроект: ' + p.projectId +\n                '\\nРезервная копия версии с диска: ' + checkpoint.fsName;\n            preMutationError = 'save_native_confirmation_error';\n            var accepted = confirmAction ? confirmAction(message, true, 'AE Agent Core — сохранение проекта') :\n                confirm(message, true, 'AE Agent Core — сохранение проекта');\n            if (accepted !== true) fault('local_cancelled');\n            preMutationError = 'save_native_checkpoint_error';\n            var project = current(p);\n            checkBytes(project.file, checkpoint, before.fileStamp.bytes);\n            preMutationError = 'save_native_recheck_error';\n            if (JSON.stringify(snapshot(p)) !== JSON.stringify(before)) fault('stale_target');\n            preMutationError = 'save_native_confirmation_error';\n            if (confirmAction && confirmAction(message, true, 'AE Agent Core — сохранение проекта') !== true)\n                fault('operator_confirmation_expired');\n            started = true;\n            if (project.save() !== true) fault('save_ae_failed');\n            var after = snapshot(p);\n            if (after.dirty) fault('save_ae_still_dirty');\n            return { outcome: 'applied', snapshot: after, transactionReceipt: { version: 2, policyId: policy,\n                proposalId: proof.proposalId, planDigest: proof.planDigest, taskId: proof.taskId, taskEpoch: proof.taskEpoch,\n                stepId: proof.stepId, checkpointRef: proof.checkpointRef, checkpointDigest: proof.checkpointDigest,\n                baselineDigest: proof.baselineDigest, baselineRevision: proof.baselineRevision, target: after.target,\n                resultRevision: after.revision, protectedFields: after['protected'] } };\n        } catch (error) {\n            return { outcome: started ? 'unknown' : 'rejected',\n                code: error && error.coreCode || (started ? 'ae_error' : preMutationError) };\n        }\n    }\n    return { inspect: read, verify: read, mutate: apply };\n}())\n",
+      "manifest": {
+        "entry": "implementation.js",
+        "hashes": {
+          "contract.json": "5bd7077b0c24520d32d8dc71bff03f053fb932f0f0819fa9041df975f454a6d6",
+          "executor.jsx": "259652812007d78f344e5da2ac5dad304b9e340df4f5e4b73e5934d29a74bef0",
+          "implementation.js": "9c60ddd66cff5519185d8d2db99ebcc36c838508c62606caca515fb5cd6ae3b3"
+        },
+        "id": "project-save",
+        "publicDependencies": {},
+        "version": "4.1.2"
+      },
+      "moduleId": "project-save",
+      "path": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\broker\\artifacts\\6e383c5c9a6ee78b7f917aefff5b493d109a9da341d44ada432ae6b88077c24c",
+      "pin": "6e383c5c9a6ee78b7f917aefff5b493d109a9da341d44ada432ae6b88077c24c",
+      "publicDependencies": {}
+    },
+    "seq": 36,
+    "stepId": "s1",
+    "target": {
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+      "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+    },
+    "taskEpoch": 0,
+    "taskId": "task-162d0a67-c633-464f-9861-7c4ae49f424d",
+    "transportIdentity": "200198c13f3c9aa94bf80adf6ac71f5c05dd224c7569fd76c3090f87c87b05eb",
+    "type": "intent",
+    "workflowId": "workflow-ec925d96-a4fa-4123-87cd-cb6c9b42d920"
+  },
+  "terminal": {
+    "after": {
+      "checkpoint": {
+        "bytes": 82265,
+        "path": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\project-save-checkpoints\\checkpoint-abd745e6-9a99-4601-8191-ab2776bdb1bf.aep",
+        "scope": "on-disk-before-save",
+        "sha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49"
+      },
+      "checkpointRoot": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\project-save-checkpoints",
+      "dirty": false,
+      "fileStamp": {
+        "bytes": 103533,
+        "modifiedMs": 1794502041000
+      },
+      "protected": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+      "revision": "[72,false,103533,1794502041000]",
+      "savedFileSha256": "e9bfd6813ae411ad46c207c5633f65e7f30c14f1a108f2ea0a7f9861d33d6edc",
+      "target": {
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+        "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+      }
+    },
+    "commandId": "command-5a3d07d9-b535-4652-8438-3dd264eb14b3",
+    "previousHash": "a28d11b7f3d90b0256d1b92dd8b333440a8cb2be48a4e6a99da1f23bb5b96e17",
+    "recordHash": "2a287f952ef06b973e9ecacad7e5f12c46b7fa08eef415078df0793d035052d1",
+    "seq": 38,
+    "state": "succeeded",
+    "type": "command",
+    "verificationKind": "local-transaction-receipt"
+  }
+}

@@ -1,0 +1,282 @@
+{
+  "recordedAt": "2026-11-12T16:33:49.873Z",
+  "result": "no-cu-baseline-and-adoption-pass-post-adoption-panel-startup-blocked",
+  "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+  "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+  "noSourceRuntimeConfigEdits": true,
+  "noComputerUseAfterStructuredLaunch": true,
+  "inspection": {
+    "authority": false,
+    "continuity": false,
+    "contractId": "b25529075602e5a6baa8bf109cd8ea26cda06f2e1d44524f36f46d3ac66c77b9",
+    "evidenceRef": "observation-63ebe213-6891-4046-b075-435b6f91f07e",
+    "moduleId": "project-inspection",
+    "observation": {
+      "activeComp": {
+        "compId": 1,
+        "time": 0,
+        "workAreaDuration": 50,
+        "workAreaStart": 0
+      },
+      "aeVersion": "26.3x87",
+      "compositions": [
+        {
+          "compId": 1,
+          "duration": 50,
+          "name": "Core Architecture Live 20261112",
+          "numLayers": 1
+        }
+      ],
+      "coverage": {
+        "displayNamesShortened": false,
+        "inventory": {
+          "itemsScanned": 1,
+          "nextCursor": null,
+          "startItemIndex": 1,
+          "status": "complete",
+          "throughItemIndex": 1
+        },
+        "layers": {
+          "returned": 0,
+          "total": 0
+        },
+        "lookup": {
+          "compId": null,
+          "method": "none",
+          "status": "not_requested"
+        }
+      },
+      "dirty": false,
+      "layers": [],
+      "observationVersion": 1,
+      "project": {
+        "name": "live-ae.aep",
+        "numItems": 1,
+        "saved": true
+      },
+      "projectRevision": 68,
+      "target": {
+        "compId": null,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+      },
+      "truncated": false
+    },
+    "originalBinding": {
+      "channelEpoch": "http-505ff242-62d6-4052-a5c0-9f07efe1300a",
+      "commandId": "inspect-b3508749-bdb9-40c2-a032-2dab4186927b",
+      "controllerId": "controller-8ed76c08-c80f-4899-ace1-4d23572a2c09",
+      "executorHash": "a33134d736c8b638edde6f61ea3f241d900a735afdd992dd451d18920ddad01d",
+      "moduleId": "project-inspection",
+      "operationId": "inspect",
+      "payloadHash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "phase": "inspect",
+      "receiptRef": "7340088120071a864ee68d1961cbb2cd630d8016f6c610ecc26e24ae67e49fa0",
+      "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688"
+    },
+    "pins": {
+      "executorHash": "a33134d736c8b638edde6f61ea3f241d900a735afdd992dd451d18920ddad01d",
+      "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+      "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+    }
+  },
+  "adoption": {
+    "stopId": "982a72c9-5f94-4f41-8d3c-b39cb8a7935a",
+    "result": "adopted-resumed-runtime-not-started",
+    "host": {
+      "aePid": 39220,
+      "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+      "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+      "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+      "machineId": "DESKTOP-32974QF"
+    },
+    "allowedProject": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+  },
+  "archives": [
+    {
+      "resetId": "fff4d550-28bf-436b-8ca5-c2591855c679",
+      "file": "C:\\Users\\Ant\\AEAgentCore4\\transactions\\fff4d550-28bf-436b-8ca5-c2591855c679-start-over\\archive-receiver\\completions.ndjson",
+      "bytes": 17713,
+      "sha256": "f6cbbd03ad70852bff7864e42831ff7d6f99264994a1edd70d23b0fc2ead31b6",
+      "exact": true
+    },
+    {
+      "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+      "file": "C:\\Users\\Ant\\AEAgentCore4\\transactions\\0e6d16c9-f80e-4761-b445-3a7e8cfbac1d-start-over\\archive-receiver\\completions.ndjson",
+      "bytes": 4246,
+      "sha256": "eb26c8b8a0afd0e99c7ca400e69ed247b997a85f7fd1d13a618513572e49317a",
+      "exact": true
+    }
+  ],
+  "startup": {
+    "ack": {
+      "checkedAt": 1794501049885,
+      "code": "menu_executed",
+      "deadline": 1794501135865,
+      "hostFacts": {
+        "appVersion": "26.3x87",
+        "dirty": false,
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+        "numItems": 1,
+        "projectPresent": true
+      },
+      "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+      "requestNonce": "[redacted]"
+    },
+    "attempt": {
+      "bootstrapHash": "a032cb013715df88f8c27aa8c3fb5adfb4d9bfea5d0de286d47f1babc7fa3dba",
+      "deadline": 1794501135865,
+      "dispatchProtocol": 3,
+      "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+      "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+      "initialPeer": null,
+      "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+      "original": {
+        "birth": "2026-11-12T16:28:50.0853090Z",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "pid": 39220
+      },
+      "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+      "requestHash": "e49c43d6b02e39746fdfe62671f3e3414013c31740762afc9fc098a04b7678d5",
+      "requestNonce": "[redacted]"
+    },
+    "code": "startup_outcome_unresolved",
+    "completion": null,
+    "nativeVerified": false,
+    "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+    "outcome": "unknown",
+    "panel": null
+  },
+  "final": {
+    "owner": {
+      "birthTicks": "639300978217466260",
+      "historyAtStartup": {
+        "ledger": {
+          "byteHash": null,
+          "eventCount": 0,
+          "present": false,
+          "settled": true,
+          "unresolvedCount": 0
+        },
+        "receiver": {
+          "byteHash": "94cc4509de90554be726bc4c85646d832e219084855ed6f904fa144104170018",
+          "eventCount": 5,
+          "present": true,
+          "settled": true,
+          "unresolvedCount": 0
+        }
+      },
+      "mode": "active",
+      "pid": 44952,
+      "processBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+      "reason": null,
+      "recoveryRequired": false
+    },
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": false,
+      "mode": "work-session",
+      "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+      "resetPending": false,
+      "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+    },
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": false
+      },
+      "attachments": 1,
+      "bootId": "3a646818-b9a1-4b15-a4f0-f934056140ae",
+      "closed": false,
+      "fenced": false,
+      "frozen": false,
+      "generation": 1,
+      "holderClientId": null,
+      "mode": "idle",
+      "pending": false,
+      "workSession": {
+        "baselineRequired": false,
+        "resetPending": false,
+        "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+      }
+    },
+    "physical": {
+      "automaticLifecycle": "unavailable",
+      "expectedPanelIdentity": {
+        "extensionId": "com.codex.aeagentcore4.panel",
+        "panelBuildId": "574cffbc4489a568630268e694dcb8c202f8e7bce93380094584067b5e52c712",
+        "productVersion": "4.2.6",
+        "protocolVersion": 1,
+        "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+      },
+      "externalLegacyCoverage": "unobserved",
+      "inspectionAvailable": false,
+      "lastCommandOutcome": null,
+      "lastPanelRejection": null,
+      "lastPhysicalFault": null,
+      "lastReadFailure": null,
+      "listening": true,
+      "peer": {
+        "connected": false,
+        "origin": null
+      },
+      "pending": null,
+      "port": 3457,
+      "readiness": {
+        "baselineRequired": false,
+        "cepConnected": false,
+        "native": "unverified",
+        "process": {
+          "birth": "2026-11-12T16:28:50.0853095Z",
+          "coverage": "visible-top-level-windows-in-observer-desktop",
+          "dialogs": [],
+          "fresh": false,
+          "observedAt": 1794501147943,
+          "pid": 39220,
+          "state": "window-responsive"
+        }
+      },
+      "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688",
+      "registryBootstrap": null,
+      "startOverFrozen": false,
+      "storeClosed": false,
+      "storeFault": false,
+      "unknown": false
+    },
+    "startupActivity": {
+      "operationId": null,
+      "pending": false,
+      "unresolved": true
+    },
+    "readiness": {
+      "baselineRequired": false,
+      "cepConnected": false,
+      "native": "unverified",
+      "process": {
+        "birth": "2026-11-12T16:28:50.0853095Z",
+        "coverage": "visible-top-level-windows-in-observer-desktop",
+        "dialogs": [],
+        "fresh": true,
+        "observedAt": 1794501147943,
+        "pid": 39220,
+        "state": "window-responsive"
+      }
+    }
+  },
+  "aep": {
+    "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+    "bytes": 82265,
+    "sha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49"
+  },
+  "titleMutations": 0,
+  "frameExports": 0,
+  "typedSaves": 0,
+  "leaseReleased": true,
+  "controllerHandedBackToRoot": true,
+  "limits": [
+    "No-CU baseline discriminates previous setup path; exact Sky/UI causal mechanism remains unproven.",
+    "Startup operation has menu_executed ACK but no completion/panel; unknown is preserved, no replay.",
+    "Full Titles mutation, frame and save acceptance remain open."
+  ]
+}

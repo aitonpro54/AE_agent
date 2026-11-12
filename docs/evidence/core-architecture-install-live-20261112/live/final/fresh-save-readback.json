@@ -1,0 +1,15 @@
+{
+  "checkpointRoot": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\project-save-checkpoints",
+  "dirty": false,
+  "fileStamp": {
+    "bytes": 103533,
+    "modifiedMs": 1794502041000
+  },
+  "protected": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+  "revision": "[72,false,103533,1794502041000]",
+  "savedFileSha256": "e9bfd6813ae411ad46c207c5633f65e7f30c14f1a108f2ea0a7f9861d33d6edc",
+  "target": {
+    "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+    "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "context": "New AE process after completed reset fff4d550 and opening only own saved AEP; no further setup mutation",
+  "preDispatchReportedByTypedController": "AE26648 responsive, fresh dialogs empty, peer and registry ready, session8f7bc96d baselineRequired, pending/UNKNOWN false",
+  "controller": "root; exclusive diagnostic UI interval requested while original new read waits",
+  "windowId": 3213974,
+  "observedModal": "Unable to execute script at line 0. After Effects error: Cannot run a script while a modal dialog is waiting for response.",
+  "action": "Acknowledged only this observed error with OK",
+  "after": "Panel: Требуется восстановление: Unexpected end of JSON input. Own saved scene remained visible with no dirty asterisk.",
+  "projectMutation": false,
+  "reloadOrRestart": false,
+  "nextBoundary": "Establish original durable outcome. No third inspection/replay before persistent dispatch defect diagnosis.",
+  "uiBlockFinished": true,
+  "completion": "Stopped native sky UI calls immediately after observation; documented native API has no teardown. Returned control to typed worker for status only."
+}

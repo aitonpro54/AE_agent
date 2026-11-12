@@ -1,0 +1,107 @@
+{
+  "leaseTokensRedacted": true,
+  "recordedAt": "2026-11-12T16:20:35.7689099Z",
+  "roleCredentialsAbsent": true,
+  "files": [
+    {
+      "file": "offline-session-permit-gate.json",
+      "bytes": 2091,
+      "sha256": "3ec2791e0c0df5e8c44732bd9bc23cccd1f9558922f99eb761056c6398af6654"
+    },
+    {
+      "file": "original-second-status-01.json",
+      "bytes": 9014,
+      "sha256": "c5a0c65adbe586234368570a7c6aba7978c98575497f3e77c665da82a5f5f192"
+    },
+    {
+      "file": "own-project-after-reset-01-inspect-intent.json",
+      "bytes": 292,
+      "sha256": "db70ef8c8670b2e467c4d719f08f1021428ccc50dbbcca00c16e37d9f304a48d"
+    },
+    {
+      "file": "own-project-after-reset-01.json",
+      "bytes": 55370,
+      "sha256": "d795d33c8dd1d92013c78ed4dbd12b88df0d72c85f84c22edd68bfe424748c38"
+    },
+    {
+      "file": "own-project-before-adoption-01-inspect-intent.json",
+      "bytes": 296,
+      "sha256": "c0e9677cda56bd7a99e1d3cbda9744f2ad7a634438697135cbe20d24710d44a7"
+    },
+    {
+      "file": "own-project-before-adoption-01.json",
+      "bytes": 57411,
+      "sha256": "90e129c828c915bccc4109f82834188a875e6d25646ab90b192f6e39ef965275"
+    },
+    {
+      "file": "post-reset-controller-01.json",
+      "bytes": 15493,
+      "sha256": "c2ad5eb8443caf203a03699ff390b5b3fb580aae2b75b26a5dedff154e656071"
+    },
+    {
+      "file": "post-reset-status-01.json",
+      "bytes": 11861,
+      "sha256": "9c419bea7a633d1fd38ae1dea0ef88f0e2995b47feac6ebc9874e6dab69d49c4"
+    },
+    {
+      "file": "readiness-before-second-inspection.json",
+      "bytes": 1820,
+      "sha256": "e1b6d0bc16706087db0a8c85e104ddd1e48c74ce4693bb738e148a73daad3988"
+    },
+    {
+      "file": "recovery-observation-02.json",
+      "bytes": 8486,
+      "sha256": "ca656bd7fd94e493947737f6cd253e3689ffbe2d5ab5b82fdc04cc4af330b6e3"
+    },
+    {
+      "file": "reset-finish-intent.json",
+      "bytes": 210,
+      "sha256": "6b35673f5361d13dc5ccbf8c6f78bd16a2b87ada49a3942137487fae958de349"
+    },
+    {
+      "file": "reset-inspect-after-ae-exit-01.json",
+      "bytes": 421,
+      "sha256": "2357ce4e6c7f14a5f9ecc3f7a8f13e3662ad17926f1560cbf7edb3555488c01a"
+    },
+    {
+      "file": "reset-inspect-after-finish-refusal-01.json",
+      "bytes": 93,
+      "sha256": "8290635f4210092edbf762767574e41e18993c4acbd28fe7524ab738ffab4e75"
+    },
+    {
+      "file": "reset-operation.json",
+      "bytes": 158,
+      "sha256": "cf3d9784a9442d7359ef96e19eda00f05f3d1653b5e85abbcb2e0e24f1cbfb05"
+    },
+    {
+      "file": "reset-plan.json",
+      "bytes": 807,
+      "sha256": "f5f3b35cc0efc0c99223222ecb54b17316c238ce807aaabe6316fee742e9dc80"
+    },
+    {
+      "file": "reset-request-intent.json",
+      "bytes": 212,
+      "sha256": "9fa3992cab34ee0f786b77bf659ee47cf4293ab4b6ec38c554eec87853863609"
+    },
+    {
+      "file": "reset-request.json",
+      "bytes": 516,
+      "sha256": "a76f4bb3aa2cfa533c70d454c826cf40d00e9e35cb711edbdc92baed735d9fc1"
+    },
+    {
+      "file": "reset-settlement.json",
+      "bytes": 543,
+      "sha256": "38cfb564567a532c4c7a54cfb5c1613dc7d4e17db4131cc02e7b1d996da6b00b"
+    },
+    {
+      "file": "second-inspection-command-provenance.json",
+      "bytes": 2186,
+      "sha256": "ce2c71794aa9eaa8f4e9a79e79d63a6e8f98707cd7ffbd2f21424b22eab9562c"
+    },
+    {
+      "file": "stage-ii-blocker-summary.json",
+      "bytes": 4286,
+      "sha256": "cee4aea21b245379b525124b22557b6d9223fd418d9246cc901eb5b0ea54c69d"
+    }
+  ]
+}

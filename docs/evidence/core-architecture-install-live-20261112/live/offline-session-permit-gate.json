@@ -1,0 +1,46 @@
+{
+  "recordedAt": "2026-11-12T16:03:07.4483799Z",
+  "result": "offline-gate-found-before-live-actions",
+  "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+  "baselineSessionSource": "install/installed-native-01.json final.workSession",
+  "baselineSessionId": null,
+  "baselineSessionMode": "legacy",
+  "operatorProfiles": {
+    "project-save": {
+      "operationId": "save-current-project",
+      "operatorConfirmation": "registry-v1",
+      "resultProfile": "current-project-save-v1"
+    },
+    "comp-frame-export": {
+      "operationId": "save-comp-frame-png",
+      "operatorConfirmation": "registry-v1",
+      "resultProfile": "comp-frame-export-v1"
+    },
+    "titles-current-target": {
+      "operationId": "set-current-text",
+      "operatorConfirmation": true,
+      "resultProfile": "manual-text-v1"
+    }
+  },
+  "facts": [
+    "deriveComposition derives operatorConfirmation from composition-policy.profiles, not raw composition.assets.",
+    "operator-confirmation CLI requires truthy sessionId, then work.assertCurrent(sessionId).",
+    "work-session assertCurrent strictly compares supplied sessionId with current null.",
+    "createOperatorConfirmation binds ordinary permit to currentSession() directly; it does not use installationId fallback.",
+    "Initial adopt-host creates only host-adoption and explicitly returns lifecycleEpoch=false; no work session is created.",
+    "Montage mandate supports media-import, layer-overlay and comp-frame-export only; no titles-current-target or project-save."
+  ],
+  "sourceRefs": [
+    "core4/runtime/composition-spec.js:222",
+    "core4/runtime/operator-confirmation.js:38",
+    "core4/runtime/operator-confirmation.js:59",
+    "core4/runtime/operator-confirmation.js:98",
+    "core4/runtime/operator-confirmation.js:118",
+    "core4/runtime/work-session.js:82",
+    "core4/runtime/stdio-entry.js:570",
+    "core4/runtime/windows-reservation-provider.js:137"
+  ],
+  "liveActionsSinceNewTask": 0,
+  "noBypassAttempted": true,
+  "parentNotified": true
+}

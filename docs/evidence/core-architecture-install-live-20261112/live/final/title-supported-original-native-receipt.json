@@ -1,0 +1,143 @@
+{
+  "source": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\receiver\\completions.ndjson",
+  "begin": {
+    "command": {
+      "channelEpoch": "channel-c4dbde7b-740f-46b8-bedc-577901a0623c",
+      "commandId": "command-e07fac8f-bb71-4920-9e8d-a52968f3687c",
+      "controllerId": "controller-6c045c6e-e79a-4bcb-b7c3-44f23331acc9",
+      "executorHash": "f439be6df6abb5a3de9372c85c91e895a05283e8d15d53784d9e7ba808701eb4",
+      "moduleId": "titles-current-target",
+      "operationId": "set-current-text",
+      "payload": {
+        "_execution": {
+          "baselineDigest": "8dd70503acec925dfb5152be96ebb56b986d8647d8eb238f979f230adc8d00f9",
+          "baselineProtected": "{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}",
+          "baselineRevision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1,\"layerId\":14},\"ИФ\",{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}]",
+          "checkpointDigest": "9c2c805d9211af1d427a7a409d21676e42b7915bde714dff5738ef64a969e7ee",
+          "checkpointRef": "checkpoint-c94d6957-d324-4067-ad4d-8ff23536df89",
+          "operatorConfirmation": {
+            "digest": "b9e3f03d32ccdf31928f68e4fd679448290d1200ff99095c959cbc4544c435e0",
+            "expiresAt": 1794502072088
+          },
+          "pins": {
+            "core": "c39eda2f40cabd19239aa8ace9f1d90ca2611beb61dad78d4bd1b4466d1750a9",
+            "engine": null,
+            "modules": [
+              {
+                "admission": "b9a6fea6d4dd5239b19569f6ecd71a373ad8b56bc2802d64b8c379b727f25dcb",
+                "dependencies": {},
+                "executionPolicy": {
+                  "executionScope": {
+                    "origin": {
+                      "aePid": 39220,
+                      "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+                      "machineId": "DESKTOP-32974QF"
+                    },
+                    "schemaVersion": 2,
+                    "target": {
+                      "compId": 1,
+                      "layerId": 14,
+                      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+                    }
+                  },
+                  "operatorConfirmation": true,
+                  "pin": "5598599bb4bcd941d18ee9058b054c8455a2e2f6c97bbb7b688d9a2f92251357",
+                  "policyId": "current-matching-target-after-local-confirmation-v1",
+                  "verificationKind": "local-transaction-receipt"
+                },
+                "module": "704e67f0793eb9ebcf7fafc41e0d777ed6d3cd4d801d9f847da08eefb892e284",
+                "stepId": "s1"
+              }
+            ],
+            "protocol": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+            "transport": "200198c13f3c9aa94bf80adf6ac71f5c05dd224c7569fd76c3090f87c87b05eb"
+          },
+          "planDigest": "7995bfc998a4611eec8ed05003e59021cb343b3a005c149b039a20b25bacef7a",
+          "policyId": "current-matching-target-after-local-confirmation-v1",
+          "proposalId": "proposal-16f7ecad-6098-4426-a365-14b6965a1326",
+          "stepId": "s1",
+          "target": {
+            "compId": 1,
+            "layerId": 14,
+            "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+          },
+          "taskEpoch": 0,
+          "taskId": "task-941bb11e-bfe8-4448-abef-1deaded6e7b7"
+        },
+        "compId": 1,
+        "expectedRevision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1,\"layerId\":14},\"ИФ\",{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}]",
+        "expectedText": "ИФ",
+        "layerId": 14,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+        "text": "CORE 4.2.6 LIVE"
+      },
+      "payloadHash": "d91fa30b0aba9283bd8a00565a43e96f59a2e9640cf3e4499cd23dcd68a585d5",
+      "phase": "mutate",
+      "protocolVersion": 1
+    },
+    "commandDigest": "baea2fa4dcd5ababa209797df5700fe5f284c5114752c9d7a56d624ae539df80",
+    "commandId": "command-e07fac8f-bb71-4920-9e8d-a52968f3687c",
+    "originalBinding": {
+      "channelEpoch": "channel-c4dbde7b-740f-46b8-bedc-577901a0623c",
+      "commandId": "command-e07fac8f-bb71-4920-9e8d-a52968f3687c",
+      "controllerId": "controller-6c045c6e-e79a-4bcb-b7c3-44f23331acc9",
+      "executorHash": "f439be6df6abb5a3de9372c85c91e895a05283e8d15d53784d9e7ba808701eb4",
+      "moduleId": "titles-current-target",
+      "operationId": "set-current-text",
+      "payloadHash": "d91fa30b0aba9283bd8a00565a43e96f59a2e9640cf3e4499cd23dcd68a585d5",
+      "phase": "mutate",
+      "receiptRef": "9221ddc6d264378ccb9b00cc50a4b552998de6e63db320e96c95fc0ea17cc83b",
+      "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688"
+    },
+    "previousHash": "6d17037adf4fe69e7feb46d007bad429dda71041955a31948ab6988450883d69",
+    "recordHash": "9b353dd8bda2d86cd9f7d33206dc0cc2533004d8e3aeeeaed6dd65213d1a0477",
+    "seq": 16,
+    "type": "begin"
+  },
+  "complete": {
+    "commandId": "command-e07fac8f-bb71-4920-9e8d-a52968f3687c",
+    "previousHash": "9b353dd8bda2d86cd9f7d33206dc0cc2533004d8e3aeeeaed6dd65213d1a0477",
+    "recordHash": "dcd0b3b5f3a7f39c6ab09fe895c713c1490ad3934d4c2bbebb42435bb0cbc21d",
+    "response": {
+      "commandId": "command-e07fac8f-bb71-4920-9e8d-a52968f3687c",
+      "executorHash": "f439be6df6abb5a3de9372c85c91e895a05283e8d15d53784d9e7ba808701eb4",
+      "payloadHash": "d91fa30b0aba9283bd8a00565a43e96f59a2e9640cf3e4499cd23dcd68a585d5",
+      "protocolVersion": 1,
+      "result": {
+        "outcome": "applied",
+        "snapshot": {
+          "protected": "{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}",
+          "revision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1,\"layerId\":14},\"CORE 4.2.6 LIVE\",{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}]",
+          "target": {
+            "compId": 1,
+            "layerId": 14,
+            "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+          },
+          "text": "CORE 4.2.6 LIVE"
+        },
+        "transactionReceipt": {
+          "baselineDigest": "8dd70503acec925dfb5152be96ebb56b986d8647d8eb238f979f230adc8d00f9",
+          "baselineRevision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1,\"layerId\":14},\"ИФ\",{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}]",
+          "checkpointDigest": "9c2c805d9211af1d427a7a409d21676e42b7915bde714dff5738ef64a969e7ee",
+          "checkpointRef": "checkpoint-c94d6957-d324-4067-ad4d-8ff23536df89",
+          "desiredText": "CORE 4.2.6 LIVE",
+          "planDigest": "7995bfc998a4611eec8ed05003e59021cb343b3a005c149b039a20b25bacef7a",
+          "policyId": "current-matching-target-after-local-confirmation-v1",
+          "proposalId": "proposal-16f7ecad-6098-4426-a365-14b6965a1326",
+          "protectedFields": "{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}",
+          "stepId": "s1",
+          "target": {
+            "compId": 1,
+            "layerId": 14,
+            "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+          },
+          "taskEpoch": 0,
+          "taskId": "task-941bb11e-bfe8-4448-abef-1deaded6e7b7",
+          "version": 1
+        }
+      }
+    },
+    "seq": 17,
+    "type": "complete"
+  }
+}

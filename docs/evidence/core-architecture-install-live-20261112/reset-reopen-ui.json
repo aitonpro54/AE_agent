@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "resetId": "fff4d550-28bf-436b-8ca5-c2591855c679",
+  "controller": "root; exclusive UI interval after reset settlement",
+  "launch": {
+    "method": "sky.launch_app using returned installed After Effects app ID",
+    "attempts": 1,
+    "initialResult": "launched app did not expose a targetable window after about 13 seconds",
+    "resolution": "subsequent list_windows found the launched AE window; launch was not repeated",
+    "windowId": 3213974
+  },
+  "open": {
+    "method": "Home Open project; observed file picker with exact task-owned path; Open once",
+    "file": "C:/Users/Ant/Documents/Codex/AE_Agent_Core/.codex-runtime/core-architecture-live-20261112/live-ae.aep",
+    "observed": "Own path without dirty asterisk; Core Architecture Live 20261112 comp and ИФ layer; Selection Tool selected, timeline focus, no modal",
+    "panel": "Новый сеанс: требуется чтение проекта"
+  },
+  "existingUserAepActions": 0,
+  "uiBlockFinished": true,
+  "completion": "Stopped native sky calls immediately after observing open own stand; no native teardown API. Returned sole control to typed worker for fresh baseline and adoption."
+}

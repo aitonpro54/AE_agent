@@ -1,0 +1,107 @@
+{
+  "recordedAt": "2026-11-12T16:20:35.5484691Z",
+  "result": "blocked-repeatable-native-eval-modal-before-adoption-or-mutation",
+  "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+  "originalCommands": [
+    "inspect-997e1ab4-0f2d-4c86-a498-880388ecd4fe",
+    "inspect-d851a63d-bfbe-482b-a365-65111380320f"
+  ],
+  "completedRecovery": {
+    "explicitFinish": "one refused endpoint_busy before action; automatic reset had completed; no repeat",
+    "operatorId": "4ea5e0ec-1a5d-4759-b077-2fc075afa4b1",
+    "resetId": "fff4d550-28bf-436b-8ca5-c2591855c679",
+    "originalReceiverSha256": "f6cbbd03ad70852bff7864e42831ff7d6f99264994a1edd70d23b0fc2ead31b6",
+    "sessionId": "8f7bc96d-1a95-4686-9851-cb5360a05344",
+    "originalReceiverBytes": 17713,
+    "autoCompleted": true
+  },
+  "current": {
+    "aePid": 26648,
+    "ownerPid": 42200,
+    "ownerBirth": "639300967741674810",
+    "unknown": true,
+    "startOver": {
+      "aeAuthority": false,
+      "baselineRequired": true,
+      "eligibility": {
+        "action": "request",
+        "reason": "start_over_unresolved"
+      },
+      "fault": null,
+      "id": "fff4d550-28bf-436b-8ca5-c2591855c679",
+      "ownerBootId": "4c14cf2d-c56e-4770-b66c-99db620d2a93",
+      "phase": "baseline-required",
+      "requiresAEExit": true,
+      "resetComplete": true,
+      "sessionId": "8f7bc96d-1a95-4686-9851-cb5360a05344"
+    },
+    "lastCommandOutcome": {
+      "code": "host_callback_timeout",
+      "commandId": "inspect-d851a63d-bfbe-482b-a365-65111380320f",
+      "effect": "none",
+      "handoff": "offered",
+      "intentRecorded": true,
+      "moduleId": "project-inspection",
+      "nativeStart": "unknown",
+      "phase": "inspect",
+      "queue": "fenced",
+      "stage": "unknown",
+      "terminalReceipt": null
+    },
+    "pending": null,
+    "aeBirth": "2026-11-12T16:15:13.3505099Z",
+    "storeClosed": true,
+    "workSession": {
+      "aeAuthority": false,
+      "baselineRequired": true,
+      "mode": "work-session",
+      "resetId": "fff4d550-28bf-436b-8ca5-c2591855c679",
+      "resetPending": false,
+      "sessionId": "8f7bc96d-1a95-4686-9851-cb5360a05344"
+    },
+    "attachmentOwner": {
+      "accepted": 0,
+      "activity": {
+        "fault": false,
+        "pending": false,
+        "unresolved": true
+      },
+      "attachments": 1,
+      "bootId": "020684eb-c714-4e43-ba03-2f777926ca14",
+      "closed": false,
+      "fenced": true,
+      "frozen": false,
+      "generation": 1,
+      "holderClientId": "8fe788b6-f236-4566-8004-2654b98544f6",
+      "mode": "fenced",
+      "pending": false,
+      "workSession": {
+        "baselineRequired": true,
+        "resetPending": false,
+        "sessionId": "8f7bc96d-1a95-4686-9851-cb5360a05344"
+      }
+    }
+  },
+  "ownAep": {
+    "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+    "baselineSha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49",
+    "sha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49"
+  },
+  "adoptionPerformed": false,
+  "titleMutations": 0,
+  "frameExports": 0,
+  "typedProjectSaves": 0,
+  "inspectionReplay": 0,
+  "thirdInspectionAttempted": false,
+  "secondResetAttempted": false,
+  "rootOwnsLiveControl": true,
+  "specialist": "/root/live_session_gate",
+  "uiObservation": "Root twice observed AE line0 Cannot run a script while a modal dialog is waiting for response; clicked only OK; panel Unexpected end of JSON input. Second came after fresh AE/reopen, fresh readiness dialogs=[], accepted registry.",
+  "limits": [
+    "Actual delivered evalScript bytes not captured; durable typed frame and installed code hashes are provided.",
+    "No clean lease release is claimed: release refused owner_draining after both pending reads; current attachment remains fenced.",
+    "client-proof wrapper launch_check_failed is not the native cause; exact original command state is host_callback_timeout/UNKNOWN.",
+    "Prepared adoption script was never executed; no host-adoption or authority was fabricated.",
+    "No further recovery or native attempt until specialist diagnosis."
+  ]
+}

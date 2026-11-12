@@ -1,0 +1,54 @@
+{
+  "before": {
+    "protected": "{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}",
+    "revision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1,\"layerId\":14},\"ИФ\",{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}]",
+    "target": {
+      "compId": 1,
+      "layerId": 14,
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+    },
+    "text": "ИФ"
+  },
+  "after": {
+    "protected": "{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}",
+    "revision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1,\"layerId\":14},\"CORE 4.2.6 LIVE\",{\"character\":{\"font\":\"Caveat-Regular\",\"fontSize\":120,\"applyFill\":true,\"fillColor\":[1,1,1],\"applyStroke\":true,\"strokeColor\":[0.20392000675201,0.25097998976707,0.53332996368408],\"strokeWidth\":1,\"tracking\":47,\"baselineShift\":0,\"horizontalScale\":1,\"verticalScale\":1,\"fauxBold\":true,\"fauxItalic\":false},\"paragraph\":{\"justification\":7415,\"leading\":39,\"autoLeading\":false}}]",
+    "target": {
+      "compId": 1,
+      "layerId": 14,
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+    },
+    "text": "CORE 4.2.6 LIVE"
+  },
+  "preserved": true,
+  "fieldCount": 16,
+  "style": {
+    "character": {
+      "font": "Caveat-Regular",
+      "fontSize": 120,
+      "applyFill": true,
+      "fillColor": [
+        1,
+        1,
+        1
+      ],
+      "applyStroke": true,
+      "strokeColor": [
+        0.20392000675201,
+        0.25097998976707,
+        0.53332996368408
+      ],
+      "strokeWidth": 1,
+      "tracking": 47,
+      "baselineShift": 0,
+      "horizontalScale": 1,
+      "verticalScale": 1,
+      "fauxBold": true,
+      "fauxItalic": false
+    },
+    "paragraph": {
+      "justification": 7415,
+      "leading": 39,
+      "autoLeading": false
+    }
+  }
+}

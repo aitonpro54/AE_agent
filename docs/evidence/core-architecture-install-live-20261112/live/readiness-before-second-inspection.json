@@ -1,0 +1,50 @@
+{
+  "observedAt": 1794500215333,
+  "ae": {
+    "birth": "2026-11-12T16:15:13.3505099Z",
+    "coverage": "visible-top-level-windows-in-observer-desktop",
+    "dialogs": [],
+    "fresh": true,
+    "observedAt": 1794500215333,
+    "pid": 26648,
+    "state": "window-responsive"
+  },
+  "peer": {
+    "acceptedIdentity": {
+      "extensionId": "com.codex.aeagentcore4.panel",
+      "panelBuildId": "574cffbc4489a568630268e694dcb8c202f8e7bce93380094584067b5e52c712",
+      "productVersion": "4.2.6",
+      "protocolVersion": 1,
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+    },
+    "connected": true,
+    "identityEpoch": "http-67a14a55-25cb-43bb-8ab1-4b67a7a7f5f2",
+    "identityObservedAt": 1794500127289,
+    "origin": "file://",
+    "peerId": "panel-0f10538d031f872b8080c973adcc5bb6bdd84799a9957ccb",
+    "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+    "registryReady": true
+  },
+  "registryBootstrap": {
+    "commandId": "registry-8840b002-59af-4b28-862d-ba5b2541a4da",
+    "deadlineAt": 1794500217291,
+    "epoch": "http-67a14a55-25cb-43bb-8ab1-4b67a7a7f5f2",
+    "nonce": "[redacted]",
+    "peerId": "panel-0f10538d031f872b8080c973adcc5bb6bdd84799a9957ccb",
+    "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+    "sessionId": "8f7bc96d-1a95-4686-9851-cb5360a05344",
+    "startupOperationId": null,
+    "state": "completed"
+  },
+  "workSession": {
+    "aeAuthority": false,
+    "baselineRequired": true,
+    "mode": "work-session",
+    "resetId": "fff4d550-28bf-436b-8ca5-c2591855c679",
+    "resetPending": false,
+    "sessionId": "8f7bc96d-1a95-4686-9851-cb5360a05344"
+  },
+  "pending": null,
+  "unknown": false,
+  "storeFault": false
+}

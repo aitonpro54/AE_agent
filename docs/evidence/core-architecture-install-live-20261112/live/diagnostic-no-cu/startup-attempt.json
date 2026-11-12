@@ -1,0 +1,17 @@
+{
+  "bootstrapHash": "a032cb013715df88f8c27aa8c3fb5adfb4d9bfea5d0de286d47f1babc7fa3dba",
+  "deadline": 1794501135865,
+  "dispatchProtocol": 3,
+  "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+  "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+  "initialPeer": null,
+  "operationId": "80ae6fce-dcc7-4296-8cb2-afc2f6f063ff",
+  "original": {
+    "birth": "2026-11-12T16:28:50.0853090Z",
+    "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "pid": 39220
+  },
+  "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+  "requestHash": "e49c43d6b02e39746fdfe62671f3e3414013c31740762afc9fc098a04b7678d5",
+  "requestNonce": "[redacted]"
+}

@@ -1,0 +1,18 @@
+{
+  "receiver": {
+    "file": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\receiver\\completions.ndjson",
+    "bytes": 66650,
+    "sha256": "d6c13e3c6f69db2e687ca22295683bf66e1067d948357c0515610bfebd615e5b",
+    "records": 39,
+    "lastRecordHash": "b557ac5af853619b709e23ea16bb8fc412a1044995038b24932167a5c16c63df",
+    "chainVerified": true
+  },
+  "ledger": {
+    "file": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\broker\\ledger.ndjson",
+    "bytes": 140900,
+    "sha256": "c8f36eb5570a411a72749a279905d74e9fab89503b378445afac660554e98dfa",
+    "records": 42,
+    "lastRecordHash": "f4bfc52cb978aa77d201b1dd71fcb0f9f563c5b50badc67023c4731acebad88e",
+    "chainVerified": true
+  }
+}

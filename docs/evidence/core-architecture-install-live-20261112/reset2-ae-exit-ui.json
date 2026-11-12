@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-12",
+  "operatorOperationId": "885aef08-c0be-4213-bee0-fe50c51ebcec",
+  "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+  "purpose": "Archive second original read UNKNOWN before one no-CU registered-open diagnostic",
+  "controller": "root; exclusive old-host exit interval",
+  "oldAePid": 26648,
+  "windowId": 3213974,
+  "before": "Own saved live-ae.aep visible without dirty asterisk",
+  "action": "Clicked normal main-window Close once",
+  "observation": "Subsequent list_windows returned no AfterFX windows; no Save/Discard prompt",
+  "projectSaveOrDiscardAction": false,
+  "uiBlockFinished": true,
+  "completion": "Stopped native sky calls immediately after observed exit. No teardown API. Typed controller establishes exact PID exit and reset completion. No CU permitted on the next registered-open host before typed diagnostic."
+}

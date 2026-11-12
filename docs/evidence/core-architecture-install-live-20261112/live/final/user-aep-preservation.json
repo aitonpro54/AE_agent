@@ -1,0 +1,40 @@
+{
+  "observedAt": "2026-11-12T16:50:36.516Z",
+  "baselineManifestSha256": "7b854d80b5d27cc48950539c6aa80cf9c5ed5ccb2d0357262cd5e9d50f0eb55d",
+  "result": "PASS",
+  "aepFiles": 4,
+  "aep": [
+    {
+      "role": "aep-0",
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\slideshow-s1-msi-20261107\\slideshow-s1-desktop-working.aep",
+      "bytes": 276729,
+      "baselineSha256": "773c86afc5ac63c2b8b3bf5b116414297700039a2bf9c2b94fe8aeaf54bdd663",
+      "actualSha256": "773c86afc5ac63c2b8b3bf5b116414297700039a2bf9c2b94fe8aeaf54bdd663",
+      "unchanged": true
+    },
+    {
+      "role": "aep-1",
+      "path": "C:\\Проекты 21\\2026.11.09 - Анатомия хитов (ШМП, Мунивер, СЭБ)\\муз универ_ШМПушка_СЭБ_АНАТОМИЯ ХИТОВ folder\\муз универ_ШМПушка_СЭБ_АНАТОМИЯ ХИТОВ.aep",
+      "bytes": 95724372,
+      "baselineSha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+      "actualSha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+      "unchanged": true
+    },
+    {
+      "role": "aep-2",
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\p2-visible-probe.aep",
+      "bytes": 95724372,
+      "baselineSha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+      "actualSha256": "9e9979aa7707776ad0dd10d4b3e6be1d896e893b914451f0561a8c26bfb2d5dd",
+      "unchanged": true
+    },
+    {
+      "role": "aep-3",
+      "path": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\p2-desktop-visible-20261110\\p2-visible-installed.aep",
+      "bytes": 95762386,
+      "baselineSha256": "794f0c50fd1fc02abdf0702b9f36694e20bfad3525c8577c0c68cd59ade791a6",
+      "actualSha256": "794f0c50fd1fc02abdf0702b9f36694e20bfad3525c8577c0c68cd59ade791a6",
+      "unchanged": true
+    }
+  ]
+}

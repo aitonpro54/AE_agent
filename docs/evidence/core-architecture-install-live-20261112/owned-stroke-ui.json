@@ -1,0 +1,35 @@
+{
+  "observed_at": "2026-11-12",
+  "method": "Computer Use via bundled @oai/sky",
+  "project": "C:/Users/Ant/Documents/Codex/AE_Agent_Core/.codex-runtime/core-architecture-live-20261112/live-ae.aep",
+  "ae_window": {
+    "title_hint": "AE 2026; live-ae.aep",
+    "id": 5769924,
+    "reselected_from_fresh_list_apps": true
+  },
+  "composition": "Core Architecture Live 20261112",
+  "layer": {
+    "ownership": "own test AEP layer per task assignment",
+    "id": 14,
+    "index": 1,
+    "id_source": "preceding typed project inspection; UI showed the sole layer at index 1",
+    "name": "ИФ",
+    "selection": "selected in timeline"
+  },
+  "action": "Enabled Stroke via Character panel",
+  "ui_observation": {
+    "stroke_swatch": "active blue",
+    "fill_swatch": "white",
+    "stroke_width": "1 px",
+    "fill_checked": true,
+    "stroke_checked": true,
+    "title_asterisk_after_change": true
+  },
+  "other_character_settings_changed": false,
+  "core_panel": "moved floating window by title bar only; not closed or reloaded",
+  "saved": false,
+  "visual_check": "partial: white text on black comp visible, portion occluded by floating Core panel; stroke appearance not fully assessed",
+  "typed_readback": "pending subsequent fresh typed inspection by Sol High",
+  "checkpoint_sha256_before": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49",
+  "ui_control": "native @oai/sky calls stopped after final screenshot; runtime documents no teardown, so disablement is not claimed"
+}

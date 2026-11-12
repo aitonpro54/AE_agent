@@ -1,0 +1,15 @@
+{
+  "body": {
+    "archiveManifestHash": "ab3321a9d014cb787a2f2f6b95de6a9a8893de71292a48a442fa33cf7015a0d1",
+    "baselineRequired": true,
+    "descriptorHash": "79266cc306d9a080a94d0d1007c26e23b55f1398d640b0dfcbc9f8f6f2e3903b",
+    "id": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+    "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+    "intentHash": "26faf5d5945e32e514265e5106618ef1e5eef9c717cc1137ad5583b543ec5930",
+    "kind": "start-over-completed",
+    "machineId": "DESKTOP-32974QF",
+    "sessionHash": "307b76037dc42dcadb0f37628390f75d5ec97d8014796805d24de1ff1d6a60b2",
+    "version": 1
+  },
+  "mac": "[redacted]"
+}

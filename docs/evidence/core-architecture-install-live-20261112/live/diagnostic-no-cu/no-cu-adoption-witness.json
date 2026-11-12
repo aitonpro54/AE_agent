@@ -1,0 +1,13 @@
+{
+  "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+  "machineId": "DESKTOP-32974QF",
+  "host": {
+    "machineId": "DESKTOP-32974QF",
+    "aePid": 39220,
+    "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+    "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71"
+  },
+  "allowedProject": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+  "rootObservationDigest": "a432ddf24902c3bd02d3d610f8638b6c01d346b2a52b2c6040726b9215a15535"
+}

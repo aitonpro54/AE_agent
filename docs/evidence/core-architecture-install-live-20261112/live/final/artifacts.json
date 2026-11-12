@@ -1,0 +1,107 @@
+[
+  {
+    "file": "configured-client-full-flow.json",
+    "bytes": 161202,
+    "sha256": "6424fc6f8395a3f31d784977c8143707aba0de8824250fd017d301fe49e4f679"
+  },
+  {
+    "file": "core-426-live-frame0.png",
+    "bytes": 83350,
+    "sha256": "39d8dec2f0f9928d620b1322a5673cf9038285b239763999c30198f4612760e9"
+  },
+  {
+    "file": "final-status.json",
+    "bytes": 7562,
+    "sha256": "f51d9a68f2235aeee972c12d85e1b565b125a6247c81fcb1f3db5d21c27c9e45"
+  },
+  {
+    "file": "frame0-ledger-intent-and-terminal.json",
+    "bytes": 23105,
+    "sha256": "d466cfc52dc835ea933ec91d8b038c420a8c6fb7eacde8370954d8f8edbd5614"
+  },
+  {
+    "file": "frame0-original-native-receipt.json",
+    "bytes": 8438,
+    "sha256": "c8e80ab8e704246a1f91a75af68fdcde5365963750b90f0671c4282136e2e652"
+  },
+  {
+    "file": "frame0-permit-intent.json",
+    "bytes": 284,
+    "sha256": "c51a0f4bed789a6a88442e49bd27bd6e40b32b4692e4049e60e32bd3c3b6dfd9"
+  },
+  {
+    "file": "frame0-permit.json",
+    "bytes": 186,
+    "sha256": "b58e0b16da677dd4ec9cc6515a4d882275de32f09ccb3ce842dcb321be08e993"
+  },
+  {
+    "file": "fresh-project-readback.json",
+    "bytes": 1359,
+    "sha256": "9174a3f81efc4adb95499acf403d22b192340d3ce185515c6d3a8b7ec6eb131e"
+  },
+  {
+    "file": "fresh-save-readback.json",
+    "bytes": 664,
+    "sha256": "2d4accc0729a384183a511e4d0cbaaf9867fffaf16db5308a375ce3f8b37c6fe"
+  },
+  {
+    "file": "journal-proofs.json",
+    "bytes": 697,
+    "sha256": "8d73cb5d65ad2764f1d033a235bd9c6c97226abec49fbbf01eb756bcc2afeaeb"
+  },
+  {
+    "file": "save-ledger-intent-and-terminal.json",
+    "bytes": 24430,
+    "sha256": "fe269b1b359d5552127027929f56b14a5620923c98ab39abb8e114aec78f9852"
+  },
+  {
+    "file": "save-original-native-receipt.json",
+    "bytes": 8202,
+    "sha256": "7bbab68763f1529d37104ef819acd1ff6dbb55e0db36760e5bd9886c9615f499"
+  },
+  {
+    "file": "save-permit-intent.json",
+    "bytes": 284,
+    "sha256": "07f421f18aec24b15dfa959f49299b05115222dad09a6e23d21085a4f8c88fc6"
+  },
+  {
+    "file": "save-permit.json",
+    "bytes": 186,
+    "sha256": "9d439d87bc75b53224c9f173ca0a50b2ab56ae0f537c58ceed23cd312f817b92"
+  },
+  {
+    "file": "style16-readback.json",
+    "bytes": 3197,
+    "sha256": "6938c4964a00ec72721e04b59e9bb7ebdd46470f1f69119ae9aaef2ccd0c1b17"
+  },
+  {
+    "file": "summary.json",
+    "bytes": 5884,
+    "sha256": "7ac244f72093da98796e6bb0444db5ef4e56fa1f3d082c6c83875e8a993ca4c4"
+  },
+  {
+    "file": "title-permit-intent.json",
+    "bytes": 284,
+    "sha256": "2b72aa5b74d3d0470ec070486ca112f08ebc6494dbed766f423122b2f5839a50"
+  },
+  {
+    "file": "title-permit.json",
+    "bytes": 186,
+    "sha256": "cb800078bd6ebf116bb069ec08506fc825dc24e0318f87b4e2a8265e0bbdeafc"
+  },
+  {
+    "file": "title-supported-ledger-intent-and-terminal.json",
+    "bytes": 29133,
+    "sha256": "1385fd8b940ab83c5dead0fa4865aab45519a1dbdb92439a875398b4598a3826"
+  },
+  {
+    "file": "title-supported-original-native-receipt.json",
+    "bytes": 10379,
+    "sha256": "587202ef120334a19864f3d17f97fe814e9fe5c5eae0b8da5163fb517c845a1b"
+  },
+  {
+    "file": "user-aep-preservation.json",
+    "bytes": 1938,
+    "sha256": "9701d5c903cff1d525272428b4791684dcca30f8c0354b500b0f61ce55210637"
+  }
+]

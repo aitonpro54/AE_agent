@@ -1,0 +1,154 @@
+{
+  "source": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\receiver\\completions.ndjson",
+  "begin": {
+    "command": {
+      "channelEpoch": "channel-c4dbde7b-740f-46b8-bedc-577901a0623c",
+      "commandId": "command-5a3d07d9-b535-4652-8438-3dd264eb14b3",
+      "controllerId": "controller-6c045c6e-e79a-4bcb-b7c3-44f23331acc9",
+      "executorHash": "259652812007d78f344e5da2ac5dad304b9e340df4f5e4b73e5934d29a74bef0",
+      "moduleId": "project-save",
+      "operationId": "save-current-project",
+      "payload": {
+        "_execution": {
+          "baselineDigest": "b7b3710f11d3ff20fb004f384d4ca553ff05bc5d20e7386aaecbd24b46161101",
+          "baselineProtected": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+          "baselineRevision": "[72,true,82265,1794499635000]",
+          "checkpointDigest": "57fc5140117267a72cb61579d4cd29dcadbf0df260c1210fabf0bc9a41a8a92a",
+          "checkpointRef": "checkpoint-abd745e6-9a99-4601-8191-ab2776bdb1bf",
+          "operatorConfirmation": {
+            "digest": "8fe7f9f46c5cd54ccf7e3c916fd3de7b46cbce0861ec4c766f11d415055317bc",
+            "expiresAt": 1794502159951
+          },
+          "pins": {
+            "core": "c39eda2f40cabd19239aa8ace9f1d90ca2611beb61dad78d4bd1b4466d1750a9",
+            "engine": null,
+            "modules": [
+              {
+                "admission": "1b8c208a37a44b8dfda41d848421419289705849ccbd744fafd7e2a253b6ec7d",
+                "dependencies": {},
+                "executionPolicy": {
+                  "executionScope": {
+                    "origin": {
+                      "aePid": 39220,
+                      "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+                      "machineId": "DESKTOP-32974QF"
+                    },
+                    "schemaVersion": 2,
+                    "target": {
+                      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+                      "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+                    }
+                  },
+                  "operatorConfirmation": true,
+                  "pin": "fb515199a9e4bd5420fd82eb26090b3d1deae246f5ecb3c7b45e5ea478220425",
+                  "policyId": "current-matching-target-after-local-confirmation-v1",
+                  "verificationKind": "local-transaction-receipt"
+                },
+                "module": "6e383c5c9a6ee78b7f917aefff5b493d109a9da341d44ada432ae6b88077c24c",
+                "stepId": "s1"
+              }
+            ],
+            "protocol": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+            "transport": "200198c13f3c9aa94bf80adf6ac71f5c05dd224c7569fd76c3090f87c87b05eb"
+          },
+          "planDigest": "ff233ee6cfbf5e31e5073c3be4a7af3cd1f00c7e9348d1849531521cde580ee1",
+          "policyId": "current-matching-target-after-local-confirmation-v1",
+          "proposalId": "proposal-fef687a8-5069-4585-b3f8-ec3040c033f8",
+          "stepId": "s1",
+          "target": {
+            "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+            "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+          },
+          "taskEpoch": 0,
+          "taskId": "task-162d0a67-c633-464f-9861-7c4ae49f424d"
+        },
+        "checkpointRoot": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\project-save-checkpoints",
+        "expectedFileStamp": {
+          "bytes": 82265,
+          "modifiedMs": 1794499635000
+        },
+        "expectedRevision": "[72,true,82265,1794499635000]",
+        "expectedSavedSha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49",
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+        "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+      },
+      "payloadHash": "71dd6c1cf6282b56a2e9a340bedd773bea6445084af382fde199e80208773103",
+      "phase": "mutate",
+      "protocolVersion": 1
+    },
+    "commandDigest": "8739ccb7d8e076bc8d90258b4b03f5e7068391a2336dbc143ce2b599d489e97b",
+    "commandId": "command-5a3d07d9-b535-4652-8438-3dd264eb14b3",
+    "originalBinding": {
+      "channelEpoch": "channel-c4dbde7b-740f-46b8-bedc-577901a0623c",
+      "commandId": "command-5a3d07d9-b535-4652-8438-3dd264eb14b3",
+      "controllerId": "controller-6c045c6e-e79a-4bcb-b7c3-44f23331acc9",
+      "executorHash": "259652812007d78f344e5da2ac5dad304b9e340df4f5e4b73e5934d29a74bef0",
+      "moduleId": "project-save",
+      "operationId": "save-current-project",
+      "payloadHash": "71dd6c1cf6282b56a2e9a340bedd773bea6445084af382fde199e80208773103",
+      "phase": "mutate",
+      "receiptRef": "6683d3028f926c44bad56cefebb9232f31b6b82d3a06944dda198ffb11a569bf",
+      "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688"
+    },
+    "previousHash": "22c47edf6b8deedc35294374c33262bb6984016403f7721854f8cc961b1286a1",
+    "recordHash": "b7a76acedfed798d5593cc683348ea0b14a4158d649e4eb258f39ce0c6bdf31c",
+    "seq": 32,
+    "type": "begin"
+  },
+  "complete": {
+    "commandId": "command-5a3d07d9-b535-4652-8438-3dd264eb14b3",
+    "previousHash": "b7a76acedfed798d5593cc683348ea0b14a4158d649e4eb258f39ce0c6bdf31c",
+    "recordHash": "d158c1c79339133a33c24c33241b74daf0bd0575f20643f381d8097996c27aa0",
+    "response": {
+      "commandId": "command-5a3d07d9-b535-4652-8438-3dd264eb14b3",
+      "executorHash": "259652812007d78f344e5da2ac5dad304b9e340df4f5e4b73e5934d29a74bef0",
+      "payloadHash": "71dd6c1cf6282b56a2e9a340bedd773bea6445084af382fde199e80208773103",
+      "protocolVersion": 1,
+      "result": {
+        "outcome": "applied",
+        "snapshot": {
+          "checkpoint": {
+            "bytes": 82265,
+            "path": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\project-save-checkpoints\\checkpoint-abd745e6-9a99-4601-8191-ab2776bdb1bf.aep",
+            "scope": "on-disk-before-save",
+            "sha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49"
+          },
+          "checkpointRoot": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\project-save-checkpoints",
+          "dirty": false,
+          "fileStamp": {
+            "bytes": 103533,
+            "modifiedMs": 1794502041000
+          },
+          "protected": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+          "revision": "[72,false,103533,1794502041000]",
+          "savedFileSha256": "e9bfd6813ae411ad46c207c5633f65e7f30c14f1a108f2ea0a7f9861d33d6edc",
+          "target": {
+            "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+            "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+          }
+        },
+        "transactionReceipt": {
+          "baselineDigest": "b7b3710f11d3ff20fb004f384d4ca553ff05bc5d20e7386aaecbd24b46161101",
+          "baselineRevision": "[72,true,82265,1794499635000]",
+          "checkpointDigest": "57fc5140117267a72cb61579d4cd29dcadbf0df260c1210fabf0bc9a41a8a92a",
+          "checkpointRef": "checkpoint-abd745e6-9a99-4601-8191-ab2776bdb1bf",
+          "planDigest": "ff233ee6cfbf5e31e5073c3be4a7af3cd1f00c7e9348d1849531521cde580ee1",
+          "policyId": "current-matching-target-after-local-confirmation-v1",
+          "proposalId": "proposal-fef687a8-5069-4585-b3f8-ec3040c033f8",
+          "protectedFields": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+          "resultRevision": "[72,false,103533,1794502041000]",
+          "stepId": "s1",
+          "target": {
+            "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+            "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+          },
+          "taskEpoch": 0,
+          "taskId": "task-162d0a67-c633-464f-9861-7c4ae49f424d",
+          "version": 2
+        }
+      }
+    },
+    "seq": 33,
+    "type": "complete"
+  }
+}

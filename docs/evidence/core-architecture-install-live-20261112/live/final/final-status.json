@@ -1,0 +1,227 @@
+{
+  "attachmentOwner": {
+    "accepted": 0,
+    "activity": {
+      "fault": false,
+      "pending": false,
+      "unresolved": false
+    },
+    "attachments": 1,
+    "bootId": "3a646818-b9a1-4b15-a4f0-f934056140ae",
+    "closed": false,
+    "fenced": false,
+    "frozen": false,
+    "generation": 3,
+    "holderClientId": null,
+    "mode": "idle",
+    "pending": false,
+    "workSession": {
+      "baselineRequired": false,
+      "resetPending": false,
+      "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+    }
+  },
+  "automaticLifecycle": "unavailable",
+  "catalogError": null,
+  "catalogRevision": "selected-v1-084e8e8ad437be7d290f16a36bf57547822f52878ec6509d4f62b853298e2500",
+  "closed": false,
+  "composition": "operator-render-jobs",
+  "connection": "connected",
+  "controllerBusy": false,
+  "coreIdentity": "c39eda2f40cabd19239aa8ace9f1d90ca2611beb61dad78d4bd1b4466d1750a9",
+  "externalLegacyCoverage": "unobserved",
+  "inspectionPolicy": "read-only-current-observation-v1",
+  "installation": {
+    "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+    "machineId": "DESKTOP-32974QF",
+    "nodeVerified": true,
+    "nodeVersion": "24.15.0",
+    "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80"
+  },
+  "ledgerFault": false,
+  "lifecycle": {
+    "birthTicks": "639300978217466260",
+    "historyAtStartup": {
+      "ledger": {
+        "byteHash": null,
+        "eventCount": 0,
+        "present": false,
+        "settled": true,
+        "unresolvedCount": 0
+      },
+      "receiver": {
+        "byteHash": "94cc4509de90554be726bc4c85646d832e219084855ed6f904fa144104170018",
+        "eventCount": 5,
+        "present": true,
+        "settled": true,
+        "unresolvedCount": 0
+      }
+    },
+    "mode": "active",
+    "pid": 44952,
+    "processBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+    "reason": null,
+    "recoveryRequired": false
+  },
+  "maintenance": {
+    "fault": null,
+    "id": null,
+    "phase": "running",
+    "requested": false
+  },
+  "manualPolicy": "current-matching-target-after-local-confirmation-v1",
+  "ownershipFault": null,
+  "physical": {
+    "automaticLifecycle": "unavailable",
+    "expectedPanelIdentity": {
+      "extensionId": "com.codex.aeagentcore4.panel",
+      "panelBuildId": "574cffbc4489a568630268e694dcb8c202f8e7bce93380094584067b5e52c712",
+      "productVersion": "4.2.6",
+      "protocolVersion": 1,
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+    },
+    "externalLegacyCoverage": "unobserved",
+    "inspectionAvailable": true,
+    "lastCommandOutcome": {
+      "commandId": "inspect-e2fb2141-3410-4def-a2ed-b7a99b7a9894",
+      "effect": "unclassified",
+      "handoff": "offered",
+      "intentRecorded": true,
+      "late": false,
+      "moduleId": "project-save",
+      "nativeStart": "unknown",
+      "phase": "inspect",
+      "queue": "idle",
+      "stage": "terminal",
+      "terminalReceipt": {
+        "receiptRef": "7765f8625846f5fda0137fb4405cc2580e967fc8432bd7b845d15703e98e1855",
+        "recordHash": "b557ac5af853619b709e23ea16bb8fc412a1044995038b24932167a5c16c63df",
+        "source": "host"
+      }
+    },
+    "lastPanelRejection": null,
+    "lastPhysicalFault": null,
+    "lastReadFailure": {
+      "authority": false,
+      "code": "titles_missing_stroke_color",
+      "commandId": "inspect-874074e1-1539-4337-8058-b7a9b8588b25",
+      "executorHash": "f439be6df6abb5a3de9372c85c91e895a05283e8d15d53784d9e7ba808701eb4",
+      "moduleId": "titles-current-target",
+      "phase": "inspect"
+    },
+    "listening": true,
+    "peer": {
+      "acceptedIdentity": {
+        "extensionId": "com.codex.aeagentcore4.panel",
+        "panelBuildId": "574cffbc4489a568630268e694dcb8c202f8e7bce93380094584067b5e52c712",
+        "productVersion": "4.2.6",
+        "protocolVersion": 1,
+        "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee"
+      },
+      "connected": true,
+      "identityEpoch": "http-ab5fd7cf-5a1a-4cf2-8ae1-86164663390b",
+      "identityObservedAt": 1794501464631,
+      "origin": "file://",
+      "peerId": "panel-cdd4d68470b52860ac77a18590793b6ba498dea10797be80",
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+      "registryReady": true
+    },
+    "pending": null,
+    "port": 3457,
+    "readiness": {
+      "baselineRequired": false,
+      "cepConnected": true,
+      "native": "unverified",
+      "process": {
+        "birth": "2026-11-12T16:28:50.0853095Z",
+        "coverage": "visible-top-level-windows-in-observer-desktop",
+        "dialogs": [],
+        "fresh": true,
+        "observedAt": 1794502077620,
+        "pid": 39220,
+        "state": "window-responsive"
+      }
+    },
+    "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688",
+    "registryBootstrap": {
+      "commandId": "registry-1978fddc-38fb-434a-a343-bf57598518a3",
+      "deadlineAt": 1794501554636,
+      "epoch": "http-ab5fd7cf-5a1a-4cf2-8ae1-86164663390b",
+      "nonce": "[redacted]",
+      "peerId": "panel-cdd4d68470b52860ac77a18590793b6ba498dea10797be80",
+      "registryBuildId": "f58832f938483dd9a84a10f90abc4b5e7c90aa5028f0aa32ae2cf47827f091ee",
+      "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62",
+      "startupOperationId": null,
+      "state": "completed"
+    },
+    "startOverFrozen": false,
+    "storeClosed": false,
+    "storeFault": false,
+    "unknown": false
+  },
+  "pid": 44952,
+  "product": "AE Agent Core 4.2.6",
+  "protocolPin": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+  "ready": true,
+  "resourceDiagnostics": [],
+  "resourceProvider": {
+    "adopted": true,
+    "coverage": {
+      "core4Lane": "cooperating-Core4-only",
+      "hostProcess": "adopted-reprobe-required",
+      "legacyEndpoints": "named-probes-only",
+      "legacyPhysicalQueue": "not-proven",
+      "otherAEActors": "outside-coverage",
+      "sharedOutputs": "not-requested"
+    },
+    "origin": {
+      "aePid": 39220,
+      "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+      "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+      "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+      "machineId": "DESKTOP-32974QF"
+    }
+  },
+  "startOver": {
+    "aeAuthority": false,
+    "baselineRequired": false,
+    "eligibility": {
+      "action": "request",
+      "reason": "start_over_ready"
+    },
+    "fault": null,
+    "id": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+    "ownerBootId": "7fd50bfd-7992-4a45-af7c-15b90206ad50",
+    "phase": "ready",
+    "requiresAEExit": false,
+    "resetComplete": true,
+    "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+  },
+  "startupActivity": {
+    "operationId": null,
+    "pending": false,
+    "unresolved": false
+  },
+  "synthetic": false,
+  "unavailableReason": null,
+  "unresolved": [],
+  "workSession": {
+    "aeAuthority": false,
+    "baselineRequired": false,
+    "mode": "work-session",
+    "resetId": "0e6d16c9-f80e-4761-b445-3a7e8cfbac1d",
+    "resetPending": false,
+    "sessionId": "af098d2e-d5b8-4212-9c27-d9358cdc6e62"
+  },
+  "worker": {
+    "epoch": 1,
+    "lateReplies": 0,
+    "loaded": [
+      "titles-current-target@704e67f0793eb9ebcf7fafc41e0d777ed6d3cd4d801d9f847da08eefb892e284",
+      "comp-frame-export@7f001f2961627012242757eca5c59abd271a93da0a15b64a8b2cb202796fcbd2",
+      "project-save@6e383c5c9a6ee78b7f917aefff5b493d109a9da341d44ada432ae6b88077c24c"
+    ],
+    "pending": 0,
+    "pid": 26632
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-11-12 16:54:28 UTC",
+  "result": "ACCEPT",
+  "severityFindings": {
+    "P1": 0,
+    "P2": 0
+  },
+  "reviewer": "/root/review_live_evidence (ae_reviewer, read-only)",
+  "scope": "Completed installed native Titles/frame0/project-save evidence; not full release approval",
+  "verification": {
+    "finalArtifacts": 21,
+    "finalArtifactsMatch": true,
+    "receiverRecords": 39,
+    "ledgerRecords": 42,
+    "actualJournalChainsVerified": true,
+    "originalReceiptsBoundToActualJournalsProposalsPermits": true,
+    "submissionsPerMutation": 1,
+    "mutationsSucceeded": 3,
+    "styleFieldsExact": 16,
+    "target": {
+      "compId": 1,
+      "layerId": 14,
+      "layerIndex": 1
+    },
+    "text": "CORE 4.2.6 LIVE",
+    "dirty": false,
+    "leaseReleased": true,
+    "pending": false,
+    "unknown": false,
+    "fault": false,
+    "originalCheckpointExact": true,
+    "finalAepAndPngExact": true,
+    "userAepFilesExact": 4,
+    "visualPngViewedIndependently": true,
+    "unredactedCredentialsFound": 0,
+    "historicalUnknownArchivesExact": true
+  },
+  "limits": [
+    "Static owned uniform 2D point text with active Fill/Stroke",
+    "Checkpoint covers original on-disk bytes; final saved AEP not reopened",
+    "Earlier modal refusal cause unproved; original startup required panel UI recovery",
+    "Cached chat MCP refresh not claimed; actual fresh effective-config client used",
+    "Source certification reused; no full release or MSI acceptance"
+  ],
+  "readOnly": true,
+  "additionalTestsRequiredForThisEvidenceReview": false
+}

@@ -1,0 +1,32 @@
+{
+  "aeAuthority": false,
+  "dispatched": false,
+  "plan": {
+    "descriptorHash": "79266cc306d9a080a94d0d1007c26e23b55f1398d640b0dfcbc9f8f6f2e3903b",
+    "installationId": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+    "journals": {
+      "ledger": null,
+      "receiver": {
+        "bytes": 4246,
+        "sha256": "eb26c8b8a0afd0e99c7ca400e69ed247b997a85f7fd1d13a618513572e49317a"
+      }
+    },
+    "operationId": "885aef08-c0be-4213-bee0-fe50c51ebcec",
+    "packageHash": "950d180c11eaead6c5dcf6c371225ef47af5ff77ee16e84dc5202f1775c9ef80",
+    "status": {
+      "birthTicks": "639300967741674810",
+      "eligibility": {
+        "action": "request",
+        "reason": "start_over_unresolved"
+      },
+      "pid": 42200,
+      "processBootId": "4c14cf2d-c56e-4770-b66c-99db620d2a93",
+      "requiresAEExit": true,
+      "resetId": "fff4d550-28bf-436b-8ca5-c2591855c679",
+      "sessionId": "8f7bc96d-1a95-4686-9851-cb5360a05344",
+      "unresolved": []
+    },
+    "version": 1
+  },
+  "planHash": "7f03e414087dcde1f48ed5507fb348e3c2e035d8e7f946ee90542bc0af60780c"
+}

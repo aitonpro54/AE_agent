@@ -1,0 +1,63 @@
+{
+  "submittedAt": "2026-11-12T16:28:49.612Z",
+  "submissionCount": 1,
+  "executable": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+  "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+  "args": [
+    "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+  ],
+  "aepSha256": "d852fb9cccba518b7ab9d72ec818ed72d63626df8840b4b4d9402b3c30c51f49",
+  "before": {
+    "version": 1,
+    "hostname": "DESKTOP-32974QF",
+    "observedAt": "2026-11-12T16:28:49.608Z",
+    "processes": [],
+    "endpoints": [
+      {
+        "port": 3456,
+        "state": "observed-absent"
+      },
+      {
+        "port": 8787,
+        "state": "observed-absent"
+      }
+    ],
+    "completedAt": 1794500929611
+  },
+  "noComputerUseAfterLaunch": true,
+  "shell": false,
+  "environment": "installed adobeEnvironment",
+  "submissionPid": 39220,
+  "after": {
+    "version": 1,
+    "hostname": "DESKTOP-32974QF",
+    "observedAt": "2026-11-12T16:28:50.784Z",
+    "processes": [
+      {
+        "pid": 39220,
+        "birth": "2026-11-12T16:28:50.0853090Z",
+        "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+        "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71",
+        "executableLength": 5931016
+      }
+    ],
+    "endpoints": [
+      {
+        "port": 3456,
+        "state": "observed-absent"
+      },
+      {
+        "port": 8787,
+        "state": "observed-absent"
+      }
+    ],
+    "completedAt": 1794500930785
+  },
+  "host": {
+    "machineId": "DESKTOP-32974QF",
+    "aePid": 39220,
+    "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+    "executablePath": "C:\\Program Files\\Adobe\\Adobe After Effects 2026\\Support Files\\AfterFX.exe",
+    "executableHash": "8599b66580ececdf1a6df008faffdd47c06afceef582eca599a98e81de3aaf71"
+  }
+}

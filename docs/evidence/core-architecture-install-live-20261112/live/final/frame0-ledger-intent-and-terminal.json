@@ -1,0 +1,445 @@
+{
+  "source": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\broker\\ledger.ndjson",
+  "intent": {
+    "attemptId": "attempt-246a5a97-8332-4b90-bfa4-0cdb7ba5d4ae",
+    "before": {
+      "duration": 50,
+      "frameDuration": 0.04,
+      "fullResolution": true,
+      "height": 1080,
+      "protected": "[\"Core Architecture Live 20261112\",1920,1080,50,0.04,0,0,1,true,1,1]",
+      "revision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1},72,\"[\\\"Core Architecture Live 20261112\\\",1920,1080,50,0.04,0,0,1,true,1,1]\"]",
+      "target": {
+        "compId": 1,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+      },
+      "width": 1920
+    },
+    "checkpoint": {
+      "digest": "709e5db629600a76e9a4601c0465992388a4e5b70e0eb221b9bee4fd418febb1",
+      "kind": "composition-frame-preimage-v1",
+      "ref": "checkpoint-ea748629-1eeb-48dc-b1dc-2187fbfb93cb"
+    },
+    "commandId": "command-d633550a-d837-422e-a170-e8631d0a2201",
+    "dispatchBinding": {
+      "channelEpoch": "channel-c4dbde7b-740f-46b8-bedc-577901a0623c",
+      "commandId": "command-d633550a-d837-422e-a170-e8631d0a2201",
+      "controllerId": "controller-6c045c6e-e79a-4bcb-b7c3-44f23331acc9",
+      "executorHash": "a8211fd9544eeb05dea1cc83a5bc03d776ec5e39cea03eddce4e30d5a705f31c",
+      "moduleId": "comp-frame-export",
+      "operationId": "save-comp-frame-png",
+      "payloadHash": "2bcb28b8dcdcc6f6093ce207c30cde7f268b3d088b1c60d89b3bf8884100d480",
+      "phase": "mutate",
+      "receiptRef": "8628ec980bf4666152be3fb50d64eb3cbc804b4e1bfe381416a9744322e8ef8a",
+      "receiverStoreIdentity": "receiver-store-cff4fc98-13c9-4f4c-b77a-e65830648688"
+    },
+    "dispatchedAt": 1794502006369,
+    "executionPolicy": {
+      "executionScope": {
+        "origin": {
+          "aePid": 39220,
+          "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+          "machineId": "DESKTOP-32974QF"
+        },
+        "schemaVersion": 2,
+        "target": {
+          "compId": 1,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+        }
+      },
+      "operatorConfirmation": true,
+      "pin": "5d462d905672071fc30f2a1d9235cb1a8951db2a6d11a017e83e1a64571bbdb6",
+      "policyId": "current-matching-target-after-local-confirmation-v1",
+      "verificationKind": "local-transaction-receipt"
+    },
+    "grant": {
+      "allowedEffect": "composition-frame-png-export",
+      "approvalDigest": "0d4a3b348c02565e2334c9cc450d99cb958ad3a76edf41e352a5180afeae8bcc",
+      "checkpointRef": "checkpoint-ea748629-1eeb-48dc-b1dc-2187fbfb93cb",
+      "executionScope": {
+        "origin": {
+          "aePid": 39220,
+          "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+          "machineId": "DESKTOP-32974QF"
+        },
+        "schemaVersion": 2,
+        "target": {
+          "compId": 1,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+        }
+      },
+      "operatorConfirmation": {
+        "digest": "045670c6e667383a025449b503e4f57ffd85642926e7132b889b42b5e2f504dd",
+        "expiresAt": 1794502125348
+      },
+      "owner": "installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56",
+      "provenance": "local-operator-exact-confirmation-v1",
+      "reservationRef": "reservation-b0a2b2b7-d0a7-4f1d-8251-1787925262c2"
+    },
+    "input": {
+      "compId": 1,
+      "expectedRevision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1},72,\"[\\\"Core Architecture Live 20261112\\\",1920,1080,50,0.04,0,0,1,true,1,1]\"]",
+      "fileName": "core-426-live-frame0-20261112.png",
+      "frame": 0,
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+    },
+    "inputDigest": "370b108d58ed14d7dd29789476c1369c111c513c393ae743336709cff37b9842",
+    "physicalInput": {
+      "_execution": {
+        "baselineDigest": "dba15840ea5436e3ebae8cd17c12ed2233a829876999b70ba0167092540c05dd",
+        "baselineProtected": "[\"Core Architecture Live 20261112\",1920,1080,50,0.04,0,0,1,true,1,1]",
+        "baselineRevision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1},72,\"[\\\"Core Architecture Live 20261112\\\",1920,1080,50,0.04,0,0,1,true,1,1]\"]",
+        "checkpointDigest": "709e5db629600a76e9a4601c0465992388a4e5b70e0eb221b9bee4fd418febb1",
+        "checkpointRef": "checkpoint-ea748629-1eeb-48dc-b1dc-2187fbfb93cb",
+        "operatorConfirmation": {
+          "digest": "045670c6e667383a025449b503e4f57ffd85642926e7132b889b42b5e2f504dd",
+          "expiresAt": 1794502125348
+        },
+        "pins": {
+          "core": "c39eda2f40cabd19239aa8ace9f1d90ca2611beb61dad78d4bd1b4466d1750a9",
+          "engine": null,
+          "modules": [
+            {
+              "admission": "b4c97be928edf2aba69f1da3e41a2e6b82bb0f27de1800c059523f9263aaf847",
+              "dependencies": {},
+              "executionPolicy": {
+                "executionScope": {
+                  "origin": {
+                    "aePid": 39220,
+                    "aeProcessBirth": "2026-11-12T16:28:50.0853090Z",
+                    "machineId": "DESKTOP-32974QF"
+                  },
+                  "schemaVersion": 2,
+                  "target": {
+                    "compId": 1,
+                    "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+                  }
+                },
+                "operatorConfirmation": true,
+                "pin": "5d462d905672071fc30f2a1d9235cb1a8951db2a6d11a017e83e1a64571bbdb6",
+                "policyId": "current-matching-target-after-local-confirmation-v1",
+                "verificationKind": "local-transaction-receipt"
+              },
+              "module": "7f001f2961627012242757eca5c59abd271a93da0a15b64a8b2cb202796fcbd2",
+              "stepId": "s1"
+            }
+          ],
+          "protocol": "b43279225fc49f3cbf228f0d5ae8f71fbad539d5d16b87ef0d8d96d0fdc1bf9d",
+          "transport": "200198c13f3c9aa94bf80adf6ac71f5c05dd224c7569fd76c3090f87c87b05eb"
+        },
+        "planDigest": "531514e64069f6f3751218852e5d8366511e1af888ea33ed9e06ee889c428638",
+        "policyId": "current-matching-target-after-local-confirmation-v1",
+        "proposalId": "proposal-ff130c99-df93-4698-a32d-83e0dd2e0711",
+        "stepId": "s1",
+        "target": {
+          "compId": 1,
+          "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+        },
+        "taskEpoch": 0,
+        "taskId": "task-5e28c5ba-0ec7-42cf-8c0a-54f9d3cccfd6"
+      },
+      "compId": 1,
+      "expectedRevision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1},72,\"[\\\"Core Architecture Live 20261112\\\",1920,1080,50,0.04,0,0,1,true,1,1]\"]",
+      "fileName": "core-426-live-frame0-20261112.png",
+      "frame": 0,
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+    },
+    "planDigest": "531514e64069f6f3751218852e5d8366511e1af888ea33ed9e06ee889c428638",
+    "planRevision": "revision-964bc401-7629-4067-a353-a40d421dffde",
+    "previousHash": "3bad515385dbbf2e5d461a2dfa53b47da1e9d4941fcc7dac3f622ec003f16a98",
+    "proposalId": "proposal-ff130c99-df93-4698-a32d-83e0dd2e0711",
+    "recordContext": {
+      "contextId": "core-architecture-live-20261112",
+      "lifetime": "ephemeral_check",
+      "project": {
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+      },
+      "purpose": "technical_check",
+      "resources": [
+        {
+          "identity": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep",
+          "kind": "project"
+        }
+      ]
+    },
+    "recordHash": "c692d700583c5fa86d3edb03922d0083cfe5a43f63659e67aa2aa8a23397698e",
+    "runId": "run-a678da78-adea-40db-9ac8-541b5d360008",
+    "selected": {
+      "admission": {
+        "artifactHash": "7f001f2961627012242757eca5c59abd271a93da0a15b64a8b2cb202796fcbd2",
+        "effectPolicyHash": "3d8a69bf6b149a630389e3d74cb4c9fa436ebcb55d6320200289950b911db380",
+        "executorHash": "a8211fd9544eeb05dea1cc83a5bc03d776ec5e39cea03eddce4e30d5a705f31c",
+        "moduleId": "comp-frame-export",
+        "operationId": "save-comp-frame-png",
+        "protocolVersion": 1,
+        "resultSchemaHash": "3392d85abb6a40dc6b2a056f277b64fced598fb2333d70db79833f5f6ad138b9",
+        "revoked": false,
+        "schemaHash": "3fd8cb8fbff3ec602a243d65113204d683dba12ed073c0779883e93ddd3ec586",
+        "trustApprovalId": "source-review-comp-frame-export-independent-msi-20261110"
+      },
+      "admissionPath": "config/admissions/comp-frame-export.json",
+      "contract": {
+        "buildSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "fileName": {
+              "maxLength": 95,
+              "minLength": 5,
+              "type": "string"
+            },
+            "frame": {
+              "maximum": 1000000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "frame",
+            "fileName"
+          ],
+          "type": "object"
+        },
+        "effectPolicy": {
+          "checkpointKind": "composition-frame-preimage-v1",
+          "confirmation": "native-current-target",
+          "effect": "composition-frame-png-export",
+          "expectedBindings": {
+            "expectedRevision": "revision"
+          },
+          "preserve": [
+            "protected"
+          ],
+          "requiresCheckpoint": true,
+          "resultBindings": {},
+          "targetFields": [
+            "projectId",
+            "compId"
+          ]
+        },
+        "executionPolicy": "current-matching-target-after-local-confirmation-v1",
+        "inputSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "expectedRevision": {
+              "maxLength": 24000,
+              "minLength": 1,
+              "type": "string"
+            },
+            "fileName": {
+              "maxLength": 95,
+              "minLength": 5,
+              "type": "string"
+            },
+            "frame": {
+              "maximum": 1000000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId",
+            "frame",
+            "fileName",
+            "expectedRevision"
+          ],
+          "type": "object"
+        },
+        "moduleId": "comp-frame-export",
+        "operationId": "save-comp-frame-png",
+        "protocolVersion": 1,
+        "snapshotSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "duration": {
+              "maximum": 86400,
+              "minimum": 0.001,
+              "type": "number"
+            },
+            "frameDuration": {
+              "maximum": 1,
+              "minimum": 0.0001,
+              "type": "number"
+            },
+            "fullResolution": {
+              "type": "boolean"
+            },
+            "height": {
+              "maximum": 30000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "output": {
+              "additionalProperties": false,
+              "properties": {
+                "bytes": {
+                  "maximum": 67108864,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "file": {
+                  "maxLength": 8192,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "frame": {
+                  "maximum": 1000000,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "file",
+                "frame",
+                "bytes"
+              ],
+              "type": "object"
+            },
+            "protected": {
+              "maxLength": 20000,
+              "minLength": 1,
+              "type": "string"
+            },
+            "revision": {
+              "maxLength": 24000,
+              "minLength": 1,
+              "type": "string"
+            },
+            "target": {
+              "additionalProperties": false,
+              "properties": {
+                "compId": {
+                  "maximum": 2147483647,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "projectId": {
+                  "maxLength": 8192,
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "projectId",
+                "compId"
+              ],
+              "type": "object"
+            },
+            "width": {
+              "maximum": 30000,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "target",
+            "revision",
+            "protected",
+            "width",
+            "height",
+            "duration",
+            "frameDuration",
+            "fullResolution"
+          ],
+          "type": "object"
+        },
+        "targetSchema": {
+          "additionalProperties": false,
+          "properties": {
+            "compId": {
+              "maximum": 2147483647,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "projectId": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "projectId",
+            "compId"
+          ],
+          "type": "object"
+        }
+      },
+      "executor": "(function () {\n    var POLICY = 'current-matching-target-after-local-confirmation-v1';\n    function fault(code) { var e = new Error(code); e.coreCode = code; throw e; }\n\n    function composition(p) {\n        var project = app.project;\n        if (!project || !project.file || String(project.file.fsName) !== p.projectId) fault('frame_export_project');\n        var comp = project.itemByID(p.compId);\n        if (!(comp instanceof CompItem) || comp.id !== p.compId) fault('frame_export_composition');\n        return comp;\n    }\n\n    function snapshot(p, comp) {\n        var project = app.project, revision = project.revision, factor = comp.resolutionFactor;\n        if (typeof revision !== 'number' || !isFinite(revision) || revision < 0 || Math.floor(revision) !== revision ||\n            typeof project.dirty !== 'boolean' || !factor || factor.length !== 2) fault('frame_export_native_state');\n        var target = { projectId: p.projectId, compId: p.compId };\n        var state = JSON.stringify([comp.name, comp.width, comp.height, comp.duration, comp.frameDuration,\n            comp.time, comp.displayStartTime, comp.numLayers, project.dirty, factor[0], factor[1]]);\n        return { target: target, revision: JSON.stringify([target, revision, state]), 'protected': state,\n            width: comp.width, height: comp.height, duration: comp.duration, frameDuration: comp.frameDuration,\n            fullResolution: factor[0] === 1 && factor[1] === 1 };\n    }\n\n    function inspect(p) { return snapshot(p, composition(p)); }\n\n    function completedPng(path) {\n        var waitMs = 20000, pollMs = 100, deadline = new Date().getTime() + waitMs;\n        for (var attempt = 0; attempt < waitMs / pollMs && new Date().getTime() < deadline; attempt++) {\n            var file = new File(path), size = file.exists ? file.length : 0;\n            if (file.alias || size > 67108864) fault('frame_export_readback');\n            if (size >= 45) {\n                file.encoding = 'BINARY';\n                if (file.open('r')) {\n                    var end = '';\n                    try { if (file.seek(size - 12, 0)) end = file.read(12); }\n                    finally { file.close(); }\n                    if (end.length === 12 && end.substr(0, 8) === '\\x00\\x00\\x00\\x00IEND' &&\n                        file.length === size && new Date().getTime() <= deadline) return size;\n                }\n            }\n            var remaining = deadline - new Date().getTime();\n            if (remaining <= 0) break;\n            $.sleep(Math.min(pollMs, remaining));\n        }\n        fault('frame_export_output_incomplete');\n    }\n\n    function mutate(p, confirmAction) {\n        var started = false;\n        try {\n            var comp = composition(p), before = snapshot(p, comp), proof = p._execution;\n            if (!proof || proof.policyId !== POLICY || before.revision !== p.expectedRevision ||\n                proof.baselineRevision !== before.revision || proof.baselineProtected !== before['protected'] ||\n                !proof.target || proof.target.projectId !== p.projectId || proof.target.compId !== p.compId) fault('frame_export_binding');\n            if (!before.fullResolution || before.width > 4096 || before.height > 4096) fault('frame_export_resolution');\n            var time = p.frame * before.frameDuration;\n            if (p.frame < 0 || Math.floor(p.frame) !== p.frame || !(time >= 0 && time < before.duration)) fault('frame_export_range');\n            if (typeof comp.saveFrameToPng !== 'function') fault('frame_export_unavailable');\n            if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,90}\\.png$/.test(p.fileName) ||\n                /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])\\./i.test(p.fileName)) fault('frame_export_filename');\n            var folder = new Folder(app.project.file.parent.fsName + '/frames-output');\n            if (!folder.exists || folder.alias) fault('frame_export_directory');\n            var file = new File(folder.fsName + '/' + p.fileName);\n            if (file.exists || file.alias) fault('frame_export_exists');\n            if (!confirmAction || confirmAction() !== true) fault('operator_confirmation_required');\n            if (snapshot(p, composition(p)).revision !== before.revision || file.exists || file.alias) fault('frame_export_stale');\n            if (confirmAction() !== true) fault('operator_confirmation_expired');\n            started = true;\n            comp.saveFrameToPng(time, file);\n            var bytes = completedPng(file.fsName);\n            var after = inspect(p);\n            if (after['protected'] !== before['protected']) fault('frame_export_state_changed');\n            after.output = { file: String(file.fsName), frame: p.frame, bytes: bytes };\n            return { outcome: 'applied', snapshot: after, transactionReceipt: { version: 2, policyId: POLICY,\n                proposalId: proof.proposalId, planDigest: proof.planDigest, taskId: proof.taskId, taskEpoch: proof.taskEpoch,\n                stepId: proof.stepId, checkpointRef: proof.checkpointRef, checkpointDigest: proof.checkpointDigest,\n                baselineDigest: proof.baselineDigest, baselineRevision: proof.baselineRevision, target: after.target,\n                resultRevision: after.revision, protectedFields: after['protected'] } };\n        } catch (e) {\n            return { outcome: started ? 'unknown' : 'rejected', code: e.coreCode || 'frame_export_ae_error' };\n        }\n    }\n    return { inspect: inspect, verify: inspect, mutate: mutate };\n}())\n",
+      "manifest": {
+        "entry": "implementation.js",
+        "hashes": {
+          "contract.json": "eaa6bef9892f26681be0772412ea9e71eb61dbcdaff55ae28497f1b301f3873b",
+          "executor.jsx": "a8211fd9544eeb05dea1cc83a5bc03d776ec5e39cea03eddce4e30d5a705f31c",
+          "implementation.js": "0f9fef96718078f4b54a3f6248e1f7a4538bad32935632bf208bf9e855d800eb"
+        },
+        "id": "comp-frame-export",
+        "publicDependencies": {},
+        "version": "4.2.3"
+      },
+      "moduleId": "comp-frame-export",
+      "path": "C:\\Users\\Ant\\AEAgentCore4\\state\\production\\broker\\artifacts\\7f001f2961627012242757eca5c59abd271a93da0a15b64a8b2cb202796fcbd2",
+      "pin": "7f001f2961627012242757eca5c59abd271a93da0a15b64a8b2cb202796fcbd2",
+      "publicDependencies": {}
+    },
+    "seq": 23,
+    "stepId": "s1",
+    "target": {
+      "compId": 1,
+      "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+    },
+    "taskEpoch": 0,
+    "taskId": "task-5e28c5ba-0ec7-42cf-8c0a-54f9d3cccfd6",
+    "transportIdentity": "200198c13f3c9aa94bf80adf6ac71f5c05dd224c7569fd76c3090f87c87b05eb",
+    "type": "intent",
+    "workflowId": "workflow-e3f91fe6-4923-42e5-9863-2d2abbdceec9"
+  },
+  "terminal": {
+    "after": {
+      "duration": 50,
+      "frameDuration": 0.04,
+      "fullResolution": true,
+      "height": 1080,
+      "output": {
+        "bytes": 83350,
+        "file": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\frames-output\\core-426-live-frame0-20261112.png",
+        "frame": 0
+      },
+      "protected": "[\"Core Architecture Live 20261112\",1920,1080,50,0.04,0,0,1,true,1,1]",
+      "revision": "[{\"projectId\":\"C:\\\\Users\\\\Ant\\\\Documents\\\\Codex\\\\AE_Agent_Core\\\\.codex-runtime\\\\core-architecture-live-20261112\\\\live-ae.aep\",\"compId\":1},72,\"[\\\"Core Architecture Live 20261112\\\",1920,1080,50,0.04,0,0,1,true,1,1]\"]",
+      "target": {
+        "compId": 1,
+        "projectId": "C:\\Users\\Ant\\Documents\\Codex\\AE_Agent_Core\\.codex-runtime\\core-architecture-live-20261112\\live-ae.aep"
+      },
+      "width": 1920
+    },
+    "commandId": "command-d633550a-d837-422e-a170-e8631d0a2201",
+    "previousHash": "edab1902239e74a48b3a5ea4cd82484380e702ed684e61eca9bb4e39ef659322",
+    "recordHash": "5c9ffbb77c5def33365c781c4b4096afb0567ba539c36d03a59f55130e2a44af",
+    "seq": 25,
+    "state": "succeeded",
+    "type": "command",
+    "verificationKind": "local-transaction-receipt"
+  }
+}
