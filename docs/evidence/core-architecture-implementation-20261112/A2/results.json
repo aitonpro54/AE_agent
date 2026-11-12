@@ -1,0 +1,95 @@
+[
+  {
+    "name": "syntax-dispatcher",
+    "args": [
+      "--check",
+      "core4/cep/js/poll-dispatcher.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  },
+  {
+    "name": "syntax-panel-lifecycle-test",
+    "args": [
+      "--check",
+      "core4/test/panel-lifecycle.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  },
+  {
+    "name": "panel-lifecycle",
+    "args": [
+      "--test",
+      "core4/test/panel-lifecycle.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 37",
+      "ℹ pass 37",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 2119.9985"
+    ]
+  },
+  {
+    "name": "panel-start-over",
+    "args": [
+      "--test",
+      "core4/test/panel-start-over.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 11",
+      "ℹ pass 11",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 553.8144"
+    ]
+  },
+  {
+    "name": "start-over-channel",
+    "args": [
+      "--test",
+      "core4/test/start-over-channel.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 29",
+      "ℹ pass 29",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 3434.0178"
+    ]
+  },
+  {
+    "name": "panel-reconnect",
+    "args": [
+      "--test",
+      "core4/test/panel-reconnect.test.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": [
+      "ℹ tests 69",
+      "ℹ pass 69",
+      "ℹ fail 0",
+      "ℹ skipped 0",
+      "ℹ duration_ms 3463.069"
+    ]
+  },
+  {
+    "name": "boundaries",
+    "args": [
+      "core4/tools/check-boundaries.js"
+    ],
+    "exit": 0,
+    "signal": null,
+    "summary": []
+  }
+]

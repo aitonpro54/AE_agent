@@ -1,0 +1,106 @@
+{
+  "stage": "A2",
+  "recordedAt": "2026-11-12T09:58:55.551627+00:00",
+  "sourceParent": "5ea56ca",
+  "result": "146 offline tests PASS; boundaries91 PASS; independent review ACCEPT",
+  "sourceHashesVerified": true,
+  "fullAffectedProof": "remaining selected/deferred routes tracked for C",
+  "files": [
+    {
+      "path": "a2-validation.json",
+      "sha256": "eb06b626cf2720b87dcd13fbab9d13252e20630a00d715b63ad8e6147b9071de",
+      "bytes": 6734
+    },
+    {
+      "path": "boundaries.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "boundaries.stdout.txt",
+      "sha256": "394931c5861ee7b063cabd543f3844f2184582019bd30b6c7dfd848a43cc304a",
+      "bytes": 102
+    },
+    {
+      "path": "diff-check.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "diff-check.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "panel-lifecycle.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "panel-lifecycle.stdout.txt",
+      "sha256": "24b2d66396e6a01ec87cd1634ec044d7f2e9a89ef2b9b7232c788e85a23e9ff2",
+      "bytes": 4433
+    },
+    {
+      "path": "panel-reconnect.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "panel-reconnect.stdout.txt",
+      "sha256": "65c71ad61c9f90725bb1516b506b1a8fc662bf058a358f275065d1d1600ee7a6",
+      "bytes": 7261
+    },
+    {
+      "path": "panel-start-over.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "panel-start-over.stdout.txt",
+      "sha256": "676eccd3fd82bd3d26deb20460ee08702c8e76c6aa1c177f5586eade4edfb78c",
+      "bytes": 1294
+    },
+    {
+      "path": "results.json",
+      "sha256": "8d0d3077a63f089503e77238a19728d825b1968976188c6837653bc0ce7a90a9",
+      "bytes": 1709
+    },
+    {
+      "path": "selection.json",
+      "sha256": "a5d54cc49d068c495b306e55dad8a78b63276ee4321946182232aecd3e521c43",
+      "bytes": 45470
+    },
+    {
+      "path": "start-over-channel.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "start-over-channel.stdout.txt",
+      "sha256": "0ddd0a3b941c3f28d2b3d30057f21592544eb7cf1cef1a6cbdbe71229ed6069d",
+      "bytes": 3165
+    },
+    {
+      "path": "syntax-dispatcher.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-dispatcher.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-panel-lifecycle-test.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "syntax-panel-lifecycle-test.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    }
+  ],
+  "noLiveOrInstalledChanges": true
+}

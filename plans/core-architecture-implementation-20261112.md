@@ -300,6 +300,14 @@ Source file hashes и package hash могут измениться от пере
 
 ## Этап C — доказать затронутую связность
 
+Из A1 известен test-only пробел текущего panel identity handshake. Перед broad
+affected прогоном исправить owner-runtime panel helper и проверить аналогичные
+installed-composition/transition fixtures. Использовать действующий пример
+installable-runtime.test.js: panelIdentity.verify(), loadedPanel/extensionRoot
+в подписанном claim и signed registry-ready. Synthetic helpers без releaseDir/
+cepDir не переводить механически на installed identity. Это ремонт fixtures,
+production HMAC/Origin/identity/registry gates сохраняются.
+
 1. Использовать актуальный diff и existing validation map. Для каждого изменённого
    инварианта: какой fixture ловит нарушение, какой результат получен, какое
    историческое evidence применимо и что осталось непроверенным.
@@ -386,6 +394,15 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Progress
 
+- **A2 реализован:** строгий связанный bootstrap error callback сохраняет
+  registry_refresh_failed через существующий UI. Success/registry-ready,
+  persistent latch, signed retirement и UNKNOWN/no-replay не изменены.
+  panel.js менять не потребовалось. 146/146 offline tests, syntax и boundaries
+  91 PASS; ae_reviewer ACCEPT.
+  [Evidence A2](../docs/evidence/core-architecture-implementation-20261112/A2/acceptance.json).
+- Оставшиеся A2 выбранные integration routes (installable-runtime,
+  manual-runtime, ae-panel-startup) и deferred records сохраняются до C;
+  полный current closure PASS этим локальным этапом не заявлен.
 - **A1 реализован:** оба нижних close ожидают один cleanup и сохраняют его
   rejection; direct stdio сразу закрывает tool admission/status. При ошибке
   peer.close Broker/state lock не освобождается. Upper Owner/maintenance не менялись.
@@ -417,6 +434,10 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Decision Log
 
+- A2 использует существующий error.message путь. Matching finite error требует
+  exact keys/version/nonce, текущий callback token и owned latch; malformed и
+  foreign callback не превращаются в подтверждённый отказ. Новый terminal
+  wire result, автоочистка и повтор исполнения не введены.
 - A1 safe sequencing: failed peer close сохраняет ошибку для повторных callers
   и удерживает Broker lease; cleanup не повторяется автоматически. Runtime
   status обозначает closing немедленно, существующий public return API не расширен.
@@ -443,6 +464,9 @@ reviewable commits, контракты и затронутая closure пров�
 
 ## Validation
 
+- A2: lifecycle 37, panel-start-over 11, start-over-channel 29,
+  reconnect 69 PASS. Два изменённых source/test SHA сверены координатором;
+  commands/exit codes/stdout hashes сохранены. Новый live proof не заявляется.
 - A1 evidence скопировано с SHA, source hashes четырёх changed JS совпали;
   полный stdout успешных и неуспешных попыток сохранён. Новых live действий нет.
 - Failed-run raw stdout содержит отступы на пустых строках; они сохраняются

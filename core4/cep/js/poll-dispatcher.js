@@ -102,6 +102,13 @@
         if (nativeGuard.active !== token) { reject(new Error('registry_native_guard')); return; }
         try {
           var result = JSON.parse(raw);
+          if (result && typeof result === 'object' && Object.prototype.hasOwnProperty.call(result, 'code')) {
+            exact(result, ['version', 'nonce', 'code']);
+            if (Object.keys(result).length !== 3 || result.version !== 1 || result.nonce !== binding.nonce || result.code !== 'registry_refresh_failed') throw new Error('registry_native_identity');
+            // A returned, bound callback is a local diagnostic only. Preserve
+            // the original latch and never acknowledge it as registry-ready.
+            owned(); throw new Error(result.code);
+          }
           exact(result, ['version', 'nonce', 'registryBuildId', 'refreshed']);
           if (Object.keys(result).length !== 4 || result.version !== 1 || result.nonce !== binding.nonce || result.registryBuildId !== options.registryBuildId || typeof result.refreshed !== 'boolean') throw new Error('registry_native_identity');
           record.result = result; save(); nativeGuard.active = null;

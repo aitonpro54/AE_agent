@@ -1,0 +1,40 @@
+✔ start-over-channel fence refuses a new direct or Broker submit before durable begin (53.4578ms)
+✔ start-over-channel previously accepted undelivered command cannot escape through late poll (232.1222ms)
+✔ start-over-channel reset flushes outstanding poll without delivering a command (30.0745ms)
+✔ start-over-channel delivered native completion settles only the old journal after the fence (27.0019ms)
+✔ start-over-channel normal attachment freeze still drains an already accepted physical command (18.5887ms)
+✔ start-over-channel HTTP delivery and held VM callback settle only the fenced old receiver before timeout (24.3078ms)
+✔ start-over-channel late VM callback after HTTP timeout preserves UNKNOWN and cannot enter a fresh receiver (562.2726ms)
+✔ start-over-channel new dispatcher and session cannot bypass same-window unresolved native callback (1.5171ms)
+✔ start-over-channel late callback preserves old session key and old completion channel on lost ack (1.3148ms)
+✔ start-over-channel malformed native callback retains old no-replay latch while releasing returned callback guard (1.2643ms)
+✔ start-over-channel synchronous native exception remains uncertain across dispatcher script reload (1.2669ms)
+✔ start-over-channel session keys preserve legacy latch and reject caller malformed session identity (1.9377ms)
+✔ start-over-channel UNKNOWN persist failure cannot escape timer or retain an accepted Promise; fault remains fenced (70.8655ms)
+✔ start-over-channel failed terminal fsync immediately fences the original read even with a drain window (31.2613ms)
+✔ start-over-channel no poll settles direct intent durably without dispatch or a new channel (219.5876ms)
+✔ start-over-channel direct late callback requires its original authenticated delivery and settles before unlock (196.037ms)
+✔ start-over-channel lost poll response remains handed-off unknown after drain expiry (312.9325ms)
+▶ start-over-channel failed offered response fences the same command for immediate and held polls
+  ✔ immediate (127.2878ms)
+  ✔ held (140.5999ms)
+✔ start-over-channel failed offered response fences the same command for immediate and held polls (269.3487ms)
+✔ start-over-channel failed empty poll timeout does not fence or retain the lane (140.733ms)
+✔ start-over-channel start-over fences a direct read already draining and refuses its callback (176.8166ms)
+▶ start-over-channel only direct project inspection can drain after its ordinary callback deadline
+  ✔ comp-frame-export (307.8162ms)
+  ✔ titles-current-target (296.4864ms)
+  ✔ project-inspection (294.4018ms)
+✔ start-over-channel only direct project inspection can drain after its ordinary callback deadline (899.6298ms)
+▶ start-over-channel private mutation reservation is checked at offer and is not required for its original completion
+  ✔ before offer (22.4031ms)
+  ✔ after offer (29.5992ms)
+✔ start-over-channel private mutation reservation is checked at offer and is not required for its original completion (52.8584ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3434.0178

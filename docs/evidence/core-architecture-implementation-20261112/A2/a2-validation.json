@@ -1,0 +1,249 @@
+{
+  "scope": "A2 only",
+  "status": "PASS focused offline validation; full affected union reserved for C",
+  "files": [
+    {
+      "path": "core4/cep/js/poll-dispatcher.js",
+      "sha256": "ef2c1b1479dccfdca370e67a946aefaaca47f823098a6554c869fa831cb8e2de"
+    },
+    {
+      "path": "core4/test/panel-lifecycle.test.js",
+      "sha256": "63479576fe999290b024a008a72575350a7cf82f65b70442433a8a0af786795c"
+    }
+  ],
+  "runs": [
+    {
+      "name": "syntax-dispatcher",
+      "args": [
+        "--check",
+        "core4/cep/js/poll-dispatcher.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [],
+      "logs": [
+        {
+          "path": "syntax-dispatcher.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-dispatcher.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "syntax-panel-lifecycle-test",
+      "args": [
+        "--check",
+        "core4/test/panel-lifecycle.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [],
+      "logs": [
+        {
+          "path": "syntax-panel-lifecycle-test.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "syntax-panel-lifecycle-test.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "panel-lifecycle",
+      "args": [
+        "--test",
+        "core4/test/panel-lifecycle.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 37",
+        "ℹ pass 37",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 2119.9985"
+      ],
+      "logs": [
+        {
+          "path": "panel-lifecycle.stdout.txt",
+          "sha256": "24b2d66396e6a01ec87cd1634ec044d7f2e9a89ef2b9b7232c788e85a23e9ff2",
+          "bytes": 4433
+        },
+        {
+          "path": "panel-lifecycle.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "panel-start-over",
+      "args": [
+        "--test",
+        "core4/test/panel-start-over.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 11",
+        "ℹ pass 11",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 553.8144"
+      ],
+      "logs": [
+        {
+          "path": "panel-start-over.stdout.txt",
+          "sha256": "676eccd3fd82bd3d26deb20460ee08702c8e76c6aa1c177f5586eade4edfb78c",
+          "bytes": 1294
+        },
+        {
+          "path": "panel-start-over.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "start-over-channel",
+      "args": [
+        "--test",
+        "core4/test/start-over-channel.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 29",
+        "ℹ pass 29",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 3434.0178"
+      ],
+      "logs": [
+        {
+          "path": "start-over-channel.stdout.txt",
+          "sha256": "0ddd0a3b941c3f28d2b3d30057f21592544eb7cf1cef1a6cbdbe71229ed6069d",
+          "bytes": 3165
+        },
+        {
+          "path": "start-over-channel.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "panel-reconnect",
+      "args": [
+        "--test",
+        "core4/test/panel-reconnect.test.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [
+        "ℹ tests 69",
+        "ℹ pass 69",
+        "ℹ fail 0",
+        "ℹ skipped 0",
+        "ℹ duration_ms 3463.069"
+      ],
+      "logs": [
+        {
+          "path": "panel-reconnect.stdout.txt",
+          "sha256": "65c71ad61c9f90725bb1516b506b1a8fc662bf058a358f275065d1d1600ee7a6",
+          "bytes": 7261
+        },
+        {
+          "path": "panel-reconnect.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "boundaries",
+      "args": [
+        "core4/tools/check-boundaries.js"
+      ],
+      "exit": 0,
+      "signal": null,
+      "summary": [],
+      "logs": [
+        {
+          "path": "boundaries.stdout.txt",
+          "sha256": "394931c5861ee7b063cabd543f3844f2184582019bd30b6c7dfd848a43cc304a",
+          "bytes": 102
+        },
+        {
+          "path": "boundaries.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "diff-check",
+      "args": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        "core4/cep/js/poll-dispatcher.js",
+        "core4/test/panel-lifecycle.test.js"
+      ],
+      "exit": 0,
+      "logs": [
+        {
+          "path": "diff-check.stdout.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "diff-check.stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      ]
+    }
+  ],
+  "coveredFullTestFiles": [
+    "core4/test/panel-lifecycle.test.js",
+    "core4/test/panel-start-over.test.js",
+    "core4/test/start-over-channel.test.js",
+    "core4/test/panel-reconnect.test.js"
+  ],
+  "testCount": 146,
+  "selectedCheckCount": 7,
+  "selectedChecks": [
+    "installable-runtime",
+    "manual-runtime",
+    "panel-lifecycle",
+    "ae-panel-startup",
+    "panel-start-over",
+    "start-over-channel",
+    "panel-reconnect"
+  ],
+  "notRunSelectedChecks": [
+    "installable-runtime",
+    "manual-runtime",
+    "ae-panel-startup"
+  ],
+  "deferredCoverageCount": 30,
+  "materialDecisions": [
+    "panel.js unchanged: existing error.message UI displays the finite code",
+    "strict matching failure is diagnostic only; no /registry-ready POST, persistent latch byte-exact, no retry/eval/new session",
+    "sync eval throw or absent callback retains native guard; returned malformed callback retains existing semantics",
+    "signed completed reset remains the only tested retirement path; archives exact old latch"
+  ],
+  "noLive": true,
+  "noInstalledChanges": true,
+  "noCommits": true
+}

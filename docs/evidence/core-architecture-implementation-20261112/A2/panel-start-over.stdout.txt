@@ -1,0 +1,19 @@
+✔ panel-start-over initial status is read-only and no business reset is sent automatically (31.9515ms)
+✔ panel-start-over cancelling confirmation keeps the physical channel and sends no reset (28.9587ms)
+✔ panel-start-over explicit request stops poll and waits for the same reset before selecting new session (63.0572ms)
+✔ panel-start-over reload during pending reset does not recover or evaluate an old latch (31.6093ms)
+✔ panel-start-over a lost request response is followed by status only and never resubmitted (47.3368ms)
+✔ panel-start-over forged status MAC cannot select a session or begin the physical handshake (31.3348ms)
+✔ panel-start-over late old callback keeps its key/channel and a new session cannot evaluate while callback is pending (78.4237ms)
+✔ panel-start-over healthy baseline uses the signed denial and preserves the physical connection (31.2467ms)
+✔ panel-start-over a new pending command revokes the cached action before confirmation (30.7303ms)
+✔ panel-start-over an unavailable owner disables reset while status polling waits (30.954ms)
+✔ panel-start-over a foreign installation is rejected before a role proof is sent (31.4551ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 553.8144

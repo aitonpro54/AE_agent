@@ -31,6 +31,7 @@ function nativeHost(current = false, localRegistryScope = false) {
 }
 function panel(t, options = {}) {
   const config = options.config || cfg, local = options.local || storage(), session = options.session || storage(), native = nativeHost(options.currentRegistry, options.localRegistryScope), elements = {}, calls = [], evals = [], proofs = [], markerReads = [], reloads = [], timers = new Set();
+  if (options.bootstrapFailure) native.context.$.evalFile = () => { throw new Error('fixture_private_native_error'); };
   let sequence = 0, peerId, nonceCount = 0, polls = 0, unload, click, completeResolve, bootstrapCallback, linkCount = 0;
   const marker = options.marker || installationMarker({ ...descriptor, panelToken: 'c'.repeat(64) }, selected);
   for (const id of ['status', 'detail', 'connect', 'start-over']) elements[id] = { dataset: {}, textContent: '', addEventListener(event, callback) { if (id === 'connect') click = callback; } };
@@ -107,7 +108,7 @@ test('panel-lifecycle bootstrap never publishes a wrong or nondispatching regist
     await assert.rejects(api.bootstrapRegistry({ installationId: cfg.installationId, storage: local, extensionRoot: descriptor.cepDir, registryBuildId: expected.registryBuildId, binding,
       csInterface: { evalScript(script, done) { const load = '$.evalFile(new File(' + JSON.stringify(descriptor.cepDir + '/jsx/registry.jsx') + '));'; done(native.run(script.replace(load, 'eval(' + JSON.stringify('var AECore4Host=' + candidate + ';') + ');'))); } },
       complete() { completeCalls++; return Promise.resolve(); }
-    }), /invalid_frame/);
+    }), /registry_refresh_failed/);
     assert.equal(native.context.AECore4Host, original); assert.equal(completeCalls, 0); assert.notEqual(local.getItem(api.registryKey(cfg.installationId)), null);
   }
 });
@@ -187,7 +188,102 @@ const S1 = '10000000-0000-4000-8000-000000000011', S2 = '10000000-0000-4000-8000
 const completedReset = { id: RESET, sessionId: S2, ownerBootId: '10000000-0000-4000-8000-000000000001', phase: 'baseline-required', requiresAEExit: false, resetComplete: true, baselineRequired: true, fault: null, eligibility: { action: 'none', reason: 'start_over_baseline_required' }, aeAuthority: false };
 const bootKey = 'aeagentcore4-registry-' + cfg.installationId;
 function oldLatch(sessionId = S1) { return JSON.stringify({ binding: { epoch: 'old-epoch', peerId: 'old-peer', nonce: 'e'.repeat(64), packageHash: cfg.packageHash, sessionId }, registryBuildId: expected.registryBuildId, extensionRoot: descriptor.cepDir }, null, 1); }
-function isolatedDispatcher() { const context = vm.createContext({ JSON, Object, Array, Promise, Error, isFinite }); vm.runInContext(read('cep/js/poll-dispatcher.js').toString(), context); return context.Core4PollDispatcher; }
+function isolatedDispatcher(context = vm.createContext({ JSON, Object, Array, Promise, Error, isFinite })) { vm.runInContext(read('cep/js/poll-dispatcher.js').toString(), context); return context.Core4PollDispatcher; }
+
+function registryCallbackFixture(options = {}) {
+  const context = vm.createContext({ JSON, Object, Array, Promise, Error, isFinite }), api = isolatedDispatcher(context), local = storage();
+  const binding = { epoch: 'callback-fixture', peerId: 'callback-peer', nonce: 'd'.repeat(64), packageHash: cfg.packageHash, sessionId: S1 };
+  const success = { version: 1, nonce: binding.nonce, registryBuildId: expected.registryBuildId, refreshed: true };
+  const failure = { version: 1, nonce: binding.nonce, code: 'registry_refresh_failed' };
+  let callback, evals = 0, posts = 0;
+  const start = () => api.bootstrapRegistry({ installationId: cfg.installationId, storage: local, extensionRoot: descriptor.cepDir, registryBuildId: expected.registryBuildId, binding,
+    csInterface: { evalScript(_script, done) { evals++; if (options.syncThrow) throw new Error('fixture_sync_eval'); callback = done; } },
+    complete(value) { posts++; return Promise.resolve({ registryReady: true, nonce: value.nonce, registryBuildId: value.registryBuildId, sessionId: value.sessionId }); }
+  });
+  return { api, context, local, start, success, failure, callback: raw => callback(raw), get evals() { return evals; }, get posts() { return posts; } };
+}
+
+test('panel-lifecycle A2 bound native failure is visible in the existing UI without ready, replay or latch clearing', async t => {
+  const f = panel(t, { bootstrapFailure: true }); await until(() => f.elements.connect.disabled === false);
+  assert.match(f.elements.status.textContent, /registry_refresh_failed/);
+  assert.doesNotMatch(f.elements.status.textContent, /fixture_private_native_error|invalid_frame/);
+  assert.equal(f.elements.status.dataset.state, 'recovery');
+  const raw = f.local.getItem(bootKey); assert.ok(raw); assert.equal(Object.hasOwn(JSON.parse(raw), 'result'), false);
+  assert.equal(f.context.Core4PollDispatcher.nativePending(), false);
+  assert.equal(f.calls.some(c => c.route === '/registry-ready' || c.route === '/poll'), false);
+  await f.click(); assert.equal(f.evals.length, 1); assert.equal(f.local.getItem(bootKey), raw); assert.equal(f.reloads.length, 0);
+});
+
+test('panel-lifecycle A2 only exact bound error callbacks preserve registry_refresh_failed', async () => {
+  const invalid = [
+    { patch: { nonce: 'e'.repeat(64) }, message: 'registry_native_identity' },
+    { patch: { version: 2 }, message: 'registry_native_identity' },
+    { patch: { code: 'other_failure' }, message: 'registry_native_identity' },
+    { patch: { extra: true }, message: 'invalid_frame' },
+    { raw: '{bad json', name: 'SyntaxError' },
+    { raw: 'null', message: 'invalid_frame' }
+  ];
+  for (const bad of invalid) {
+    const f = registryCallbackFixture(), pending = f.start(), original = f.local.getItem(bootKey);
+    const rejected = assert.rejects(pending, error => error.message !== 'registry_refresh_failed' && (bad.name ? error.name === bad.name : error.message === bad.message));
+    f.callback(bad.raw ?? JSON.stringify({ ...f.failure, ...bad.patch })); await rejected;
+    assert.equal(f.posts, 0); assert.equal(f.evals, 1); assert.equal(f.local.getItem(bootKey), original);
+    assert.equal(f.api.nativePending(), false); assert.equal(f.api.reloadIdle(f.local, cfg.installationId, S1, false), false);
+    await assert.rejects(f.start(), /registry_bootstrap_unknown_no_replay/); assert.equal(f.evals, 1);
+  }
+});
+
+test('panel-lifecycle A2 foreign callback token and replaced latch never become a known bootstrap failure', async () => {
+  for (const changed of ['token', 'latch']) {
+    const f = registryCallbackFixture(), pending = f.start(), original = f.local.getItem(bootKey);
+    if (changed === 'token') f.context.__aeCore4NativeCallbackGuard.active = { foreign: true }; else f.local.setItem(bootKey, 'replacement-latch');
+    const rejected = assert.rejects(pending, changed === 'token' ? /registry_native_guard/ : /registry_latch_replaced/);
+    f.callback(JSON.stringify(f.failure)); await rejected;
+    assert.equal(f.local.getItem(bootKey), changed === 'token' ? original : 'replacement-latch'); assert.equal(f.posts, 0);
+    if (changed === 'token') assert.equal(f.api.nativePending(), true);
+  }
+});
+
+test('panel-lifecycle A2 storage failures preserve the latch and never acknowledge bootstrap readiness', async () => {
+  const initial = registryCallbackFixture(); initial.local.setItem = () => { throw new Error('fixture_initial_storage_write'); };
+  assert.throws(initial.start, /fixture_initial_storage_write/); assert.equal(initial.evals, 0); assert.equal(initial.posts, 0);
+  for (const failure of ['success-write', 'error-read']) {
+    const f = registryCallbackFixture(), pending = f.start(), original = f.local.getItem(bootKey), get = f.local.getItem;
+    if (failure === 'success-write') f.local.setItem = () => { throw new Error('fixture_result_storage_write'); };
+    else f.local.getItem = () => { throw new Error('fixture_result_storage_read'); };
+    const rejected = assert.rejects(pending, /fixture_result_storage_write|fixture_result_storage_read/);
+    f.callback(JSON.stringify(failure === 'success-write' ? f.success : f.failure)); await rejected;
+    f.local.getItem = get;
+    assert.equal(f.local.getItem(bootKey), original); assert.equal(f.posts, 0);
+    assert.equal(f.api.reloadIdle(f.local, cfg.installationId, S1, false), false);
+  }
+});
+
+test('panel-lifecycle A2 synchronous eval throw and absent callback retain the native guard across reload', async () => {
+  for (const syncThrow of [false, true]) {
+    const f = registryCallbackFixture({ syncThrow }), pending = f.start(), original = f.local.getItem(bootKey);
+    if (syncThrow) await assert.rejects(pending, /fixture_sync_eval/);
+    assert.equal(f.api.nativePending(), true);
+    const reloaded = isolatedDispatcher(f.context);
+    assert.equal(reloaded.nativePending(), true); assert.equal(reloaded.reloadIdle(f.local, cfg.installationId, S1, false), false);
+    assert.equal(await reloaded.retireRegistryLatch(retireOptions(f.local, await resetProof())), false);
+    await assert.rejects(f.start(), /registry_bootstrap_unknown_no_replay/);
+    assert.equal(f.local.getItem(bootKey), original); assert.equal(f.evals, 1); assert.equal(f.posts, 0);
+    if (!syncThrow) { f.callback(JSON.stringify(f.success)); await pending; assert.equal(f.posts, 1); }
+  }
+});
+
+test('panel-lifecycle A2 a diagnosed failure still requires signed completed reset to archive the exact old latch', async () => {
+  const f = registryCallbackFixture(), pending = f.start(), original = f.local.getItem(bootKey);
+  const rejected = assert.rejects(pending, /registry_refresh_failed/); f.callback(JSON.stringify(f.failure)); await rejected;
+  assert.equal(await f.api.retireRegistryLatch(retireOptions(f.local, await resetProof(), { verifyProof: async () => false })), false);
+  assert.equal(await f.api.retireRegistryLatch(retireOptions(f.local, await resetProof({ ...completedReset, resetComplete: false }))), false);
+  assert.equal(f.local.getItem(bootKey), original); assert.equal(f.posts, 0);
+  assert.equal(await f.api.retireRegistryLatch(retireOptions(f.local, await resetProof())), true);
+  const archive = JSON.parse(f.local.getItem(bootKey + '-archive-' + hash(original) + '-reset-' + RESET));
+  assert.equal(archive.raw, original); assert.equal(archive.outcome, 'unknown_preserved'); assert.equal(archive.digest, hash(original));
+  assert.equal(f.local.getItem(bootKey), null); assert.equal(f.evals, 1); assert.equal(f.posts, 0);
+});
 async function resetProof(state = completedReset) {
   const control = createStartOverPanelControl({ installation: descriptor, status: () => state, request: async () => { throw new Error('no reset mutation'); } });
   const challenge = (await control.handle('/start-over/challenge', { action: 'status' }, 'file://')).challenge;
