@@ -486,3 +486,87 @@ Source изменения сохранены в011ffbf и3492c89, их scoped te
 bb86…/fb2b…. Одного успешного ordinary native project-inspection, hot update и
 same-package repeat после исправления нет; full release/native completion=false.
 Проверка состояния не повторяла settled/UNKNOWN команды и не ослабляла guards.
+
+## Происхождение двух установок и простой вариант замены, 12 ноября
+
+По новому запросу пользователя выполнено только read-only расследование и подготовка
+предложения. Разработка recovery/root-rebase не возобновлялась, установки/CEP/config
+не переключались, Computer Use не включался.
+
+### Progress / Validation
+
+- Separate physical Node probe через WMI прочитал оба origin и соответствующие
+  state anchors; hashes совпали, descriptor identities и native paths различны.
+  Safe receipt installation-origin-facts-76745613-10c6-4de1-8c4e-2f70fd52b29b.json,
+  SHAe6521bcb3e87d73901754d61734e8322a0110552dfaaae4c3e7d75ffd3f72e23.
+- Original e0… создана 2026-11-04T13:05:38.604Z (18:05 YEKT), current4.2.6.
+  Initial apply прямо записан в core-portability-practical-20261104.md:127.
+- Duplicate7ece… создана 2026-11-10T05:22:29.474Z (10:22 YEKT), current4.2.1/pkg8f….
+  Раздел «Восстановление штатного MCP на десктопе» в плане с именем20261109,
+  строки894–911: прежний runtime сочли отсутствующим, поиск в корзине пуст,
+  выполнен новый initial apply1135…/582… и создан отдельный installationId.
+  Имя файла плана не является датой этого события; origin даёт точную дату10ноября.
+- Причина создания второго ID установлена: recovery выполнил initial install
+  после необнаружения прежнего runtime. Какой конкретно process/context сделал
+  старую установку невидимой тогда, не доказано сохранёнными записями; текущий
+  MSIX split объясняет механизм, но не заменяет отсутствующий исторический trace.
+- Source-only feasibility: штатный installer принимает чистый
+  C:/Users/Ant/AEAgentCore4 внеAppData, имяbasenameAEAgentCore4, тот же томC.
+  Путь сейчас отсутствует. ExistingCEP/Core config section требуют явного
+  сохранения/retirement перед fresh apply; migrate-legacy не универсальный перенос.
+- Fresh identity не имеет host-adoption: core_ensure требует executable binding.
+  Есть существующий adopt-host setup (mutationGrantfalse); initial readonly
+  acquire/connect/project-inspection/release допускается без adoption. Одинapply
+  автоматически весь AE startup не подтверждает. Native smoke не выполнялся.
+
+### Decision Log / Предложение, не назначение исполнения
+
+История e0… — исходная для проекта; 7ece… возникла как восстановительный дубль.
+Обе истории сохраняются отдельно. Для одной рабочей установки без нового kernel
+protocol рекомендуется чистая оперативная замена: адресно остановить прежние Core
+процессы и убрать старые bindings; сохранить/вывести из работы обе physical roots
+и прежнюю CEP; fresh dry-run/apply проверенного готового пакета в указанный root
+внеAppData из обычного Windows процесса. Прочий config/AEP/preferences не менять.
+Затем existing initial host setup, штатный AE/panel launch, loaded JS/native registry
+identity и ровно один ordinary typed project read/release. Старые UNKNOWN не replay,
+не переносить их в новый runtime и не объявлять завершёнными. Новая активная
+установка получит новый служебный installationId; старые identities остаются архивах.
+Это предложение требует отдельного поручения выполнить переключение; текущий запрос
+не запускает retirement/install автоматически. Нового кода ядра для этого пути не нужно.
+
+## Чистое переключение по прямому поручению пользователя, 12 ноября
+
+- Пользователь утвердил архивирование обеих установок, clean install в
+  C:/Users/Ant/AEAgentCore4 и native launch/version/read без переработок ядра.
+- Точные Core clients46996/17476 и read-only resetdriver26048 завершены после
+  проверки PID/birth/path и status no execution lane; AE/CEP отсутствовали.
+  Старый reset/UNKNOWN не продолжался и не объявлялся успешным.
+- Одноразовый cutover operator прошёл независимое review. Whole-root архивирование
+  сохраняет исходные hardlinks/inodes; отдельные backup copies независимы/nlink1.
+  Operationfce38996-3172-4979-aa6a-575f7d959d99: full copy+readback обоих roots,
+  CEP и configs до moves; originals затем атомарно перенесены раздельно в
+  C:/Users/Ant/AEAgentCore4-archive/2026-11-12-fce38996-3172-4979-aa6a-575f7d959d99.
+  Global config SHAac2939ec… неизменен; убрана только Core section project config,
+  prefix802 bytes/suffix0 сохранены. Ничего не удалялось и не объединялось.
+- Existing standalone dry-run/apply1 PASS. Новый active installation
+  installation-81a5d9e6-9ecf-4fbd-a33f-5ceb3d772f56, operator/owner4.2.6,
+  first packagefb2b942f…, root внеAppData. AE16072 штатно создан WMI GUI launch;
+  панель открылась сама, executing JS d28ec5… и registryf588… подтверждены.
+- Две новые ordinary inspection попытки получили known terminal
+  host_registry_unavailable/effectnone, без UNKNOWN, обе leases освобождены.
+  Между ними exact installed JSX загружен обычным AfterFX-r; устойчивость host
+  registry этим не достигнута. Ни capture/disposition, ни reset не вызывались.
+- Найдена локальная ошибка CEP loader: evalFile внутри IIFE оставлял registry
+  локальным, хотя тот же bootstrap подтверждал ID. Подготовлена только публикация
+  проверенного registry в $.global.AECore4Host и проверка dispatch. Source delta
+  четыре строки poll-dispatcher.js плюс адресный test; storage/reset/protocol и
+  все runtime/kernel bytes unchanged. Это точечное исправление панели, не новая
+  переработка. Предварительный прогноз «готовый пакет без правок» уточнён пользователю.
+- Независимый review ACCEPT, targeted31/31 + syntax/diff-check PASS.
+  Две operator standalone сборки identical/closure verified:
+  package6cea11091208c73dab7ca40e763623f50dadeb537967bef267c93815010791a9,
+  distribution05a684acb98f5c6117d62e11daf94feaf53ca317aa161d2774cc32a2b5227db3.
+  Source/runtime scope проверен: release delta только poll-dispatcher и derived
+  panel identity. Snapshot перед ordinary update SHA94b04c2055fce48a5d1593b31b235a1a15dfcdb602c3b68bc26092a567f9b75b.
+- Текущий source milestone фиксирует узкую правку; native read после неё ещё
+  ожидается. Никакого full release/recovery/root-rebase этот block не назначает.

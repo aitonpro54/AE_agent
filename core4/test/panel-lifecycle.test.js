@@ -15,13 +15,22 @@ const descriptor = { installationId: 'lifecycle-fixture', packageHash: pkg.packa
 const selected = deriveComposition(pkg.release, read), cfg = installationConfig(descriptor, selected);
 function storage() { const data = new Map(); return { get length() { return data.size; }, key: i => [...data.keys()][i] ?? null, getItem: k => data.has(k) ? data.get(k) : null, setItem: (k, v) => data.set(k, String(v)), removeItem: k => data.delete(k) }; }
 async function until(fn) { const deadline = Date.now() + 3000; while (!fn()) { if (Date.now() > deadline) assert.fail('lifecycle fixture did not settle'); await new Promise(r => setTimeout(r, 2)); } }
-function nativeHost(current = false) {
-  const loaded = [], context = vm.createContext({ File: function (file) { this.fsName = file; }, app: { version: '26-fixture', project: { file: null, numItems: 0 } }, $: { evalFile(file) { assert.equal(file.fsName, descriptor.cepDir + '/jsx/registry.jsx'); loaded.push(file.fsName); vm.runInContext(read('cep/jsx/registry.jsx').toString(), context); } } });
+function nativeHost(current = false, localRegistryScope = false) {
+  const loaded = [], context = vm.createContext({ File: function (file) { this.fsName = file; }, CompItem: function () {}, app: { version: '26-fixture', project: { file: null, numItems: 0 } }, $: { evalFile(file) { assert.equal(file.fsName, descriptor.cepDir + '/jsx/registry.jsx'); loaded.push(file.fsName); vm.runInContext(read('cep/jsx/registry.jsx').toString(), context); } } });
+  context.$.global = context;
   if (current) vm.runInContext(read('cep/jsx/registry.jsx').toString(), context);
-  return { context, loaded, run: script => vm.runInContext(script, context) };
+  return { context, loaded, run(script) {
+    if (localRegistryScope) {
+      // Direct eval models ExtendScript evalFile's caller-local var declaration.
+      // Each run remains a separate CEP evalScript in the same engine context.
+      const load = '$.evalFile(new File(' + JSON.stringify(descriptor.cepDir + '/jsx/registry.jsx') + '));';
+      if (script.includes(load)) { loaded.push(descriptor.cepDir + '/jsx/registry.jsx'); script = script.replace(load, 'eval(' + JSON.stringify(read('cep/jsx/registry.jsx').toString()) + ');'); }
+    }
+    return vm.runInContext(script, context);
+  } };
 }
 function panel(t, options = {}) {
-  const config = options.config || cfg, local = options.local || storage(), session = options.session || storage(), native = nativeHost(options.currentRegistry), elements = {}, calls = [], evals = [], proofs = [], markerReads = [], reloads = [], timers = new Set();
+  const config = options.config || cfg, local = options.local || storage(), session = options.session || storage(), native = nativeHost(options.currentRegistry, options.localRegistryScope), elements = {}, calls = [], evals = [], proofs = [], markerReads = [], reloads = [], timers = new Set();
   let sequence = 0, peerId, nonceCount = 0, polls = 0, unload, click, completeResolve, bootstrapCallback, linkCount = 0;
   const marker = options.marker || installationMarker({ ...descriptor, panelToken: 'c'.repeat(64) }, selected);
   for (const id of ['status', 'detail', 'connect', 'start-over']) elements[id] = { dataset: {}, textContent: '', addEventListener(event, callback) { if (id === 'connect') click = callback; } };
@@ -72,6 +81,34 @@ test('panel-lifecycle old registry refreshes only fixed own path; current regist
     const f = panel(t, { currentRegistry }); await until(() => f.polls === 1);
     assert.equal(f.evals.length, 1); assert.equal(f.native.loaded.length, currentRegistry ? 0 : 1); assert.deepEqual(JSON.parse(JSON.stringify(f.native.context.AECore4Host.identity())), { protocolVersion: 1, registryBuildId: expected.registryBuildId });
     assert.deepEqual(f.calls.slice(0, 4).map(c => c.route), ['/challenge', '/link', '/registry-ready', '/poll']);
+  }
+});
+
+test('panel-lifecycle caller-local registry survives bootstrap into a separate native dispatch', async t => {
+  const old = nativeHost(false, true);
+  assert.equal(old.run('(function(){$.evalFile(new File(' + JSON.stringify(descriptor.cepDir + '/jsx/registry.jsx') + '));return AECore4Host.identity().registryBuildId;}())'), expected.registryBuildId);
+  assert.equal(old.run('typeof AECore4Host'), 'undefined', 'local bootstrap identity alone cannot establish global readiness');
+  const f = panel(t, { localRegistryScope: true, command: true });
+  await until(() => f.calls.some(c => c.route === '/complete'));
+  assert.equal(f.evals.length, 2); assert.equal(f.native.loaded.length, 1);
+  assert.equal(f.native.run('AECore4Host === $.global.AECore4Host'), true);
+  const result = f.calls.find(c => c.route === '/complete').value.body.payload.result;
+  assert.equal(result.observationVersion, 1); assert.equal(result.readFailureVersion, undefined);
+  assert.deepEqual(f.calls.slice(0, 5).map(c => c.route), ['/challenge', '/link', '/registry-ready', '/poll', '/complete']);
+});
+
+test('panel-lifecycle bootstrap never publishes a wrong or nondispatching registry', async () => {
+  for (const candidate of [
+    '({identity:function(){return {protocolVersion:1,registryBuildId:"' + expected.registryBuildId + '"};}})',
+    '({identity:function(){return {protocolVersion:1,registryBuildId:"' + '0'.repeat(64) + '"};},dispatch:function(){}})'
+  ]) {
+    const api = isolatedDispatcher(), local = storage(), native = nativeHost(false, true), original = native.run('$.global.AECore4Host={old:true}'); let completeCalls = 0;
+    const binding = { epoch: 'fixture', peerId: 'fixture-peer', nonce: 'd'.repeat(64), packageHash: cfg.packageHash, sessionId: null };
+    await assert.rejects(api.bootstrapRegistry({ installationId: cfg.installationId, storage: local, extensionRoot: descriptor.cepDir, registryBuildId: expected.registryBuildId, binding,
+      csInterface: { evalScript(script, done) { const load = '$.evalFile(new File(' + JSON.stringify(descriptor.cepDir + '/jsx/registry.jsx') + '));'; done(native.run(script.replace(load, 'eval(' + JSON.stringify('var AECore4Host=' + candidate + ';') + ');'))); } },
+      complete() { completeCalls++; return Promise.resolve(); }
+    }), /invalid_frame/);
+    assert.equal(native.context.AECore4Host, original); assert.equal(completeCalls, 0); assert.notEqual(local.getItem(api.registryKey(cfg.installationId)), null);
   }
 });
 test('panel-lifecycle duplicate peer gets no native bootstrap until accepted provisional link', async t => {
